@@ -417,7 +417,7 @@ run, a keyboard-unreachable scrolling region in the roster strip; it was fixed.)
 |---|---|
 | 1. No CORS on `api` | **Fixed.** `ALLOWED_ORIGINS` (default `http://localhost:3000`); a wildcard is refused at start-up. Tested. |
 | 2. `FirestoreDataSource` used HTTP and fell back to mock data silently | **Fixed by decision 0015.** No Firestore SDK path; one `LiveSource` over the `api` routes; errors are shown as errors. |
-| Table: `GET /status` missing | **Fixed.** Returns `guard_impl`, `parser_impl`, model IDs from `config/models.yaml` as-is (all `TODO-VERIFY`), time scale. |
+| Table: `GET /status` missing | **Fixed.** Returns `guard_impl`, `parser_impl`, model IDs from `config/models.yaml` as-is (pinned since `chore/pin-models`; `guard` still `TODO-VERIFY`), time scale. |
 | Table: `/voice/token` vs `/live/token` | **Fixed** (UI calls `POST /live/token`). **Voice itself stays open:** the route answers 501 with an explanation; the UI falls back hands-free → push-to-talk → text. |
 | Table: `/gaps/{id}/fallback` vs `/fallbacks` | **Fixed.** UI calls `POST /fallbacks`. |
 | Table: `GET /scenarios/{key}` bundle | **Fixed differently.** `GET /scenarios` lists the playable scenarios (S-017, S-002) from the data; `POST /gaps {scenario_id}` starts one; `GET /gaps/{id}` is the single view model. |
@@ -444,7 +444,7 @@ run, a keyboard-unreachable scrolling region in the roster strip; it was fixed.)
 | 20. Client reads of `staff`, `quarantine` | **Fixed by decision 0015.** No client Firestore reads; names come in projections; quarantine has its own route. |
 | 21. Nonce in a readable document | **Fixed.** Server-only `server/{gapId}`; only `GET /gaps/{id}/approval` returns it, only while pending. Leak test over every read route. |
 | 22. No read path for offers | **Fixed.** Offers are in the gap view, without callback URLs. |
-| 23. Voice token and model | Route **fixed**; voice **open** (Slice 4); every model ID still `TODO-VERIFY`. |
+| 23. Voice token and model | Route **fixed**; voice **open** (Slice 4). Model pinned later (`gemini-3.8-live`, `v1beta`; decision 0019), and the web client now expects `v1beta` tokens. |
 
 ### Still open
 - Voice (Slice 4), BigQuery evals (Slice 6), the guard model and an adversarial scenario (Slice 5; the J4 button is omitted, see OPEN_ITEMS).

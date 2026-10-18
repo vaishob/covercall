@@ -247,7 +247,7 @@ abstract class TokenVoiceProvider implements VoiceProvider {
 }
 
 /**
- * 1. LiveVoiceProvider (hands-free): Gemini Live (`v1alpha`) authenticated ONLY with an ephemeral
+ * 1. LiveVoiceProvider (hands-free): Gemini Live (`v1beta`, decision 0019) authenticated ONLY with an ephemeral
  * token from `api` (`POST /live/token`). Never holds a client API key.
  */
 export class LiveVoiceProvider extends TokenVoiceProvider {
@@ -261,14 +261,14 @@ export class LiveVoiceProvider extends TokenVoiceProvider {
       return;
     }
     try {
-      this.callbacks.onStateChange('Thinking', 'Requesting a v1alpha ephemeral token from api…');
+      this.callbacks.onStateChange('Thinking', 'Requesting a v1beta ephemeral token from api…');
       const tokenResp = await this.apiClient.mintLiveToken();
-      if (tokenResp.api_version !== 'v1alpha' || !tokenResp.ephemeral_token) {
-        throw new Error('Ephemeral token requires Live API v1alpha.');
+      if (tokenResp.api_version !== 'v1beta' || !tokenResp.ephemeral_token) {
+        throw new Error('Ephemeral token requires Live API v1beta.');
       }
       const resolvedModel = this.modelId || tokenResp.model_id;
       if (!resolvedModel) throw new Error('No Live model ID is configured.');
-      this.callbacks.onStateChange('Listening', `Live session active (${resolvedModel}, v1alpha ephemeral token)`);
+      this.callbacks.onStateChange('Listening', `Live session active (${resolvedModel}, v1beta ephemeral token)`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Live session failed';
       const fallbackReason = `Hands-free unavailable: ${msg} Falling back to push-to-talk.`;

@@ -59,7 +59,7 @@ handoff; that history is in git (`f42c748` and earlier) and in `docs/HANDOFF.md`
 | `VITE_API_BASE_URL` | The `api` URL. Locally `http://127.0.0.1:8080`. Unset → recorded replay, badged, actions disabled. |
 
 No other client variables. No secrets go to the browser. Model IDs come from `GET /status`, which
-reads `config/models.yaml` (all still `TODO-VERIFY`).
+reads `config/models.yaml` (pinned 2026-10-18 except `guard`; voice tokens are `v1beta`, decision 0019).
 
 ## 5. Tests
 

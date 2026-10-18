@@ -65,6 +65,22 @@ test('hands-free falls back to push-to-talk when POST /live/token answers 501', 
   assert.match(reason, /Voice is Slice 4/);
 });
 
+test('hands-free accepts only a v1beta ephemeral token (decision 0019)', async () => {
+  const token = { ephemeral_token: 'tok', expires_at: '2026-11-03T06:30:00+08:00', model_id: 'gemini-3.8-live' };
+  let state = '';
+  let fallback = '';
+  await new LiveVoiceProvider(recordingClient(200, { ...token, api_version: 'v1beta' }).client, {
+    ...quiet,
+    onStateChange: (s) => (state = s),
+  }).connect();
+  assert.equal(state, 'Listening');
+  await new LiveVoiceProvider(recordingClient(200, { ...token, api_version: 'v1alpha' }).client, {
+    ...quiet,
+    onModeFallback: (m) => (fallback = m),
+  }).connect();
+  assert.equal(fallback, 'push-to-talk');
+});
+
 test('approve tool sends nonce and approve/reject, and downgrades an unclear transcript', async () => {
   const { client, calls } = recordingClient(200, { approval_id: 'a1', decision: 'reject' });
   await assert.rejects(

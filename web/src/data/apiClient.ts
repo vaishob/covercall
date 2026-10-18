@@ -138,7 +138,7 @@ export class ApiClient {
   }
 
   /** Slice 4. The backend answers 501 with an explanation until voice exists. */
-  mintLiveToken(): Promise<{ ephemeral_token: string; expires_at: string; model_id: string; api_version: 'v1alpha' }> {
+  mintLiveToken(): Promise<{ ephemeral_token: string; expires_at: string; model_id: string; api_version: 'v1beta' }> {
     return this.request('POST', '/live/token');
   }
 }
