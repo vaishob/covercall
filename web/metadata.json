@@ -1,6 +1,0 @@
-{
-  "name": "CoverCall",
-  "description": "Hands-free, provably legal shift absence coverage engine and outreach cascade for multi-outlet operators in Singapore. All data is synthetic.",
-  "requestFramePermissions": ["microphone"],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
