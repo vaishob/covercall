@@ -545,3 +545,53 @@ ah... only after 9 can, got lecture" → counter 09:00–15:00, reason school, c
 - A failed execution strands its gap (`gap-0001`); the cancel route cannot reach it. Needs a top-level error handler in the YAML and a cancel path that works without a live execution.
 - Persona text: when Gemini's wording does not parse back to the seeded intent, the template is used (seen once per S-017 run).
 - Voice (Slice 4), BigQuery evals (Slice 6), the guard model (Slice 5).
+
+---
+
+## Voice live (branch `feat/voice`, promoted 2026-10-19 ~00:55 SGT). Frozen after this.
+
+### What is live
+| Thing | Value |
+|---|---|
+| api | revision `covercall-api-00006-bip` (image `api:voice-b9fc16d`), 100% of traffic. `VOICE_ENABLED=1`, `DEMO_ISOLATION=1`, `ALLOWED_ORIGINS` = the two production Hosting origins |
+| Other services | unchanged: `*-00004-*` (tag `a6507f5`) |
+| Voice | `POST /live/token`: single-use `v1beta` ephemeral tokens for `gemini-3.8-live` (1 min to start, 30 min session), the model, audio, both transcriptions, session resumption, system instruction and five tools locked server-side (global lock). Rate limit 5 per IP and 60 overall per 10 minutes (429). The key is never logged or returned. `/status` reports `voice: live` |
+| Web | https://covercall-demo-2026.web.app: hands-free, push-to-talk and text, with a hint under the voice controls; `/about` reads voice and model status from `/status`. `@google/genai` 2.27.0 |
+| Demo isolation | lead-reported gaps (voice, text) commit to their own overlay, so the same absence always gets the same plan (decision 0024) |
+| Data | production reseeded at ~01:03 SGT |
+
+### Verification after PROMOTE (all against the production URLs)
+| Check | Result |
+|---|---|
+| Author's voice test on the preview | passed (reported by the author) |
+| S-017 by tap | FILLED in 1.9 min (`gap-0011`, but see the finding below); after the reseed FILLED in 1.3 min (`gap-0013`): Fiona 07:00-09:00 + Lucas 09:00-15:00, saved 15105 cents, `verify_chain` OK (9 events), execution `c592b95a-fa9c-4b9e-ac67-56e174f26632` |
+| Nobody replies by tap | ESCALATED then RESOLVED (borrow) in 2.8 min (`gap-0012`), `verify_chain` OK (18 events), execution `b18202c3-4522-4a00-9e27-ffff22a9248c` |
+| Fake-mic voice check | Live session opened from a production token (`gemini-3.8-live`, v1beta); text mode works |
+| Console errors | none in any run |
+
+Local checks on `b9fc16d`: ruff, mypy, lint_rules, pytest 190 passed, local_cascade exit 0, npm test 34/34,
+build, local Playwright 2/2.
+
+### Finding: Gemini parsing makes S-017 less repeatable
+In `gap-0011`, Lucas's seeded counter-offer was written by the template (Gemini's wording did not
+parse back to the intent), and the Gemini parser read that template text as `unclear`. The server
+fails closed (`unclear` is a decline, never an accept), so the plan moved on and Shreya filled the
+whole shift: legal, FILLED, recorded honestly, but not the usual Fiona + Lucas split. The next run
+(`gap-0013`) gave the usual split. This predates voice (the parser has been on since `feat/final`).
+
+### Rollback (exact commands)
+```bash
+# api: back to the pre-voice revision
+gcloud run services update-traffic covercall-api --project covercall-demo-2026 --region asia-southeast1 \
+  --to-revisions covercall-api-00004-mlt=100
+# Hosting: back to the pre-voice live release (saved as channel "prevlive" before the deploy)
+firebase hosting:clone covercall-demo-2026:prevlive covercall-demo-2026:live --project covercall-demo-2026
+```
+The preview channel `voice` (https://covercall-demo-2026--voice-m6a66s8s.web.app, expires 26 Oct) and
+the tagged revisions `voice` (`00005-bux`) and `live-voice` (`00006-bip`) remain; they carry no traffic of their own.
+
+### Still open
+- Gemini parser and persona-text variation can change which legal plan fills (above).
+- Production still runs on the real clock (dates 3–4 Nov); voice reports must name the date.
+- `gap-0001` stays stranded (failed execution, cancel route cannot reach it).
+- Ephemeral tokens are a Preview feature; rate limits are per instance (in memory).
