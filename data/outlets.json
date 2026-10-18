@@ -1,119 +1,121 @@
 [
-  {
-    "outlet_id": "bugis",
-    "name": "CoverCall Caf\u00e9 \u2014 Bugis",
-    "area": "Bugis",
-    "lat": 1.2997,
-    "lng": 103.8555,
-    "opening_hours": {
-      "open": "07:00",
-      "close": "21:00"
-    },
-    "stations": [
-      {
-        "station": "barista",
-        "skill": "barista",
-        "food_handling": true,
-        "min_count": 2
-      },
-      {
-        "station": "kitchen",
-        "skill": "kitchen",
-        "food_handling": true,
-        "min_count": 1
-      },
-      {
-        "station": "cashier",
-        "skill": "cashier",
-        "food_handling": false,
-        "min_count": 1
-      }
-    ],
-    "keyholders": [
-      "stf_001",
-      "stf_004",
-      "stf_011",
-      "stf_019",
-      "stf_022"
-    ],
-    "synthetic": true
+ {
+  "outlet_id": "bugis",
+  "name": "Bugis",
+  "area": "Bugis",
+  "lat": 1.2997,
+  "lng": 103.8555,
+  "opening_hours": {
+   "open": "07:00",
+   "close": "21:00"
   },
-  {
-    "outlet_id": "tampines",
-    "name": "CoverCall Caf\u00e9 \u2014 Tampines",
-    "area": "Tampines",
-    "lat": 1.3525,
-    "lng": 103.9447,
-    "opening_hours": {
-      "open": "07:00",
-      "close": "21:00"
-    },
-    "stations": [
-      {
-        "station": "barista",
-        "skill": "barista",
-        "food_handling": true,
-        "min_count": 2
-      },
-      {
-        "station": "kitchen",
-        "skill": "kitchen",
-        "food_handling": true,
-        "min_count": 1
-      },
-      {
-        "station": "cashier",
-        "skill": "cashier",
-        "food_handling": false,
-        "min_count": 1
-      }
-    ],
-    "keyholders": [
-      "stf_002",
-      "stf_008",
-      "stf_010",
-      "stf_014",
-      "stf_025"
-    ],
-    "synthetic": true
+  "stations": [
+   {
+    "station": "barista",
+    "skill": "barista",
+    "food_handling": true,
+    "min_count": 1
+   },
+   {
+    "station": "kitchen",
+    "skill": "kitchen",
+    "food_handling": true,
+    "min_count": 1
+   },
+   {
+    "station": "cashier",
+    "skill": "cashier",
+    "food_handling": false,
+    "min_count": 1
+   }
+  ],
+  "keyholders": [
+   "stf_001",
+   "stf_004",
+   "stf_010",
+   "stf_011",
+   "stf_016",
+   "stf_019",
+   "stf_022",
+   "stf_025",
+   "stf_028"
+  ],
+  "synthetic": true
+ },
+ {
+  "outlet_id": "tampines",
+  "name": "Tampines",
+  "area": "Tampines",
+  "lat": 1.3525,
+  "lng": 103.9447,
+  "opening_hours": {
+   "open": "07:00",
+   "close": "21:00"
   },
-  {
-    "outlet_id": "jurong_east",
-    "name": "CoverCall Caf\u00e9 \u2014 Jurong East",
-    "area": "Jurong East",
-    "lat": 1.3329,
-    "lng": 103.7436,
-    "opening_hours": {
-      "open": "07:00",
-      "close": "21:00"
-    },
-    "stations": [
-      {
-        "station": "barista",
-        "skill": "barista",
-        "food_handling": true,
-        "min_count": 2
-      },
-      {
-        "station": "kitchen",
-        "skill": "kitchen",
-        "food_handling": true,
-        "min_count": 1
-      },
-      {
-        "station": "cashier",
-        "skill": "cashier",
-        "food_handling": false,
-        "min_count": 1
-      }
-    ],
-    "keyholders": [
-      "stf_003",
-      "stf_006",
-      "stf_012",
-      "stf_016",
-      "stf_028"
-    ],
-    "synthetic": true
-  }
+  "stations": [
+   {
+    "station": "barista",
+    "skill": "barista",
+    "food_handling": true,
+    "min_count": 1
+   },
+   {
+    "station": "kitchen",
+    "skill": "kitchen",
+    "food_handling": true,
+    "min_count": 1
+   },
+   {
+    "station": "cashier",
+    "skill": "cashier",
+    "food_handling": false,
+    "min_count": 1
+   }
+  ],
+  "keyholders": [
+   "stf_002",
+   "stf_008",
+   "stf_014",
+   "stf_017",
+   "stf_023"
+  ],
+  "synthetic": true
+ },
+ {
+  "outlet_id": "jurong_east",
+  "name": "Jurong East",
+  "area": "Jurong East",
+  "lat": 1.3329,
+  "lng": 103.7436,
+  "opening_hours": {
+   "open": "07:00",
+   "close": "21:00"
+  },
+  "stations": [
+   {
+    "station": "barista",
+    "skill": "barista",
+    "food_handling": true,
+    "min_count": 1
+   },
+   {
+    "station": "kitchen",
+    "skill": "kitchen",
+    "food_handling": true,
+    "min_count": 1
+   },
+   {
+    "station": "cashier",
+    "skill": "cashier",
+    "food_handling": false,
+    "min_count": 1
+   }
+  ],
+  "keyholders": [
+   "stf_003",
+   "stf_012",
+   "stf_018"
+  ],
+  "synthetic": true
+ }
 ]

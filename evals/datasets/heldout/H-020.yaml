@@ -1,28 +1,32 @@
 id: H-020
-description: Held-out synthetic absence scenario H-020 at bugis (barista)
-now: '2026-11-03T06:02:00+08:00'
-seed: 1062
+description: 'Shreya absent: bugis kitchen 13:00-21:00 on 2026-11-06'
+now: '2026-11-06T12:23:00+08:00'
+seed: 5220
 gap:
   outlet: bugis
-  station: barista
-  start: 07:00
-  end: '15:00'
-  absent: stf_009
-overrides:
-- staff: stf_004
-  ledger:
-    ot_hours_used: 65
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 11
-    hours_since_prev_shift_end: 8.0
+  station: kitchen
+  start: '13:00'
+  end: '21:00'
+  absent: stf_025
+overrides: []
 personas:
-  stf_019:
-    will: decline
+  stf_030:
+    will: counter
+    window:
+    - '15:00'
+    - '21:00'
+  stf_032:
+    will: counter
+    window:
+    - '15:00'
+    - '21:00'
 synthetic: true
 expect:
-  outcome: filled
+  outcome: borrow
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_016
+  assignment: []
+  overtime_cost_cents: 0
+  total_cost_cents: 0
+  time_to_fill_min: null
+  computed_by: evals.runners.local_cascade (coverage-cascade state machine, solver
+    time limit 10 s, validator); never hand-typed

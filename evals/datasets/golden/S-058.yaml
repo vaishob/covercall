@@ -1,26 +1,32 @@
 id: S-058
-description: Synthetic absence scenario S-058 at tampines (kitchen)
-now: '2026-11-03T06:02:00+08:00'
-seed: 100
+description: 'Rohan absent: bugis cashier 13:00-21:00 on 2026-11-04'
+now: '2026-11-04T11:37:00+08:00'
+seed: 4258
 gap:
-  outlet: tampines
-  station: kitchen
-  start: 08:00
-  end: '16:00'
-  absent: stf_014
+  outlet: bugis
+  station: cashier
+  start: '13:00'
+  end: '21:00'
+  absent: stf_013
 overrides:
-- staff: stf_004
+- staff: stf_014
   ledger:
-    ot_hours_used: 70
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 11
-    hours_since_prev_shift_end: 14.0
-personas: {}
+    ot_hours_used: 69
+personas:
+  stf_027:
+    will: silent
+  stf_010:
+    will: decline
 synthetic: true
 expect:
   outcome: filled
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_016
+  assignment:
+  - staff_id: stf_020
+    start: '2026-11-04T13:00:00+08:00'
+    end: '2026-11-04T21:00:00+08:00'
+  overtime_cost_cents: 0
+  total_cost_cents: 9600
+  time_to_fill_min: 19.9
+  computed_by: evals.runners.local_cascade (coverage-cascade state machine, solver
+    time limit 10 s, validator); never hand-typed

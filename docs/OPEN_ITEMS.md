@@ -1,16 +1,30 @@
-# Open Items to Verify (§15.2)
+# Open items to verify (§15.2)
 
-All data in CoverCall is synthetic. This file mirrors §15.2 of the CoverCall Design Doc and tracks items requiring external verification or later-slice completion.
+All data in CoverCall is synthetic. This file mirrors §15.2 and adds items found during the build.
+`TODO-VERIFY` = a fact I could not confirm; that thread is stopped until someone confirms it.
 
-| Item | Status | Why it matters | Where to check / Resolution |
+| Item | Status | Why it matters | Where to check / what was found |
 |---|---|---|---|
-| Submission deadline and current rules | `TODO-VERIFY` | The briefing cited 18 Oct 2026; the participant dashboard is authoritative | Participant dashboard |
-| Innovation & Feasibility weight | `TODO-VERIFY` | Stated rubric weights sum to 85%; remaining 15% presumed Innovation & Feasibility | Participant dashboard |
-| Part 4 coverage details | `VERIFIED (2026-10-18)` | Drives `SG-EA4-COVERAGE` (workmen <= $4,500, non-workmen <= $2,600, managers/executives excluded) | Verified at `https://www.mom.gov.sg/employment-practices/employment-act/who-is-covered` (Last Updated 24 July 2025) |
-| Whether baristas count as food handlers | `VERIFIED (2026-10-18)` | SFA's definition covers anyone who handles and prepares food and beverages in SFA-licensed premises; `enforce_fsc_on_barista: true` in `policy/company.yaml` | Verified at `https://www.sfa.gov.sg/food-handler-hygiene-officer/training-courses/wsq-food-safety-course-level-1` (Last Updated 24 Aug 2026) |
-| Public-holiday rules | `OPEN (Out of scope v1)` | Not encoded in this version; demo scenarios avoid public holidays (`2026-11-03` is a normal Tuesday) | MOM public holiday page |
-| Competitor facts (UKG, Deputy, Homebase, Shiftboard, Humanforce, Sling, Soon.works, Fountain) | `TODO-VERIFY` | Came from market scan; Slice 8 deck must use verified facts only | Each vendor's own site before Slice 8 deck export |
-| Singapore F&B manpower and small-operator tooling | `TODO-VERIFY` | Deck slide 3 needs cited public evidence; "small operators roster on chat groups and spreadsheets" remains a hypothesis | Public MOM, SingStat or industry reports |
-| Exact Gemini model IDs, Live API access route, region availability in `asia-southeast1` | `PARTIAL / TODO-VERIFY` | `gemini-3.1-flash-live-preview` (`v1alpha`), `gemini-2.5-flash` (`v1`), and `gemini-2.5-pro` (`v1`) pinned in `config/models.yaml`; fine-tuned Gemma 3 270M checkpoint is `TODO-VERIFY` until Slice 5 (`guard` uses `guard_impl: "stub-v0"` in Slices 1–2); Vertex AI regional endpoint quota in `asia-southeast1` pending live GCP project deployment | Google model documentation & GCP console |
-| Routes API transit coverage in the route matrix for Singapore | `PLACEHOLDER (Slice 1–2)` | No `ROUTES_API_KEY` secret is provisioned in local/CI container; `data/travel_cache.json` uses `"source": "placeholder-not-routes-api"` per §3.8 step 7 until Slice 7 real connector key is configured in Secret Manager | Google Maps Routes API documentation |
-| Cloud Run / Workflows live GCP deployment in `asia-southeast1` | `TODO-VERIFY (Environment)` | Container environment has no `gcloud` CLI or attached GCP billing credentials; idempotent deployment scripts are provided in `infra/deploy.sh` and `workflows/coverage_cascade.yaml`, while `e2e_cascade.py` runs against the local/container FastAPI + workflow engine harness | Run `infra/deploy.sh` with authenticated `gcloud` in target GCP project |
+| Submission deadline and current rules | TODO-VERIFY | The briefing cited 18 Oct 2026; the dashboard is authoritative | Participant dashboard |
+| Innovation & Feasibility weight | TODO-VERIFY | Stated weights sum to 85% | Participant dashboard |
+| Part 4 coverage details | VERIFIED 2026-10-18 | Drives `SG-EA4-COVERAGE` | MOM "Employment Act: who it covers" (updated 24 July 2025): workmen ≤ S$4,500, non-workmen ≤ S$2,600. The page says Part 4 "does not cover all managers or executives"; CoverCall treats every `manager_executive` as not covered (conservative for cost, out of the candidate pool as the lead) |
+| Part-time employee equivalent salary for the Part 4 test | DESIGN CHOICE | Part-timers are paid hourly | `hourly × weekly_contract_hours × 52 / 12` (docs/decisions/0005). Not stated by MOM |
+| Whether baristas count as food handlers | VERIFIED 2026-10-18 | `SG-SFA-FSC-L1` on the barista station | SFA FSC L1 page (updated 24 Aug 2026): a food handler "handles and prepares food and beverages". `enforce_fsc_on_barista: true` |
+| Hours of work: do breaks count toward the 12 h day? | TODO-VERIFY | Engines count breaks as hours of work (stricter) | MOM page does not say; see docs/decisions/0005 |
+| Public-holiday rules | OPEN (not encoded) | Not in this version | Demo dates (3–8 Nov 2026) avoid public holidays: TODO-VERIFY against MOM's 2026 public holiday list |
+| Shift-worker 30-hour rest-day form | OPEN (not encoded) | `SG-EA4-REST-DAY` uses the weekly day-off check | MOM page "Rest day" section |
+| Competitor facts (UKG, Deputy, Homebase, Shiftboard, Humanforce, Sling, Soon.works, Fountain) | TODO-VERIFY | Deck must use verified facts only | Each vendor's own site |
+| Singapore F&B manpower and small-operator tooling | TODO-VERIFY | Deck slide 3 | MOM, SingStat or industry reports |
+| Exact Gemini model IDs, Live API route, region availability | **TODO-VERIFY** | Services refuse to start on `TODO-VERIFY` | Found 2026-10-18 on https://ai.google.dev/gemini-api/docs/models (updated 2026-10-13): `gemini-3.1-flash-live-preview` is listed as a legacy preview (the page recommends `gemini-3.8-live`); the `gemini-2.5` family is limited to earlier users; current Flash IDs include `gemini-3.6-flash` and `gemini-3.8-flash`. Not confirmed on Vertex AI for `asia-southeast1`, and not confirmed that ephemeral tokens work with `gemini-3.8-live`. Pin in `config/models.yaml` after checking the console |
+| Routes API transit coverage for Singapore | PLACEHOLDER | Travel times for borrows | `data/travel_cache.json` is `source: placeholder-not-routes-api` (no key used; no paid API calls in this run). Replace with a real matrix in Slice 7 |
+| Outlet coordinates | TODO-VERIFY | Map display only | `datagen/__init__.py` uses approximate public area centroids for Bugis, Tampines and Jurong East; check against a public map |
+| Persona reply review (§8.3) | NOT STARTED | Natural, respectful synthetic replies | `datagen/REVIEW.md` |
+| Firestore emulator for Slice 2 | NOT USED | Local verification of transactions | Running it needs the `firebase` or `gcloud` CLI, which this unattended run may not invoke. An in-memory fake behind the same interface is used (docs/decisions/0010) |
+| Cloud Workflows: can one callback endpoint receive several requests? | VERIFIED 2026-10-18 | Fan-out design (§4.4) | No, not reliably: "a single callback slot is available"; requests sent before `await_callback` are not all kept (docs.cloud.google.com/workflows/docs/creating-callback-endpoints, updated 2026-10-13). So the YAML uses one endpoint per offer in a `parallel` for-loop (docs/decisions/0011) |
+| Gemini availability in `asia-southeast1` | TODO-VERIFY | §4.6, §13.3 | Check in the console before deploy |
+| Workflows YAML accepted by the service (`next: continue` in a `parallel` for-loop, `map.get`, `sys.get_env("GOOGLE_CLOUD_WORKFLOW_EXECUTION_ID")`, OIDC `audience`) | TODO-VERIFY | `workflows/coverage_cascade.yaml` is checked statically and mirrored by the local driver, but has never been deployed | The first `gcloud workflows deploy` validates the syntax (infra/50_workflow.sh) |
+| `FirestoreStore` transactions | TODO-VERIFY | Locally only `MemoryStore` runs | Run the tests against the Firestore emulator or a dev project |
+| IAM condition on Firestore database name (`resource.name == "projects/P/databases/sim"`) | TODO-VERIFY | Least privilege: only persona-sim may use `sim` | infra/20_iam.sh; check the Firestore IAM conditions docs |
+| Firebase CLI multi-database rules (`infra/firebase.json` array form) | TODO-VERIFY | Rules for `(default)` and `sim` | Firebase CLI docs |
+| gitleaks image tag in `cloudbuild.yaml` (`zricethezav/gitleaks:v8.18.4`) | TODO-VERIFY | CI secret scan | Docker Hub |
+| Escalation lead vs short-notice reports | FINDING | With the PDF defaults, reports under ~41 min before a shift escalate at once (docs/decisions/0009) | Product decision: keep, or lower `escalation_lead_min` |

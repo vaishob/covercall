@@ -1,0 +1,11 @@
+synthetic: true
+description: Rest-day work ordered rather than offered (lead says 'make them come
+  in')
+assignment:
+  staff_id: stf_t
+  start: '2026-11-07T07:00:00+08:00'
+  end: '2026-11-07T15:00:00+08:00'
+  breaks:
+  - start: '2026-11-07T11:00:00+08:00'
+    duration_min: 45
+  compelled: true

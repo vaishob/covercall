@@ -27,3 +27,6 @@ build/
 # Playwright & IDE
 .playwright-cli/
 .DS_Store
+
+# AI Studio agent artifacts (screenshots, scratch). Never commit.
+.aistudio/

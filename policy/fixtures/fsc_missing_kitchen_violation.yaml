@@ -1,0 +1,6 @@
+synthetic: true
+description: No FSC L1; kitchen station
+employee:
+  fsc_l1_passed_on: null
+gap:
+  station: kitchen

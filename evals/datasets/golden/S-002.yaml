@@ -1,26 +1,88 @@
 id: S-002
-description: Synthetic absence scenario S-002 at jurong_east (cashier)
-now: '2026-11-03T06:02:00+08:00'
-seed: 44
+description: 'Nobody replies: every candidate stays silent (J3 fan-out and escalation)'
+now: '2026-11-04T06:05:00+08:00'
+seed: 2
 gap:
-  outlet: jurong_east
+  outlet: tampines
   station: cashier
-  start: '12:00'
-  end: '20:00'
-  absent: stf_003
-overrides:
-- staff: stf_004
-  ledger:
-    ot_hours_used: 70
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 11
-    hours_since_prev_shift_end: 14.0
-personas: {}
+  start: 07:00
+  end: '15:00'
+  absent: stf_005
+overrides: []
+personas:
+  stf_001:
+    will: silent
+  stf_002:
+    will: silent
+  stf_003:
+    will: silent
+  stf_004:
+    will: silent
+  stf_005:
+    will: silent
+  stf_006:
+    will: silent
+  stf_007:
+    will: silent
+  stf_008:
+    will: silent
+  stf_009:
+    will: silent
+  stf_010:
+    will: silent
+  stf_011:
+    will: silent
+  stf_012:
+    will: silent
+  stf_013:
+    will: silent
+  stf_014:
+    will: silent
+  stf_015:
+    will: silent
+  stf_016:
+    will: silent
+  stf_017:
+    will: silent
+  stf_018:
+    will: silent
+  stf_019:
+    will: silent
+  stf_020:
+    will: silent
+  stf_021:
+    will: silent
+  stf_022:
+    will: silent
+  stf_023:
+    will: silent
+  stf_024:
+    will: silent
+  stf_025:
+    will: silent
+  stf_026:
+    will: silent
+  stf_027:
+    will: silent
+  stf_028:
+    will: silent
+  stf_029:
+    will: silent
+  stf_030:
+    will: silent
+  stf_031:
+    will: silent
+  stf_032:
+    will: silent
+  stf_033:
+    will: silent
 synthetic: true
 expect:
-  outcome: filled
+  outcome: borrow
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_015
+  assignment: []
+  overtime_cost_cents: 0
+  total_cost_cents: 0
+  time_to_fill_min: null
+  computed_by: evals.runners.local_cascade (coverage-cascade state machine, solver
+    time limit 10 s, validator); never hand-typed

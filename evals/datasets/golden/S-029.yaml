@@ -1,26 +1,37 @@
 id: S-029
-description: Synthetic absence scenario S-029 at jurong_east (cashier)
-now: '2026-11-03T06:02:00+08:00'
-seed: 71
+description: 'Farhan absent: jurong_east cashier 07:00-15:00 on 2026-11-04'
+now: '2026-11-04T05:24:00+08:00'
+seed: 4229
 gap:
   outlet: jurong_east
   station: cashier
-  start: '12:00'
-  end: '20:00'
+  start: 07:00
+  end: '15:00'
   absent: stf_015
-overrides:
-- staff: stf_004
-  ledger:
-    ot_hours_used: 66
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 11
-    hours_since_prev_shift_end: 14.0
-personas: {}
+overrides: []
+personas:
+  stf_020:
+    will: decline
+  stf_025:
+    will: counter
+    window:
+    - 09:00
+    - '15:00'
+  stf_029:
+    will: decline
 synthetic: true
 expect:
   outcome: filled
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_016
+  assignment:
+  - staff_id: stf_011
+    start: '2026-11-04T07:00:00+08:00'
+    end: '2026-11-04T09:00:00+08:00'
+  - staff_id: stf_016
+    start: '2026-11-04T09:00:00+08:00'
+    end: '2026-11-04T15:00:00+08:00'
+  overtime_cost_cents: 3776
+  total_cost_cents: 3776
+  time_to_fill_min: 27.18
+  computed_by: evals.runners.local_cascade (coverage-cascade state machine, solver
+    time limit 10 s, validator); never hand-typed

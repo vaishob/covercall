@@ -1,5 +1,5 @@
 id: SG-EA4-REST-DAY
-title: Weekly rest day and maximum 12 days between two rest days
+title: Rest day each week; at most 12 days between rest days; rest-day work only by offer
 kind: hard
 jurisdiction: SG
 source:
@@ -12,11 +12,16 @@ source:
 applies_when: employee.part4_covered == true
 params:
   max_days_between_rest_days: 12
-  shift_worker_continuous_rest_hours: 30
-  compelled_rest_day_work_allowed: false
-message: "{name}: {days_since_rest} consecutive days since last rest day exceeds the EA Part 4 maximum of {max_days} days between rest days."
+  min_rest_days_per_week: 1
+  week_starts_on: monday
+  rest_day_work_may_be_compelled: false
+message: "{name}: working {date} makes {run_days} consecutive days of work (EA Part 4 allows at most {max_days} days between rest days) and leaves {week_rest_days} day(s) off in that week."
 tests:
   - fixture: rest_day_13_days_violation
     expect: violation
   - fixture: rest_day_5_days_ok
     expect: ok
+  - fixture: rest_day_week_without_rest_violation
+    expect: violation
+  - fixture: rest_day_compelled_violation
+    expect: violation

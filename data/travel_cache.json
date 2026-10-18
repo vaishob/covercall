@@ -1,168 +1,185 @@
 {
-  "source": "placeholder-not-routes-api",
-  "retrieved_at": "2026-10-18T00:00:00+08:00",
-  "synthetic": true,
-  "outlet_to_outlet_min": {
-    "bugis->bugis": 0,
-    "bugis->tampines": 28,
-    "bugis->jurong_east": 32,
-    "tampines->bugis": 28,
-    "tampines->tampines": 0,
-    "tampines->jurong_east": 48,
-    "jurong_east->bugis": 32,
-    "jurong_east->tampines": 48,
-    "jurong_east->jurong_east": 0
+ "source": "placeholder-not-routes-api",
+ "retrieved_at": null,
+ "generated_at": "2026-10-18T00:00:00+08:00",
+ "note": "Placeholder travel minutes. Not Google Maps Routes API data. See docs/OPEN_ITEMS.md.",
+ "outlet_to_outlet_min": {
+  "bugis->bugis": 0,
+  "bugis->tampines": 28,
+  "bugis->jurong_east": 32,
+  "tampines->bugis": 28,
+  "tampines->tampines": 0,
+  "tampines->jurong_east": 48,
+  "jurong_east->bugis": 32,
+  "jurong_east->tampines": 48,
+  "jurong_east->jurong_east": 0
+ },
+ "synthetic": true,
+ "staff_to_outlet_min": {
+  "stf_001": {
+   "bugis": 16,
+   "tampines": 28,
+   "jurong_east": 32
   },
-  "staff_to_outlet_min": {
-    "stf_001": {
-      "bugis": 16,
-      "tampines": 28,
-      "jurong_east": 32
-    },
-    "stf_002": {
-      "bugis": 28,
-      "tampines": 16,
-      "jurong_east": 48
-    },
-    "stf_003": {
-      "bugis": 32,
-      "tampines": 48,
-      "jurong_east": 16
-    },
-    "stf_004": {
-      "bugis": 16,
-      "tampines": 28,
-      "jurong_east": 32
-    },
-    "stf_005": {
-      "bugis": 28,
-      "tampines": 16,
-      "jurong_east": 48
-    },
-    "stf_006": {
-      "bugis": 32,
-      "tampines": 48,
-      "jurong_east": 16
-    },
-    "stf_007": {
-      "bugis": 16,
-      "tampines": 28,
-      "jurong_east": 32
-    },
-    "stf_008": {
-      "bugis": 28,
-      "tampines": 16,
-      "jurong_east": 48
-    },
-    "stf_009": {
-      "bugis": 32,
-      "tampines": 48,
-      "jurong_east": 16
-    },
-    "stf_010": {
-      "bugis": 28,
-      "tampines": 16,
-      "jurong_east": 48
-    },
-    "stf_011": {
-      "bugis": 16,
-      "tampines": 28,
-      "jurong_east": 32
-    },
-    "stf_012": {
-      "bugis": 32,
-      "tampines": 48,
-      "jurong_east": 16
-    },
-    "stf_013": {
-      "bugis": 16,
-      "tampines": 28,
-      "jurong_east": 32
-    },
-    "stf_014": {
-      "bugis": 28,
-      "tampines": 16,
-      "jurong_east": 48
-    },
-    "stf_015": {
-      "bugis": 32,
-      "tampines": 48,
-      "jurong_east": 16
-    },
-    "stf_016": {
-      "bugis": 16,
-      "tampines": 28,
-      "jurong_east": 32
-    },
-    "stf_017": {
-      "bugis": 28,
-      "tampines": 16,
-      "jurong_east": 48
-    },
-    "stf_018": {
-      "bugis": 32,
-      "tampines": 48,
-      "jurong_east": 16
-    },
-    "stf_019": {
-      "bugis": 16,
-      "tampines": 28,
-      "jurong_east": 32
-    },
-    "stf_020": {
-      "bugis": 28,
-      "tampines": 16,
-      "jurong_east": 48
-    },
-    "stf_021": {
-      "bugis": 32,
-      "tampines": 48,
-      "jurong_east": 16
-    },
-    "stf_022": {
-      "bugis": 16,
-      "tampines": 28,
-      "jurong_east": 32
-    },
-    "stf_023": {
-      "bugis": 28,
-      "tampines": 16,
-      "jurong_east": 48
-    },
-    "stf_024": {
-      "bugis": 32,
-      "tampines": 48,
-      "jurong_east": 16
-    },
-    "stf_025": {
-      "bugis": 16,
-      "tampines": 28,
-      "jurong_east": 32
-    },
-    "stf_026": {
-      "bugis": 28,
-      "tampines": 16,
-      "jurong_east": 48
-    },
-    "stf_027": {
-      "bugis": 32,
-      "tampines": 48,
-      "jurong_east": 16
-    },
-    "stf_028": {
-      "bugis": 16,
-      "tampines": 28,
-      "jurong_east": 32
-    },
-    "stf_029": {
-      "bugis": 28,
-      "tampines": 16,
-      "jurong_east": 48
-    },
-    "stf_030": {
-      "bugis": 32,
-      "tampines": 48,
-      "jurong_east": 16
-    }
+  "stf_002": {
+   "bugis": 28,
+   "tampines": 16,
+   "jurong_east": 48
+  },
+  "stf_003": {
+   "bugis": 32,
+   "tampines": 48,
+   "jurong_east": 16
+  },
+  "stf_004": {
+   "bugis": 16,
+   "tampines": 28,
+   "jurong_east": 32
+  },
+  "stf_005": {
+   "bugis": 28,
+   "tampines": 16,
+   "jurong_east": 48
+  },
+  "stf_006": {
+   "bugis": 32,
+   "tampines": 48,
+   "jurong_east": 16
+  },
+  "stf_007": {
+   "bugis": 16,
+   "tampines": 28,
+   "jurong_east": 32
+  },
+  "stf_008": {
+   "bugis": 28,
+   "tampines": 16,
+   "jurong_east": 48
+  },
+  "stf_009": {
+   "bugis": 32,
+   "tampines": 48,
+   "jurong_east": 16
+  },
+  "stf_010": {
+   "bugis": 16,
+   "tampines": 28,
+   "jurong_east": 32
+  },
+  "stf_011": {
+   "bugis": 16,
+   "tampines": 28,
+   "jurong_east": 32
+  },
+  "stf_012": {
+   "bugis": 32,
+   "tampines": 48,
+   "jurong_east": 16
+  },
+  "stf_013": {
+   "bugis": 16,
+   "tampines": 28,
+   "jurong_east": 32
+  },
+  "stf_014": {
+   "bugis": 28,
+   "tampines": 16,
+   "jurong_east": 48
+  },
+  "stf_015": {
+   "bugis": 32,
+   "tampines": 48,
+   "jurong_east": 16
+  },
+  "stf_016": {
+   "bugis": 16,
+   "tampines": 28,
+   "jurong_east": 32
+  },
+  "stf_017": {
+   "bugis": 28,
+   "tampines": 16,
+   "jurong_east": 48
+  },
+  "stf_018": {
+   "bugis": 32,
+   "tampines": 48,
+   "jurong_east": 16
+  },
+  "stf_019": {
+   "bugis": 16,
+   "tampines": 28,
+   "jurong_east": 32
+  },
+  "stf_020": {
+   "bugis": 28,
+   "tampines": 16,
+   "jurong_east": 48
+  },
+  "stf_021": {
+   "bugis": 32,
+   "tampines": 48,
+   "jurong_east": 16
+  },
+  "stf_022": {
+   "bugis": 16,
+   "tampines": 28,
+   "jurong_east": 32
+  },
+  "stf_023": {
+   "bugis": 28,
+   "tampines": 16,
+   "jurong_east": 48
+  },
+  "stf_024": {
+   "bugis": 32,
+   "tampines": 48,
+   "jurong_east": 16
+  },
+  "stf_025": {
+   "bugis": 16,
+   "tampines": 28,
+   "jurong_east": 32
+  },
+  "stf_026": {
+   "bugis": 28,
+   "tampines": 16,
+   "jurong_east": 48
+  },
+  "stf_027": {
+   "bugis": 32,
+   "tampines": 48,
+   "jurong_east": 16
+  },
+  "stf_028": {
+   "bugis": 16,
+   "tampines": 28,
+   "jurong_east": 32
+  },
+  "stf_029": {
+   "bugis": 28,
+   "tampines": 16,
+   "jurong_east": 48
+  },
+  "stf_030": {
+   "bugis": 32,
+   "tampines": 48,
+   "jurong_east": 16
+  },
+  "stf_031": {
+   "bugis": 16,
+   "tampines": 28,
+   "jurong_east": 32
+  },
+  "stf_032": {
+   "bugis": 28,
+   "tampines": 16,
+   "jurong_east": 48
+  },
+  "stf_033": {
+   "bugis": 32,
+   "tampines": 48,
+   "jurong_east": 16
   }
+ }
 }

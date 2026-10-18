@@ -1,28 +1,28 @@
 id: S-015
-description: Synthetic absence scenario S-015 at bugis (barista)
-now: '2026-11-03T06:02:00+08:00'
-seed: 57
+description: 'Priya absent: bugis barista 07:00-15:00 on 2026-11-04'
+now: '2026-11-04T05:09:00+08:00'
+seed: 4215
 gap:
   outlet: bugis
   station: barista
   start: 07:00
   end: '15:00'
-  absent: stf_001
+  absent: stf_004
 overrides:
-- staff: stf_004
+- staff: stf_008
   ledger:
-    ot_hours_used: 66
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 13
-    hours_since_prev_shift_end: 14.0
-personas:
-  stf_019:
-    will: decline
+    ot_hours_used: 68
+personas: {}
 synthetic: true
 expect:
   outcome: filled
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_016
+  assignment:
+  - staff_id: stf_020
+    start: '2026-11-04T07:00:00+08:00'
+    end: '2026-11-04T15:00:00+08:00'
+  overtime_cost_cents: 0
+  total_cost_cents: 9600
+  time_to_fill_min: 2.0
+  computed_by: evals.runners.local_cascade (coverage-cascade state machine, solver
+    time limit 10 s, validator); never hand-typed

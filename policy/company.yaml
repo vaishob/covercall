@@ -1,41 +1,58 @@
-# Synthetic company policy and design defaults (§3.1, §5.2, §6.4)
-# All data is synthetic.
+# Synthetic company policy and design defaults (§3.1, §5.2, §6.4, §7.3).
+# All data is synthetic. The business is fictional.
+# Every number here is a design default: chosen for this design, not a fact from a source.
+# Rule specs reference these values as "company:<key>" so the YAML rule and this file never drift.
 
 synthetic: true
 
-buffer_min: 10              # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-w_min_min: 3                # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-w_max_min: 10               # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-k: 3                        # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-fanout_threshold_min: 25    # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-fanout_n: 3                 # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-escalation_lead_min: 15     # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+# §5.2 deadlines, reply windows and fan-out (PDF gives these values)
+buffer_min: 10              # design default (PDF §5.2)
+w_min_min: 3                # design default (PDF §5.2)
+w_max_min: 10               # design default (PDF §5.2)
+k: 3                        # design default (PDF §5.2)
+fanout_threshold_min: 25    # design default (PDF §5.2)
+fanout_n: 3                 # design default (PDF §5.2)
+escalation_lead_min: 15     # design default (PDF §5.2)
 
-solver_time_limit_s: 2      # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-solver_seed: 42             # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-top_k_plans: 3              # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-max_segments: 2             # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+# §6.4 solver
+solver_time_limit_s: 2      # design default (PDF §4.1)
+solver_seed: 42             # design default (chosen, see docs/decisions/0006-solver-formulation.md)
+top_k_plans: 3              # design default (PDF §6.4)
+max_segments: 2             # design default (PDF §6.4)
+split_granularity_min: 30   # design default (chosen, see docs/decisions/0006-solver-formulation.md)
+min_segment_min: 120        # design default (chosen, see docs/decisions/0006-solver-formulation.md)
+offline_time_limit_s: 10    # design default (chosen, see docs/decisions/0006-solver-formulation.md); used for scenario labels only
 
-material_change:            # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-  time_shift_min: 30        # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-  cost_up: true             # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+# §5.1 re-plan after a counter-offer
+material_change:            # design default (PDF §5.1)
+  time_shift_min: 30        # design default (PDF §5.1)
+  cost_up: true             # design default (PDF §5.1)
 
-parse_confidence_min: 0.7   # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-draft_max_chars: 300        # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-retry_attempts: 3           # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+# §7.3 agent
+parse_confidence_min: 0.7   # design default (PDF §7.3)
+draft_max_chars: 300        # design default (PDF §7.3)
+retry_attempts: 3           # design default (PDF §5.4)
 
-fairness:                   # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-  max_covers: 2             # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-  window_days: 14           # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+# Synthetic company rules (§6.2 CO-*)
+fairness:                   # CO-FAIRNESS
+  max_covers: 2             # design default (PDF §6.2: "more than twice in 14 days")
+  window_days: 14           # design default (PDF §6.2)
+rest_between_shifts_h: 11   # CO-REST-BETWEEN-SHIFTS, design default (PDF §6.2)
+min_staff_age: 16           # CO-AGE-SCOPE gate, scope decision (PDF §2.6)
+generated_staff_min_age: 17 # design default (PDF §2.1, §8.2)
+meal_break_min: 45          # break the planner schedules inside a cover segment, design default (chosen, see docs/decisions/0005-rule-semantics.md)
+comparable_ft_normal_daily_hours: 8  # SG-PT-OT-RATE comparator, design default (chosen, see docs/decisions/0005-rule-semantics.md)
 
-rest_between_shifts_h: 11   # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-ft_pt_ratio: [60, 40]       # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+# §8.2 data mix
+ft_pt_ratio: [60, 40]       # design default (PDF §8.2)
 
-objective_weights:          # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-  cost: 1                   # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-  fairness: 500             # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
-  disruption: 300           # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+# §6.4 objective. Units: integer cents. See docs/decisions/0006-solver-formulation.md.
+objective_weights:
+  cost: 1                   # design default (chosen): 1 x incremental labour cost in cents
+  fairness: 500             # design default (chosen): 500 cents per cover request beyond fairness.max_covers
+  disruption: 300           # design default (chosen): 300 cents per extra person in a split plan
 
-# Linked to §15.2 open item: SFA defines a food handler as any person who handles and prepares
-# food and beverages within SFA-licensed premises (verified on sfa.gov.sg, see docs/OPEN_ITEMS.md).
-enforce_fsc_on_barista: true # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+# §15.2 open item, resolved: SFA defines a food handler as anyone who handles and prepares
+# food and beverages in SFA-licensed premises (SFA FSC L1 page, last updated 24 Aug 2026,
+# retrieved 2026-10-18). Kept as a switch so the barista scope stays visible and reversible.
+enforce_fsc_on_barista: true # design default (chosen, see docs/decisions/0005-rule-semantics.md)

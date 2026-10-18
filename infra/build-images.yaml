@@ -1,0 +1,22 @@
+# Cloud Build: build and push one image per service (used by infra/30_images.sh). Build context is
+# the repo root, so each image can include the shared policy/ and datagen/ packages.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: [build, -f, services/api/Dockerfile, -t, "${_IMAGE_BASE}/api:${_TAG}", .]
+  - name: gcr.io/cloud-builders/docker
+    args: [build, -f, services/solver/Dockerfile, -t, "${_IMAGE_BASE}/solver:${_TAG}", .]
+  - name: gcr.io/cloud-builders/docker
+    args: [build, -f, services/agent/Dockerfile, -t, "${_IMAGE_BASE}/agent:${_TAG}", .]
+  - name: gcr.io/cloud-builders/docker
+    args: [build, -f, services/guard/Dockerfile, -t, "${_IMAGE_BASE}/guard:${_TAG}", .]
+  - name: gcr.io/cloud-builders/docker
+    args: [build, -f, services/persona_sim/Dockerfile, -t, "${_IMAGE_BASE}/persona-sim:${_TAG}", .]
+  - name: gcr.io/cloud-builders/docker
+    args: [build, -f, services/connectors/Dockerfile, -t, "${_IMAGE_BASE}/connectors:${_TAG}", .]
+images:
+  - "${_IMAGE_BASE}/api:${_TAG}"
+  - "${_IMAGE_BASE}/solver:${_TAG}"
+  - "${_IMAGE_BASE}/agent:${_TAG}"
+  - "${_IMAGE_BASE}/guard:${_TAG}"
+  - "${_IMAGE_BASE}/persona-sim:${_TAG}"
+  - "${_IMAGE_BASE}/connectors:${_TAG}"

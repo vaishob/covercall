@@ -11,13 +11,16 @@ source:
   retrieved: 2026-10-18
 applies_when: "true"
 params:
-  exclude_employee_classes:
-    - manager_executive
-  workman_basic_salary_cap_sgd: 4500
-  non_workman_basic_salary_cap_sgd: 2600
-message: "{name}: Part 4 coverage is {part4_status} ({employee_class}, monthly basic ${monthly_basic_sgd})."
+  excluded_employee_classes: [manager_executive]
+  workman_max_monthly_basic_sgd: 4500
+  non_workman_max_monthly_basic_sgd: 2600
+message: "{name}: EA Part 4 {coverage} ({employee_class}, monthly basic S${monthly_basic_sgd})."
 tests:
   - fixture: coverage_non_workman_covered
     expect: ok
   - fixture: coverage_manager_excluded
     expect: not_applicable
+  - fixture: coverage_non_workman_above_threshold
+    expect: not_applicable
+  - fixture: coverage_part_timer_covered
+    expect: ok

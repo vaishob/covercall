@@ -1,121 +1,338 @@
 """Independent plain-Python rule validator (§3.6, §6.3).
 
-CRITICAL ARCHITECTURAL INVARIANT:
-This module MUST NOT import `ortools`, `policy.compile_cpsat`, or any shared rule logic.
-Only Python stdlib and `yaml` are permitted. An AST test in `tests/test_policy.py`
-verifies this invariant on every test run.
+Re-implements every rule in ``policy/rules/*.yaml`` directly from the spec and the semantics in
+``docs/decisions/0005-rule-semantics.md``, on plain dicts.
+
+INVARIANT: this module imports only the standard library and ``yaml``. It MUST NOT import
+``ortools``, ``policy.compile_cpsat`` or any shared rule logic. ``tests/test_policy.py`` parses
+this file's AST and fails on any other import.
 """
 
 from __future__ import annotations
 
+import ast
 from dataclasses import asdict, dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
 import yaml
 
+VALIDATOR_VERSION = "2.0.0"
+BLOCKING_KINDS = ("hard", "data_gate")
+
+
+class ValidationDataError(ValueError):
+    """Input data is missing or malformed. The validator fails closed instead of guessing."""
+
 
 @dataclass(frozen=True)
 class RuleResult:
     rule_id: str
-    status: str  # "ok" | "violation" | "not_applicable"
+    status: str  # ok | violation | not_applicable
     message: str
     source_url: str
-    kind: str = "hard"
-    cost_cents: int = 0
-    params_filled: dict[str, Any] = field(default_factory=dict)
+    kind: str
+    params: dict[str, Any] = field(default_factory=dict)
+    cost: dict[str, int] = field(default_factory=dict)
+
+    @property
+    def blocking(self) -> bool:
+        return self.status == "violation" and self.kind in BLOCKING_KINDS
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
-def load_rules_for_validator(rules_dir: Path = Path("policy/rules")) -> list[dict[str, Any]]:
-    rules: list[dict[str, Any]] = []
-    for path in sorted(rules_dir.glob("*.yaml")):
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
-        if isinstance(data, dict):
-            rules.append(data)
+# --------------------------------------------------------------------------- loading
+
+
+def load_rules(rules_dir: str | Path = "policy/rules") -> list[dict[str, Any]]:
+    rules = []
+    for path in sorted(Path(rules_dir).glob("*.yaml")):
+        spec = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if isinstance(spec, dict):
+            rules.append(spec)
     return rules
 
 
-def compute_part4_covered(employee: dict[str, Any], coverage_rule: dict[str, Any] | None = None) -> bool:
-    """Compute EA Part 4 coverage from SG-EA4-COVERAGE (§6.2, §8.1). Never stored by hand."""
-    emp_class = str(employee.get("employee_class", "non_workman"))
-    params = (coverage_rule or {}).get("params", {})
-    excluded_classes = set(params.get("exclude_employee_classes", ["manager_executive"]))
-    if emp_class in excluded_classes:
+def load_company(path: str | Path = "policy/company.yaml") -> dict[str, Any]:
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValidationDataError(f"{path} is not a mapping")
+    return data
+
+
+def resolve_params(rule: dict[str, Any], company: dict[str, Any]) -> dict[str, Any]:
+    """Return the rule's params with every ``company:<dotted.key>`` reference resolved."""
+    out: dict[str, Any] = {}
+    for key, value in (rule.get("params") or {}).items():
+        if isinstance(value, str) and value.startswith("company:"):
+            node: Any = company
+            for part in value.removeprefix("company:").split("."):
+                if not isinstance(node, dict) or part not in node:
+                    raise ValidationDataError(f"{rule['id']}: {value} not found in company.yaml")
+                node = node[part]
+            out[key] = node
+        else:
+            out[key] = value
+    return out
+
+
+# --------------------------------------------------------------------------- applies_when
+
+
+_LITERALS = {"true": True, "false": False, "null": None}
+
+
+def eval_applies_when(expr: str, env: dict[str, Any]) -> bool:
+    """Evaluate a spec's ``applies_when`` over ``env`` with a whitelisted expression grammar."""
+    tree = ast.parse(str(expr).strip(), mode="eval")
+    return bool(_eval_node(tree.body, env))
+
+
+def _eval_node(node: ast.AST, env: dict[str, Any]) -> Any:
+    if isinstance(node, ast.BoolOp):
+        values = [_eval_node(v, env) for v in node.values]
+        return all(values) if isinstance(node.op, ast.And) else any(values)
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+        return not _eval_node(node.operand, env)
+    if isinstance(node, ast.Compare) and len(node.ops) == 1:
+        left = _eval_node(node.left, env)
+        right = _eval_node(node.comparators[0], env)
+        op = node.ops[0]
+        if isinstance(op, ast.Eq):
+            return left == right
+        if isinstance(op, ast.NotEq):
+            return left != right
+        if isinstance(op, ast.In):
+            return left in right
+        if isinstance(op, ast.NotIn):
+            return left not in right
+    if isinstance(node, ast.Constant):
+        return node.value
+    if isinstance(node, (ast.List, ast.Tuple)):
+        return [_eval_node(e, env) for e in node.elts]
+    if isinstance(node, ast.Name):
+        if node.id in _LITERALS:
+            return _LITERALS[node.id]
+        if node.id in env:
+            return env[node.id]
+        raise ValidationDataError(f"applies_when: unknown name {node.id!r}")
+    if isinstance(node, ast.Attribute):
+        base = _eval_node(node.value, env)
+        if not isinstance(base, dict) or node.attr not in base:
+            raise ValidationDataError(f"applies_when: unknown field {node.attr!r}")
+        return base[node.attr]
+    raise ValidationDataError(f"applies_when: unsupported syntax {ast.dump(node)}")
+
+
+# --------------------------------------------------------------------------- helpers
+
+
+def _ts(value: Any) -> datetime:
+    dt = datetime.fromisoformat(str(value))
+    if dt.tzinfo is None:
+        raise ValidationDataError(f"timestamp without offset: {value}")
+    return dt
+
+
+def _minutes(a: datetime, b: datetime) -> int:
+    return int((b - a).total_seconds() // 60)
+
+
+def _hours_text(minutes: int | Fraction) -> str:
+    value = Fraction(minutes) / 60
+    if value.denominator == 1:
+        return str(value.numerator)
+    return f"{float(value):.2f}".rstrip("0").rstrip(".")
+
+
+def _round_cents(x: Fraction) -> int:
+    # Half up, x >= 0.
+    return int((x + Fraction(1, 2)) // 1)
+
+
+def _sgd(cents: int) -> str:
+    return f"{cents / 100:.2f}"
+
+
+def _as_map(items: Any, key: str) -> dict[str, dict[str, Any]]:
+    if isinstance(items, dict):
+        return items
+    return {str(item[key]): item for item in items or []}
+
+
+def _require(record: dict[str, Any], name: str, what: str) -> Any:
+    if record.get(name) is None:
+        raise ValidationDataError(f"{what}: missing {name}")
+    return record[name]
+
+
+def monthly_basic_sgd(employee: dict[str, Any]) -> Fraction:
+    if employee.get("monthly_basic_sgd") is not None:
+        return Fraction(str(employee["monthly_basic_sgd"]))
+    sid = employee.get("staff_id", "?")
+    hourly = Fraction(str(_require(employee, "hourly_basic_sgd", f"staff {sid}")))
+    weekly = Fraction(str(_require(employee, "weekly_contract_hours", f"staff {sid}")))
+    return hourly * weekly * 52 / 12
+
+
+def compute_part4_covered(employee: dict[str, Any], coverage_rule: dict[str, Any]) -> bool:
+    """SG-EA4-COVERAGE. Computed from the spec's params, never stored on the record."""
+    params = coverage_rule.get("params") or {}
+    emp_class = _require(employee, "employee_class", f"staff {employee.get('staff_id')}")
+    if emp_class in params["excluded_employee_classes"]:
         return False
-
-    workman_cap = float(params.get("workman_basic_salary_cap_sgd", 4500))
-    non_workman_cap = float(params.get("non_workman_basic_salary_cap_sgd", 2600))
-
-    monthly_basic = employee.get("monthly_basic_sgd")
-    if monthly_basic is None:
-        hourly = float(employee.get("hourly_basic_sgd") or 0.0)
-        # Equivalent full-time monthly basic salary for coverage check
-        monthly_basic = (hourly * 44.0 * 52.0) / 12.0
-    else:
-        monthly_basic = float(monthly_basic)
-
+    salary = monthly_basic_sgd(employee)
     if emp_class == "workman":
-        return monthly_basic <= workman_cap
-    return monthly_basic <= non_workman_cap
+        return salary <= Fraction(str(params["workman_max_monthly_basic_sgd"]))
+    return salary <= Fraction(str(params["non_workman_max_monthly_basic_sgd"]))
 
 
-def _parse_date(val: Any) -> date | None:
-    if not val:
-        return None
-    s = str(val)
-    if "T" in s:
-        return datetime.fromisoformat(s).date()
-    return date.fromisoformat(s[:10])
+# --------------------------------------------------------------------------- facts
 
 
-def _monthly_hourly_rate_sgd(employee: dict[str, Any], cap_non_workman: bool = True) -> float:
-    """Monthly-rated hourly basic rate = (12 * monthly_basic) / (52 * 44)."""
-    if employee.get("contract_type") == "part_time" and employee.get("hourly_basic_sgd") is not None:
-        rate = float(employee["hourly_basic_sgd"])
-    else:
-        monthly = float(employee.get("monthly_basic_sgd") or 0.0)
-        rate = (12.0 * monthly) / (52.0 * 44.0)
-    if cap_non_workman and employee.get("employee_class") == "non_workman":
-        return min(rate, 13.60)
-    return rate
+@dataclass
+class _Facts:
+    name: str
+    employee: dict[str, Any]
+    ledger: dict[str, Any]
+    outlet: dict[str, Any]
+    station: str
+    start: datetime
+    end: datetime
+    day: date
+    seg: int
+    day_before: int
+    week_before: int
+    is_rest_day: bool
+    is_opening: bool
+    food_handling: bool
+    open_time: str
+    existing: list[dict[str, Any]]
+    breaks: list[tuple[datetime, datetime]]
+    compelled: bool
 
 
-def _daily_salary_sgd(employee: dict[str, Any]) -> float:
-    if employee.get("contract_type") == "part_time":
-        hourly = float(employee.get("hourly_basic_sgd") or 0.0)
-        normal_day = float(employee.get("normal_daily_hours") or 4.0)
-        return hourly * normal_day
-    monthly = float(employee.get("monthly_basic_sgd") or 0.0)
-    return (12.0 * monthly) / (52.0 * 5.5)
+def _facts(assignment: dict[str, Any], context: dict[str, Any]) -> _Facts:
+    staff = _as_map(context.get("staff"), "staff_id")
+    outlets = _as_map(context.get("outlets"), "outlet_id")
+    ledgers = _as_map(context.get("ledgers"), "ledger_id")
+    gap = context.get("gap") or {}
+    sid = str(_require(assignment, "staff_id", "assignment"))
+    if sid not in staff:
+        raise ValidationDataError(f"unknown staff {sid}")
+    employee = staff[sid]
+    outlet_id = str(_require(gap, "outlet", "gap"))
+    if outlet_id not in outlets:
+        raise ValidationDataError(f"unknown outlet {outlet_id}")
+    outlet = outlets[outlet_id]
+    station = str(_require(gap, "station", "gap"))
+    start = _ts(_require(assignment, "start", "assignment"))
+    end = _ts(_require(assignment, "end", "assignment"))
+    if end <= start:
+        raise ValidationDataError("assignment ends before it starts")
+    day = start.date()
+
+    ledger_id = f"{sid}_{day.strftime('%Y%m')}"
+    if ledger_id not in ledgers:
+        raise ValidationDataError(f"missing ledger {ledger_id}")
+    ledger = ledgers[ledger_id]
+
+    rest_days: set[date] = set()
+    for led in ledgers.values():
+        if led.get("staff_id") == sid:
+            rest_days.update(date.fromisoformat(str(d)) for d in led.get("rest_days") or [])
+
+    existing = [
+        s for s in context.get("shifts") or []
+        if s.get("staff_id") == sid and s.get("status", "scheduled") == "scheduled"
+    ]
+    day_before = 0
+    week_before = 0
+    monday = day - timedelta(days=day.weekday())
+    for s in existing:
+        s_start, s_end = _ts(s["start"]), _ts(s["end"])
+        s_day = s_start.date()
+        if s_day == day:
+            day_before += _minutes(s_start, s_end)
+        if monday <= s_day < monday + timedelta(days=7) and s_day not in rest_days:
+            week_before += _minutes(s_start, s_end)
+
+    stations = {st["station"]: st for st in outlet.get("stations") or []}
+    if station not in stations:
+        raise ValidationDataError(f"station {station} not at outlet {outlet_id}")
+    open_time = str(_require(_require(outlet, "opening_hours", outlet_id), "open", outlet_id))
+    open_dt = datetime.combine(day, datetime.strptime(open_time, "%H:%M").time(), start.tzinfo)
+
+    breaks = []
+    for b in assignment.get("breaks") or []:
+        b_start = _ts(b["start"])
+        breaks.append((b_start, b_start + timedelta(minutes=int(b["duration_min"]))))
+
+    return _Facts(
+        name=str(employee.get("display_name") or sid),
+        employee=employee,
+        ledger=ledger,
+        outlet=outlet,
+        station=station,
+        start=start,
+        end=end,
+        day=day,
+        seg=_minutes(start, end),
+        day_before=day_before,
+        week_before=week_before,
+        is_rest_day=day in rest_days,
+        is_opening=start == open_dt,
+        food_handling=bool(stations[station].get("food_handling")),
+        open_time=open_time,
+        existing=existing,
+        breaks=breaks,
+        compelled=bool(assignment.get("compelled", False)),
+    )
 
 
-def compute_ot_added_hours(employee: dict[str, Any], shift: dict[str, Any]) -> float:
-    """Compute overtime hours added by this shift assignment."""
-    work_hours = float(shift.get("work_hours", 8.0))
-    prior_today = float(shift.get("hours_worked_today_before_shift", 0.0))
-    normal_day = float(employee.get("normal_daily_hours", 8.0))
-    if employee.get("contract_type") == "part_time":
-        normal_day = 8.0  # Comparable full-timer normal daily hours (§6.2 SG-PT-OT-RATE)
+def _overtime_added(f: _Facts) -> int:
+    nd = int(_require(f.employee, "normal_daily_hours", f.name)) * 60
+    after = f.day_before + f.seg
+    daily = max(0, after - nd) - max(0, f.day_before - nd)
+    if f.is_rest_day or f.employee.get("contract_type") == "part_time":
+        return daily
+    wn = min(int(_require(f.employee, "weekly_contract_hours", f.name)), 44) * 60
+    weekly = max(0, f.week_before + f.seg - wn) - max(0, f.week_before - wn)
+    return min(f.seg, max(daily, weekly))
 
-    is_rest_or_ph = bool(shift.get("is_rest_day", False) or shift.get("is_public_holiday", False))
-    total_today = prior_today + work_hours
-    if is_rest_or_ph:
-        # Rest-day and public-holiday work counts toward monthly OT cap only beyond normal daily hours
-        before_ot = max(0.0, prior_today - normal_day)
-        after_ot = max(0.0, total_today - normal_day)
-        return max(0.0, after_ot - before_ot)
 
-    # If the shift is an extra cover shift beyond their contractual schedule, or extends beyond normal_day:
-    is_extra_day = bool(shift.get("is_extra_cover_shift", False))
-    if is_extra_day:
-        return work_hours
-    before_ot = max(0.0, prior_today - normal_day)
-    after_ot = max(0.0, total_today - normal_day)
-    return max(0.0, after_ot - before_ot)
+def _block_with_breaks(f: _Facts) -> tuple[datetime, datetime, list[tuple[datetime, datetime]]]:
+    lo, hi = f.start, f.end
+    breaks = list(f.breaks)
+    merged: set[int] = set()
+    changed = True
+    while changed:
+        changed = False
+        for idx, s in enumerate(f.existing):
+            if idx in merged:
+                continue
+            s_start, s_end = _ts(s["start"]), _ts(s["end"])
+            if s_end == lo or s_start == hi:
+                merged.add(idx)
+                lo, hi = min(lo, s_start), max(hi, s_end)
+                for b in s.get("breaks") or []:
+                    b_start = _ts(b["start"])
+                    breaks.append((b_start, b_start + timedelta(minutes=int(b["duration_min"]))))
+                changed = True
+    return lo, hi, breaks
+
+
+def _work_dates(f: _Facts) -> set[date]:
+    dates = {_ts(s["start"]).date() for s in f.existing}
+    dates.add(f.day)
+    return dates
+
+
+# --------------------------------------------------------------------------- validation
 
 
 def validate_assignment(
@@ -123,448 +340,354 @@ def validate_assignment(
     context: dict[str, Any],
     rules: list[dict[str, Any]],
 ) -> list[RuleResult]:
-    """Validate an assignment dictionary against all loaded YAML rules.
+    """Check one assignment against every rule. Returns one ``RuleResult`` per rule."""
+    company = context.get("company")
+    if not isinstance(company, dict):
+        raise ValidationDataError("context.company (policy/company.yaml) is required")
+    by_id = {r["id"]: r for r in rules}
+    coverage_rule = by_id.get("SG-EA4-COVERAGE")
+    if coverage_rule is None:
+        raise ValidationDataError("SG-EA4-COVERAGE spec is required to compute part4_covered")
 
-    `assignment` contains `employee`, `shift`, and optionally `ledger` (or looked up from `context`).
-    """
-    employee = dict(assignment.get("employee") or context.get("employee") or {})
-    shift = dict(assignment.get("shift") or context.get("shift") or {})
-    ledger = dict(assignment.get("ledger") or context.get("ledger") or {})
+    f = _facts(assignment, context)
+    part4 = compute_part4_covered(f.employee, coverage_rule)
+    env = {
+        "employee": {
+            "part4_covered": part4,
+            "contract_type": f.employee.get("contract_type"),
+            "employee_class": f.employee.get("employee_class"),
+            "monthly_rated": f.employee.get("monthly_basic_sgd") is not None,
+        },
+        "shift": {
+            "station": f.station,
+            "is_rest_day": f.is_rest_day,
+            "is_opening": f.is_opening,
+            "food_handling": f.food_handling,
+        },
+        "company": company,
+    }
 
-    rules_by_id = {r["id"]: r for r in rules if isinstance(r, dict) and "id" in r}
-    cov_rule = rules_by_id.get("SG-EA4-COVERAGE")
-    part4_covered = compute_part4_covered(employee, cov_rule)
-    employee["part4_covered"] = part4_covered
-
-    name = str(employee.get("display_name") or employee.get("staff_id") or "Staff")
-    work_hours = float(shift.get("work_hours", 8.0))
-    prior_today = float(shift.get("hours_worked_today_before_shift", 0.0))
-    daily_hours = prior_today + work_hours
-    normal_daily_hours = float(employee.get("normal_daily_hours", 8.0))
-    ot_used = float(ledger.get("ot_hours_used", 0.0))
-    ot_added = compute_ot_added_hours(employee, shift)
-    station = str(shift.get("station", "barista"))
-    outlet = str(shift.get("outlet", "bugis"))
-
-    results: list[RuleResult] = []
-
+    results = []
     for rule in rules:
-        rid = str(rule["id"])
-        kind = str(rule.get("kind", "hard"))
-        source_url = str(rule.get("source", {}).get("url", ""))
-        params = rule.get("params") or {}
-        template = str(rule.get("message", ""))
-
-        if rid == "SG-EA4-COVERAGE":
-            status = "ok" if part4_covered else "not_applicable"
-            filled = {
-                "name": name,
-                "part4_status": "covered" if part4_covered else "not covered",
-                "employee_class": employee.get("employee_class", "non_workman"),
-                "monthly_basic_sgd": employee.get("monthly_basic_sgd") or employee.get("hourly_basic_sgd") or 0,
-            }
+        params = resolve_params(rule, company)
+        applies = eval_applies_when(rule.get("applies_when", "true"), env)
+        checker = _CHECKERS.get(rule["id"])
+        if checker is None:
+            raise ValidationDataError(f"no validator implementation for {rule['id']}")
+        if rule["id"] == "SG-EA4-COVERAGE":
+            applies = part4
+        if not applies:
             results.append(
                 RuleResult(
-                    rule_id=rid,
-                    status=status,
-                    message=template.format(**filled),
-                    source_url=source_url,
-                    kind=kind,
-                    params_filled=filled,
+                    rule_id=rule["id"],
+                    status="not_applicable",
+                    message=f"{f.name}: not applicable ({rule.get('applies_when')}).",
+                    source_url=str(rule["source"]["url"]),
+                    kind=str(rule["kind"]),
                 )
             )
-
-        elif rid == "SG-EA4-OT-CAP-72":
-            max_ot = float(params.get("max_overtime_hours_per_month", 72))
-            ot_used_disp = int(ot_used) if ot_used.is_integer() else round(ot_used, 1)
-            ot_added_disp = int(ot_added) if ot_added.is_integer() else round(ot_added, 1)
-            max_disp = int(max_ot) if max_ot.is_integer() else max_ot
-            filled = {
-                "name": name,
-                "ot_used": ot_used_disp,
-                "max": max_disp,
-                "ot_added": ot_added_disp,
-            }
-            if not part4_covered:
-                status = "not_applicable"
-            elif (ot_used + ot_added) > max_ot:
-                status = "violation"
-            else:
-                status = "ok"
-            results.append(
-                RuleResult(
-                    rule_id=rid,
-                    status=status,
-                    message=template.format(**filled),
-                    source_url=source_url,
-                    kind=kind,
-                    params_filled=filled,
-                )
+            continue
+        violated, fill, cost = checker(f, params, context)
+        # A breach template is only shown for a breach. Cost rules always explain their numbers.
+        if violated or rule["kind"] == "cost":
+            message = str(rule["message"]).format(name=f.name, **fill)
+        else:
+            message = f"{f.name}: {rule['title']}: ok."
+        results.append(
+            RuleResult(
+                rule_id=rule["id"],
+                status="violation" if violated else "ok",
+                message=message,
+                source_url=str(rule["source"]["url"]),
+                kind=str(rule["kind"]),
+                params=fill,
+                cost=cost,
             )
-
-        elif rid == "SG-EA4-DAILY-MAX-12H":
-            max_daily = float(params.get("max_daily_hours", 12))
-            d_disp = int(daily_hours) if daily_hours.is_integer() else round(daily_hours, 1)
-            m_disp = int(max_daily) if max_daily.is_integer() else max_daily
-            filled = {"name": name, "daily_hours": d_disp, "max_daily_hours": m_disp}
-            if not part4_covered:
-                status = "not_applicable"
-            elif daily_hours > max_daily:
-                status = "violation"
-            else:
-                status = "ok"
-            results.append(
-                RuleResult(
-                    rule_id=rid,
-                    status=status,
-                    message=template.format(**filled),
-                    source_url=source_url,
-                    kind=kind,
-                    params_filled=filled,
-                )
-            )
-
-        elif rid == "SG-EA4-NORMAL-HOURS":
-            filled = {
-                "name": name,
-                "work_hours": int(work_hours) if work_hours.is_integer() else round(work_hours, 1),
-                "normal_daily_hours": int(normal_daily_hours)
-                if normal_daily_hours.is_integer()
-                else normal_daily_hours,
-                "ot_added": int(ot_added) if ot_added.is_integer() else round(ot_added, 1),
-            }
-            status = "ok" if part4_covered else "not_applicable"
-            results.append(
-                RuleResult(
-                    rule_id=rid,
-                    status=status,
-                    message=template.format(**filled),
-                    source_url=source_url,
-                    kind=kind,
-                    params_filled=filled,
-                )
-            )
-
-        elif rid == "SG-EA4-OT-RATE":
-            is_ft = employee.get("contract_type") == "full_time"
-            hourly_rate = _monthly_hourly_rate_sgd(employee, cap_non_workman=True)
-            mult = float(params.get("ot_multiplier", 1.5))
-            # If rest day, rest-day pay rule handles the base rest-day salary; OT beyond normal day is in rest-day or here
-            is_rest = bool(shift.get("is_rest_day", False))
-            ot_h = ot_added if not is_rest else 0.0
-            cost_cents = int(round(ot_h * hourly_rate * mult * 100)) if (part4_covered and is_ft) else 0
-            filled = {
-                "name": name,
-                "ot_hours": int(ot_h) if ot_h.is_integer() else round(ot_h, 1),
-                "hourly_rate": f"{hourly_rate:.2f}",
-                "ot_cost_sgd": f"{cost_cents / 100.0:.2f}",
-            }
-            status = "ok" if (part4_covered and is_ft) else "not_applicable"
-            results.append(
-                RuleResult(
-                    rule_id=rid,
-                    status=status,
-                    message=template.format(**filled),
-                    source_url=source_url,
-                    kind=kind,
-                    cost_cents=cost_cents,
-                    params_filled=filled,
-                )
-            )
-
-        elif rid == "SG-EA4-REST-DAY":
-            max_days = int(params.get("max_days_between_rest_days", 12))
-            days_since = int(shift.get("days_since_last_rest_day", 2))
-            compelled = bool(shift.get("compelled_rest_day_work", False))
-            filled = {"name": name, "days_since_rest": days_since, "max_days": max_days}
-            if not part4_covered:
-                status = "not_applicable"
-            elif days_since > max_days or compelled:
-                status = "violation"
-            else:
-                status = "ok"
-            results.append(
-                RuleResult(
-                    rule_id=rid,
-                    status=status,
-                    message=template.format(**filled),
-                    source_url=source_url,
-                    kind=kind,
-                    params_filled=filled,
-                )
-            )
-
-        elif rid == "SG-EA4-REST-DAY-PAY":
-            is_rest = bool(shift.get("is_rest_day", False))
-            if not (part4_covered and is_rest):
-                filled = {
-                    "name": name,
-                    "work_hours": int(work_hours) if work_hours.is_integer() else work_hours,
-                    "days_pay": 0,
-                    "rest_day_cost_sgd": "0.00",
-                }
-                results.append(
-                    RuleResult(
-                        rule_id=rid,
-                        status="not_applicable",
-                        message=template.format(**filled),
-                        source_url=source_url,
-                        kind=kind,
-                        cost_cents=0,
-                        params_filled=filled,
-                    )
-                )
-            else:
-                day_sal = _daily_salary_sgd(employee)
-                hourly_rate = _monthly_hourly_rate_sgd(employee, cap_non_workman=True)
-                if work_hours <= (normal_daily_hours / 2.0):
-                    days_pay = 1
-                    extra_ot_h = 0.0
-                elif work_hours <= normal_daily_hours:
-                    days_pay = 2
-                    extra_ot_h = 0.0
-                else:
-                    days_pay = 2
-                    extra_ot_h = work_hours - normal_daily_hours
-                total_sgd = (days_pay * day_sal) + (extra_ot_h * hourly_rate * 1.5)
-                cost_cents = int(round(total_sgd * 100))
-                filled = {
-                    "name": name,
-                    "work_hours": int(work_hours) if work_hours.is_integer() else work_hours,
-                    "days_pay": days_pay,
-                    "rest_day_cost_sgd": f"{cost_cents / 100.0:.2f}",
-                }
-                results.append(
-                    RuleResult(
-                        rule_id=rid,
-                        status="ok",
-                        message=template.format(**filled),
-                        source_url=source_url,
-                        kind=kind,
-                        cost_cents=cost_cents,
-                        params_filled=filled,
-                    )
-                )
-
-        elif rid == "SG-PT-OT-RATE":
-            is_pt = employee.get("contract_type") == "part_time"
-            ft_normal = float(params.get("comparable_full_timer_normal_daily_hours", 8.0))
-            hourly_basic = float(employee.get("hourly_basic_sgd") or 12.0)
-            if not is_pt:
-                filled = {
-                    "name": name,
-                    "work_hours": int(work_hours) if work_hours.is_integer() else work_hours,
-                    "hourly_basic_sgd": f"{hourly_basic:.2f}",
-                    "pt_cost_sgd": "0.00",
-                    "ot_hours": 0,
-                    "ft_normal": int(ft_normal),
-                }
-                results.append(
-                    RuleResult(
-                        rule_id=rid,
-                        status="not_applicable",
-                        message=template.format(**filled),
-                        source_url=source_url,
-                        kind=kind,
-                        cost_cents=0,
-                        params_filled=filled,
-                    )
-                )
-            else:
-                total_today = prior_today + work_hours
-                before_ot = max(0.0, prior_today - ft_normal)
-                after_ot = max(0.0, total_today - ft_normal)
-                pt_ot_h = max(0.0, after_ot - before_ot)
-                reg_h = max(0.0, work_hours - pt_ot_h)
-                # Incremental labour cost: base part-time hours + 1.5x beyond FT normal hours
-                # Note: overtime premium component is 0.5x on pt_ot_h, total shift wage is reg_h*1.0 + pt_ot_h*1.5
-                total_pt_sgd = (reg_h * hourly_basic * 1.0) + (pt_ot_h * hourly_basic * 1.5)
-                cost_cents = int(round(total_pt_sgd * 100))
-                filled = {
-                    "name": name,
-                    "work_hours": int(work_hours) if work_hours.is_integer() else work_hours,
-                    "hourly_basic_sgd": f"{hourly_basic:.2f}",
-                    "pt_cost_sgd": f"{cost_cents / 100.0:.2f}",
-                    "ot_hours": int(pt_ot_h) if pt_ot_h.is_integer() else round(pt_ot_h, 1),
-                    "ft_normal": int(ft_normal),
-                }
-                results.append(
-                    RuleResult(
-                        rule_id=rid,
-                        status="ok",
-                        message=template.format(**filled),
-                        source_url=source_url,
-                        kind=kind,
-                        cost_cents=cost_cents,
-                        params_filled=filled,
-                    )
-                )
-
-        elif rid == "SG-EA4-BREAKS":
-            min_break = int(params.get("min_meal_break_min_for_8h_continuous", 45))
-            max_consec = float(params.get("max_consecutive_hours_without_break", 6.0))
-            breaks_min = int(shift.get("breaks_min", 45))
-            filled = {
-                "name": name,
-                "work_hours": int(work_hours) if work_hours.is_integer() else work_hours,
-                "breaks_min": breaks_min,
-                "min_break_min": min_break,
-            }
-            if not part4_covered:
-                status = "not_applicable"
-            elif (work_hours >= 8.0 and breaks_min < min_break) or (
-                work_hours > max_consec and breaks_min <= 0
-            ):
-                status = "violation"
-            else:
-                status = "ok"
-            results.append(
-                RuleResult(
-                    rule_id=rid,
-                    status=status,
-                    message=template.format(**filled),
-                    source_url=source_url,
-                    kind=kind,
-                    params_filled=filled,
-                )
-            )
-
-        elif rid == "SG-SFA-FSC-L1":
-            req_stations = set(params.get("stations_requiring_fsc", ["kitchen", "barista"]))
-            refresher_years = int(params.get("fsc_l1_refresher_years", 5))
-            if station not in req_stations:
-                filled = {"name": name, "cert_status": "not required", "station": station}
-                results.append(
-                    RuleResult(
-                        rule_id=rid,
-                        status="not_applicable",
-                        message=template.format(**filled),
-                        source_url=source_url,
-                        kind=kind,
-                        params_filled=filled,
-                    )
-                )
-            else:
-                passed_date = _parse_date(employee.get("fsc_l1_passed_on"))
-                shift_date = _parse_date(shift.get("start")) or date(2026, 11, 3)
-                if passed_date is None:
-                    status = "violation"
-                    cert_status = "missing"
-                else:
-                    # Valid for up to 5 years from passing date
-                    try:
-                        expiry_date = date(
-                            passed_date.year + refresher_years,
-                            passed_date.month,
-                            passed_date.day,
-                        )
-                    except ValueError:
-                        expiry_date = date(passed_date.year + refresher_years, 2, 28)
-                    if shift_date > expiry_date:
-                        status = "violation"
-                        cert_status = f"lapsed (passed {passed_date.isoformat()})"
-                    else:
-                        status = "ok"
-                        cert_status = f"valid (passed {passed_date.isoformat()})"
-                filled = {"name": name, "cert_status": cert_status, "station": station}
-                results.append(
-                    RuleResult(
-                        rule_id=rid,
-                        status=status,
-                        message=template.format(**filled),
-                        source_url=source_url,
-                        kind=kind,
-                        params_filled=filled,
-                    )
-                )
-
-        elif rid == "CO-REST-BETWEEN-SHIFTS":
-            min_rest = float(params.get("min_rest_hours_between_shifts", 11.0))
-            prev_h = float(shift.get("hours_since_prev_shift_end", 24.0))
-            next_h = float(shift.get("hours_until_next_shift_start", 24.0))
-            actual_rest = min(prev_h, next_h)
-            r_disp = int(actual_rest) if actual_rest.is_integer() else round(actual_rest, 1)
-            m_disp = int(min_rest) if min_rest.is_integer() else min_rest
-            filled = {"name": name, "rest_hours": r_disp, "min_rest_hours": m_disp}
-            status = "violation" if actual_rest < min_rest else "ok"
-            results.append(
-                RuleResult(
-                    rule_id=rid,
-                    status=status,
-                    message=template.format(**filled),
-                    source_url=source_url,
-                    kind=kind,
-                    params_filled=filled,
-                )
-            )
-
-        elif rid == "CO-OPENER-KEYHOLDER":
-            is_opening = bool(shift.get("is_opening_shift", False))
-            has_key = bool(employee.get("keyholder", False))
-            other_key = bool(shift.get("other_keyholder_present", False))
-            filled = {"name": name, "outlet": outlet}
-            if not is_opening:
-                status = "not_applicable"
-            elif not (has_key or other_key):
-                status = "violation"
-            else:
-                status = "ok"
-            results.append(
-                RuleResult(
-                    rule_id=rid,
-                    status=status,
-                    message=template.format(**filled),
-                    source_url=source_url,
-                    kind=kind,
-                    params_filled=filled,
-                )
-            )
-
-        elif rid == "CO-STATION-SKILL":
-            skills = list(employee.get("skills") or [])
-            filled = {"name": name, "station": station, "skills": ", ".join(skills) or "none"}
-            status = "ok" if station in skills else "violation"
-            results.append(
-                RuleResult(
-                    rule_id=rid,
-                    status=status,
-                    message=template.format(**filled),
-                    source_url=source_url,
-                    kind=kind,
-                    params_filled=filled,
-                )
-            )
-
-        elif rid == "CO-FAIRNESS":
-            max_covers = int(params.get("max_covers_14d", 2))
-            covers = int(ledger.get("cover_requests_14d", 0))
-            filled = {"name": name, "cover_requests_14d": covers, "max_covers_14d": max_covers}
-            status = "violation" if covers > max_covers else "ok"
-            results.append(
-                RuleResult(
-                    rule_id=rid,
-                    status=status,
-                    message=template.format(**filled),
-                    source_url=source_url,
-                    kind=kind,
-                    params_filled=filled,
-                )
-            )
-
-        elif rid == "CO-AGE-SCOPE":
-            min_age = int(params.get("min_allowed_age", 16))
-            age = int(employee.get("age", 18))
-            filled = {"name": name, "age": age, "min_allowed_age": min_age}
-            status = "violation" if age < min_age else "ok"
-            results.append(
-                RuleResult(
-                    rule_id=rid,
-                    status=status,
-                    message=template.format(**filled),
-                    source_url=source_url,
-                    kind=kind,
-                    params_filled=filled,
-                )
-            )
-
+        )
     return results
+
+
+_Check = tuple[bool, dict[str, Any], dict[str, int]]
+
+
+def _check_coverage(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    return False, {
+        "coverage": "covered",
+        "employee_class": f.employee.get("employee_class"),
+        "monthly_basic_sgd": f"{float(monthly_basic_sgd(f.employee)):.2f}",
+    }, {}
+
+
+def _check_daily_max(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    after = f.day_before + f.seg
+    limit = int(p["max_daily_hours"]) * 60
+    return after > limit, {
+        "day_hours": _hours_text(after),
+        "date": f.day.isoformat(),
+        "max_daily_hours": p["max_daily_hours"],
+    }, {}
+
+
+def _check_normal_hours(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    ot = _overtime_added(f)
+    return False, {
+        "ot_added": _hours_text(ot),
+        "day_hours": _hours_text(f.day_before + f.seg),
+        "normal_daily_hours": f.employee["normal_daily_hours"],
+        "week_hours": _hours_text(f.week_before + (0 if f.is_rest_day else f.seg)),
+        "normal_weekly_hours": min(int(f.employee["weekly_contract_hours"]),
+                                   int(p["max_normal_weekly_hours"])),
+    }, {}
+
+
+def _check_breaks(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    lo, hi, breaks = _block_with_breaks(f)
+    inside = sorted((max(b0, lo), min(b1, hi)) for b0, b1 in breaks if b1 > lo and b0 < hi)
+    longest = 0
+    total_break = 0
+    cursor = lo
+    for b0, b1 in inside:
+        if b0 > cursor:
+            longest = max(longest, _minutes(cursor, b0))
+        if b1 > cursor:
+            total_break += _minutes(max(cursor, b0), b1)
+            cursor = b1
+    longest = max(longest, _minutes(cursor, hi))
+    block = _minutes(lo, hi)
+    max_stretch = int(p["max_consecutive_hours_without_break"]) * 60
+    violated = longest > max_stretch or (
+        block > max_stretch and total_break < int(p["min_total_break_min"])
+    )
+    return violated, {
+        "longest_stretch_h": _hours_text(longest),
+        "break_min": total_break,
+        "block_h": _hours_text(block),
+        "max_consecutive_h": p["max_consecutive_hours_without_break"],
+        "min_break_min": p["min_total_break_min"],
+    }, {}
+
+
+def _check_ot_cap(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    used = Fraction(str(_require(f.ledger, "ot_hours_used", f.ledger.get("ledger_id", "ledger"))))
+    ot = _overtime_added(f)
+    cap = Fraction(str(p["max_overtime_hours_per_month"]))
+    return used * 60 + ot > cap * 60, {
+        "ot_used": _hours_text(used * 60),
+        "max": _hours_text(cap * 60),
+        "ot_added": _hours_text(ot),
+    }, {}
+
+
+def _hourly_rate_cents(f: _Facts, p: dict[str, Any]) -> Fraction:
+    monthly = Fraction(str(f.employee["monthly_basic_sgd"])) * 100
+    rate = (int(p["hourly_rate_numerator_months"]) * monthly) / (
+        int(p["hourly_rate_denominator_weeks"]) * int(p["hourly_rate_denominator_hours"])
+    )
+    if f.employee.get("employee_class") == "non_workman":
+        rate = min(rate, Fraction(str(p["non_workman_hourly_rate_cap_sgd"])) * 100)
+    return rate
+
+
+def _check_ot_rate(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    ot = _overtime_added(f)
+    rate = _hourly_rate_cents(f, p)
+    cents = _round_cents(Fraction(ot, 60) * rate * Fraction(str(p["ot_multiplier"])))
+    return False, {
+        "ot_hours": _hours_text(ot),
+        "hourly_rate": _sgd(_round_cents(rate)),
+        "ot_cost_sgd": _sgd(cents),
+    }, {"overtime_cents": cents}
+
+
+def _check_rest_day(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    dates = _work_dates(f)
+    run = 1
+    d = f.day - timedelta(days=1)
+    while d in dates:
+        run += 1
+        d -= timedelta(days=1)
+    d = f.day + timedelta(days=1)
+    while d in dates:
+        run += 1
+        d += timedelta(days=1)
+    monday = f.day - timedelta(days=f.day.weekday())
+    worked_in_week = sum(1 for i in range(7) if monday + timedelta(days=i) in dates)
+    week_off = 7 - worked_in_week
+    violated = (
+        run > int(p["max_days_between_rest_days"])
+        or week_off < int(p["min_rest_days_per_week"])
+        or (f.compelled and not p["rest_day_work_may_be_compelled"])
+    )
+    return violated, {
+        "date": f.day.isoformat(),
+        "run_days": run,
+        "max_days": p["max_days_between_rest_days"],
+        "week_rest_days": week_off,
+    }, {}
+
+
+def _check_rest_day_pay(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    nd_hours = int(f.employee["normal_daily_hours"])
+    worked = f.day_before + f.seg
+    days = (
+        int(p["days_pay_up_to_half_normal_day"])
+        if worked * 2 <= nd_hours * 60
+        else int(p["days_pay_more_than_half_normal_day"])
+    )
+    days_per_week = Fraction(int(f.employee["weekly_contract_hours"]), nd_hours)
+    monthly = Fraction(str(f.employee["monthly_basic_sgd"])) * 100
+    day_rate = 12 * monthly / (52 * days_per_week)
+    cents = _round_cents(days * day_rate)
+    return False, {
+        "day_hours": _hours_text(worked),
+        "days_pay": days,
+        "rest_day_cost_sgd": _sgd(cents),
+    }, {"rest_day_cents": cents}
+
+
+def _check_pt_ot_rate(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    hourly = Fraction(str(_require(f.employee, "hourly_basic_sgd", f.name))) * 100
+    ftn = int(p["comparable_full_timer_normal_daily_hours"]) * 60
+    after = f.day_before + f.seg
+    beyond = max(0, after - ftn) - max(0, f.day_before - ftn)
+    within = f.seg - beyond
+    base = _round_cents(Fraction(within, 60) * hourly
+                        * Fraction(str(p["within_full_timer_normal_hours_multiplier"])))
+    extra = _round_cents(Fraction(beyond, 60) * hourly
+                         * Fraction(str(p["beyond_full_timer_normal_hours_multiplier"])))
+    return False, {
+        "seg_hours": _hours_text(f.seg),
+        "hourly_basic": _sgd(_round_cents(hourly)),
+        "beyond_ft_hours": _hours_text(beyond),
+        "ft_normal_hours": p["comparable_full_timer_normal_daily_hours"],
+        "pt_cost_sgd": _sgd(base + extra),
+    }, {"base_cents": base, "overtime_cents": extra}
+
+
+def _check_fsc(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    passed = f.employee.get("fsc_l1_passed_on")
+    if not passed:
+        return True, {"cert_status": "missing", "station": f.station}, {}
+    passed_on = date.fromisoformat(str(passed)[:10])
+    years = int(p["first_refresher_within_years"])
+    try:
+        valid_until = passed_on.replace(year=passed_on.year + years)
+    except ValueError:  # 29 Feb
+        valid_until = date(passed_on.year + years, 2, 28)
+    if f.day > valid_until:
+        return True, {"cert_status": f"lapsed (passed {passed_on.isoformat()})",
+                      "station": f.station}, {}
+    return False, {"cert_status": f"valid (passed {passed_on.isoformat()})",
+                   "station": f.station}, {}
+
+
+def _check_rest_between(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    min_rest = Fraction(str(p["min_rest_hours"])) * 60
+    shortest: int | None = None
+    for s in f.existing:
+        s_start, s_end = _ts(s["start"]), _ts(s["end"])
+        if s_start < f.end and s_end > f.start:
+            shortest = 0 if shortest is None else min(shortest, 0)
+            continue
+        if s_end == f.start or s_start == f.end:
+            continue
+        gap = _minutes(s_end, f.start) if s_end <= f.start else _minutes(f.end, s_start)
+        shortest = gap if shortest is None else min(shortest, gap)
+    violated = shortest is not None and shortest < min_rest
+    shown = shortest if shortest is not None else 0
+    return violated, {"rest_hours": _hours_text(shown), "min_rest_hours": p["min_rest_hours"]}, {}
+
+
+def _check_opener(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    fill = {"outlet": f.outlet.get("name") or f.outlet.get("outlet_id"), "open_time": f.open_time}
+    if f.employee.get("keyholder"):
+        return False, fill, {}
+    staff = _as_map(ctx.get("staff"), "staff_id")
+    gap = ctx.get("gap") or {}
+    absent = gap.get("absent_staff_id")
+    sid = f.employee.get("staff_id")
+    present = 0
+    for s in ctx.get("shifts") or []:
+        other = s.get("staff_id")
+        if other in (sid, absent) or s.get("status", "scheduled") != "scheduled":
+            continue
+        if s.get("outlet") != gap.get("outlet") or not staff.get(other, {}).get("keyholder"):
+            continue
+        if _ts(s["start"]) <= f.start < _ts(s["end"]):
+            present += 1
+    return present < int(p["min_keyholders_at_opening"]), fill, {}
+
+
+def _check_skill(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    skills = list(f.employee.get("skills") or [])
+    return f.station not in skills, {"station": f.station,
+                                     "skills": ", ".join(skills) or "none"}, {}
+
+
+def _check_fairness(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    covers = int(_require(f.ledger, "cover_requests_14d", f.ledger.get("ledger_id", "ledger")))
+    request_number = covers + 1
+    excess = max(0, request_number - int(p["max_covers"]))
+    return excess > 0, {
+        "cover_requests_14d": covers,
+        "window_days": p["window_days"],
+        "request_number": request_number,
+        "max_covers": p["max_covers"],
+        "penalty_units": excess,
+    }, {}
+
+
+def _check_age(f: _Facts, p: dict[str, Any], ctx: dict[str, Any]) -> _Check:
+    age = f.employee.get("age")
+    return age is None or int(age) < int(p["min_age"]), {"age": age, "min_age": p["min_age"]}, {}
+
+
+_CHECKERS = {
+    "SG-EA4-COVERAGE": _check_coverage,
+    "SG-EA4-DAILY-MAX-12H": _check_daily_max,
+    "SG-EA4-NORMAL-HOURS": _check_normal_hours,
+    "SG-EA4-BREAKS": _check_breaks,
+    "SG-EA4-OT-CAP-72": _check_ot_cap,
+    "SG-EA4-OT-RATE": _check_ot_rate,
+    "SG-EA4-REST-DAY": _check_rest_day,
+    "SG-EA4-REST-DAY-PAY": _check_rest_day_pay,
+    "SG-PT-OT-RATE": _check_pt_ot_rate,
+    "SG-SFA-FSC-L1": _check_fsc,
+    "CO-REST-BETWEEN-SHIFTS": _check_rest_between,
+    "CO-OPENER-KEYHOLDER": _check_opener,
+    "CO-STATION-SKILL": _check_skill,
+    "CO-FAIRNESS": _check_fairness,
+    "CO-AGE-SCOPE": _check_age,
+}
+
+
+def blocking_violations(results: list[RuleResult]) -> list[RuleResult]:
+    return [r for r in results if r.blocking]
+
+
+def cost_breakdown(results: list[RuleResult]) -> dict[str, int]:
+    out = {"base_cents": 0, "overtime_cents": 0, "rest_day_cents": 0}
+    for r in results:
+        for key, cents in r.cost.items():
+            out[key] += cents
+    out["total_cents"] = out["base_cents"] + out["overtime_cents"] + out["rest_day_cents"]
+    return out
+
+
+def check_staff_age(employee: dict[str, Any], rules: list[dict[str, Any]],
+                    company: dict[str, Any]) -> RuleResult:
+    """CO-AGE-SCOPE as a data-load gate (no assignment needed)."""
+    rule = next(r for r in rules if r["id"] == "CO-AGE-SCOPE")
+    params = resolve_params(rule, company)
+    age = employee.get("age")
+    violated = age is None or int(age) < int(params["min_age"])
+    fill = {"age": age, "min_age": params["min_age"]}
+    name = str(employee.get("display_name") or employee.get("staff_id"))
+    return RuleResult(
+        rule_id=rule["id"],
+        status="violation" if violated else "ok",
+        message=str(rule["message"]).format(name=name, **fill),
+        source_url=str(rule["source"]["url"]),
+        kind=str(rule["kind"]),
+        params=fill,
+    )

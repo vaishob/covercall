@@ -1,0 +1,259 @@
+# KICKSTART: CoverCall — Scaffold + Vertical Slices 1 & 2
+
+You are the lead engineer building **CoverCall**, a solo entry in the Google Cloud AI Builder Cup. The attached PDF, "CoverCall — Design Doc (Google Cloud AI Builder Cup)", is the single source of truth. Section references (§) in this prompt point to that PDF. If this prompt and the PDF ever conflict, the PDF wins. Record the conflict in `docs/decisions/` and keep going.
+
+Today is the submission deadline. Optimize for **speed and deterministic, verifiable output**. Build small, complete, tested pieces. Never build large, unfinished ones.
+
+---
+
+## 0. OPERATING PROTOCOL (read first, obey throughout)
+
+1. **Do not ask me questions.** Make the conservative choice the PDF supports, then record it in `docs/decisions/NNNN-<slug>.md` (context, decision, alternatives, PDF section) and continue.
+2. **Never invent** metrics, legal rules, legal sections, URLs, model IDs, features, test results or capabilities. If a fact is missing, add it to `docs/OPEN_ITEMS.md` (mirroring §15.2), mark the value `TODO-VERIFY`, and stop that thread only. Do not stop the whole build.
+3. **RFC 2119 applies.** MUST = release-blocking P0. A failing MUST is never "good enough".
+4. **Canonical names are law.** Use the PDF's code-font names exactly as written: services, collections, fields, rule IDs, routes, event types, states.
+5. **Design defaults live in config**, never hard-coded: `policy/company.yaml` and `config/models.yaml`. Any number you choose that the PDF does not give gets a `# design default (chosen, see docs/decisions/...)` comment.
+6. **Commit after every numbered step** with a conventional message (`feat(policy): ...`, `test(validator): ...`). Run tests before each commit. Never commit a red test suite except the single deliberate demo failure in Slice 6 (not in scope today).
+7. **Work order is strict:** §1 Ground Rules → §2 Scaffold → §3 Slice 1 → §4 Slice 2 → §5 Report. Do not start Slice 2 until Slice 1's exit check passes.
+8. Everything is in **English**: code, comments, docs, UI copy.
+
+---
+
+## 1. GROUND RULES (non-negotiable, enforce in code and tests)
+
+### 1.1 Architecture invariants
+- **A language model NEVER decides legality.** Only `policy/compile_cpsat.py` (OR-Tools CP-SAT) and `policy/validate.py` (independent plain Python) decide legality, from YAML rule specs that cite sources. User-facing rule warnings come only from the spec's `message` template, filled with computed numbers. A model never writes a legal claim.
+- **A language model NEVER owns control flow.** Only the Cloud Workflows execution `coverage-cascade` changes a gap's state. Models are called inside workflow steps, return typed data, and have **no state-changing tools**.
+- **Solver and validator disagreement is a P0.** It sends the gap to `HELD` at runtime and blocks the build in CI.
+- **Every external input is untrusted** (voice transcript, staff reply, Telegram update) until the guard labels it. A guard error or timeout **fails closed** to `HELD`. It never retries into a pass.
+- **Every service is stateless.** State lives in Firestore and the workflow execution. One service account per service, least privilege.
+- **Secrets only in Secret Manager.** Never in the repo, images, logs or test fixtures. Add a `.gitignore` covering `.env*`, `*.key`, `*credentials*.json`, `data/*.local.*`.
+
+### 1.2 Synthetic data mandate
+- **All data is synthetic.** Every generated record carries `synthetic: true`.
+- Every UI surface you build (including the Slice 2 text-only test page) shows the footer **"All data is synthetic"**. The README states it in its first paragraph.
+- Use no proprietary, employer-derived or confidential code, data or designs. Use public sources and synthetic data only.
+- No staff under 16 exist. The data loader MUST reject any such record (`CO-AGE-SCOPE`). Generated staff are aged 17 or over.
+
+### 1.3 Model mapping (exact; write to `config/models.yaml`)
+| Role | Model | Called from | Binding constraints |
+|---|---|---|---|
+| Voice | Gemini Live API. Google's docs currently show `gemini-3.1-flash-live-preview`; **verify and pin the exact ID** | Browser | **v1alpha** API version. Browser authenticates **only** with a single-use **ephemeral token** minted by `api` (default: 1 min to start, 30 min of messages). No API key ever reaches the client. Wrapped behind a `VoiceProvider` interface with fallback order hands-free → push-to-talk → text. |
+| Reply parsing, explanations, drafts | Gemini **Flash** tier on Vertex AI via **ADK** (`agent` service) | Workflow step | **Structured output only**, validated against the §7.3 schema; one retry, then `intent: unclear`; `confidence < 0.7` → `unclear`. Staff text goes inside clear delimiters as data. |
+| Simulated staff | Gemini **Flash** tier (`persona-sim`) | persona-sim | Temperature 0.8, seeded. Reads only the `sim` database. |
+| Safety guard | **Gemma 3 270M, fine-tuned**, CPU-only (`guard` service) | Workflow step | Labels `injection`, `pii`, `abuse`, `ok`. Deterministic redaction first. **Fails closed.** Ship it only if its injection recall ≥ the Gemini Flash baseline (§7.4). |
+| Eval judge | Gemini **Pro** tier | **Cloud Build only** | Never called at runtime. |
+
+Write `config/models.yaml` with each role's `provider`, `api_version`, `model_id` and `pinned_at`. Any `model_id` you cannot verify from Google's current documentation is `TODO-VERIFY`. A service MUST refuse to start if a model it uses is `TODO-VERIFY`, and it must name the role in the error. Every model call logs `model_id` and the SHA-256 of its prompt file (`prompts/*.md`).
+
+**Scope note for today:** Slices 1–2 call no model except optionally `persona-sim` and `agent`. The Gemma guard is Slice 5. Until then, ship a **`guard` stub** that performs only the deterministic redaction patterns from §7.4 and a minimal deterministic injection check. It reports `guard_impl: "stub-v0"` in every event payload and MUST still fail closed on error or timeout. Never describe the stub as a model anywhere.
+
+---
+
+## 2. SCAFFOLD THE REPOSITORY (run exactly, then commit)
+
+```bash
+mkdir -p covercall && cd covercall && git init -b main
+
+mkdir -p docs/decisions \
+  policy/rules policy/fixtures \
+  services/api/app services/solver/app services/agent/app services/guard/app \
+  services/persona_sim/app services/connectors/app \
+  workflows datagen baseline \
+  evals/datasets/golden evals/datasets/heldout evals/runners \
+  training/guard prompts config web infra data tests
+
+touch README.md docs/design.md docs/OPEN_ITEMS.md docs/runbook.md \
+  policy/__init__.py policy/company.yaml policy/compile_cpsat.py policy/validate.py \
+  policy/lint_rules.py policy/timing.py \
+  workflows/coverage_cascade.yaml \
+  datagen/__init__.py datagen/__main__.py datagen/REVIEW.md \
+  baseline/__init__.py baseline/most_reliable_first.py \
+  evals/__init__.py evals/compare.py \
+  config/models.yaml cloudbuild.yaml .gitignore pyproject.toml
+
+for s in api solver agent guard persona_sim connectors; do
+  touch services/$s/app/__init__.py services/$s/app/main.py \
+        services/$s/Dockerfile services/$s/requirements.txt
+done
+
+git add -A && git commit -m "chore: scaffold canonical CoverCall repo layout (§13.1)"
+```
+
+Notes:
+- `policy/fixtures/`, `policy/lint_rules.py`, `policy/timing.py`, `evals/compare.py`, `docs/OPEN_ITEMS.md` and `tests/` are supporting additions not named in §13.1. Record them in `docs/decisions/0001-supporting-files.md`.
+- `pyproject.toml`: Python 3.12; dependencies `ortools`, `pyyaml`, `pydantic>=2`, `fastapi`, `uvicorn`, `google-cloud-firestore`, `google-cloud-workflows`, `google-genai`, `google-adk`; dev dependencies `pytest`, `hypothesis`, `ruff`, `mypy`.
+- Copy the PDF's text into `docs/design.md` (the exported design doc).
+- `web/` stays empty until Slice 3.
+
+---
+
+## 3. VERTICAL SLICE 1 — ENGINE & EVIDENCE
+
+**Exit check (§13.2):** `python -m evals.compare --set golden` prints CoverCall against the baseline (overtime cost in SGD and rule violations), with **CoverCall violations = 0**. The full `pytest` suite is green.
+
+### 3.1 `policy/company.yaml` (synthetic company policy + design defaults)
+Include, each commented as a design default: `buffer_min: 10`, `w_min_min: 3`, `w_max_min: 10`, `k: 3`, `fanout_threshold_min: 25`, `fanout_n: 3`, `escalation_lead_min: 15`, `solver_time_limit_s: 2`, `solver_seed`, `top_k_plans: 3`, `max_segments: 2`, `material_change: {time_shift_min: 30, cost_up: true}`, `parse_confidence_min: 0.7`, `draft_max_chars: 300`, `retry_attempts: 3`, `fairness: {max_covers: 2, window_days: 14}`, `rest_between_shifts_h: 11`, `ft_pt_ratio: [60, 40]`, `objective_weights: {cost, fairness, disruption}` (chosen values recorded in a decision file), and `enforce_fsc_on_barista: true` (linked to the §15.2 open item on whether baristas count as food handlers).
+
+### 3.2 Rule spec — `policy/rules/SG-EA4-OT-CAP-72.yaml` (write first, exactly)
+```yaml
+id: SG-EA4-OT-CAP-72
+title: Monthly overtime cap
+kind: hard # hard | cost | soft
+jurisdiction: SG
+source:
+  publisher: Ministry of Manpower (MOM)
+  title: Hours of work, overtime and rest day
+  url: https://www.mom.gov.sg/employment-practices/hours-of-work-overtime-and-rest-days
+  section: Maximum hours of overtime
+  source_last_updated: 2025-07-24
+  retrieved: 2026-10-18
+applies_when: employee.part4_covered == true
+params:
+  max_overtime_hours_per_month: 72
+  rest_day_and_ph_hours_count_only_beyond_normal_day: true
+message: "{name}: {ot_used} of {max} overtime hours used this month. This shift adds {ot_added}. Breaches the EA Part 4 monthly cap."
+tests:
+  - fixture: ot_cap_70_plus_3
+    expect: violation
+  - fixture: ot_cap_manager_not_covered
+    expect: not_applicable
+```
+- Semantics: a violation means `ot_used + ot_added > 72`. Exactly 72 is allowed. Rest-day and public-holiday hours count toward overtime only beyond the usual daily hours.
+- Fixtures go in `policy/fixtures/<fixture>.yaml`. `ot_cap_70_plus_3`: a Part 4-covered staff member at 70 hours whose shift adds 3. `ot_cap_manager_not_covered`: a `manager_executive` with the same numbers. Add an edge fixture `ot_cap_69_plus_3` → `ok`.
+
+### 3.3 Remaining rule specs (after OT-CAP-72 passes both engines)
+Add these in order. Use the §6.2 text exactly, each with all source subfields and ≥2 tests: `SG-EA4-COVERAGE` (applicability gate: managers and executives not covered; overtime-pay thresholds $2,600 non-workman and $4,500 workman), `SG-EA4-DAILY-MAX-12H`, `SG-EA4-OT-RATE` (1.5×; hourly = (12 × monthly basic) / (52 × 44); non-workman rate capped at the $2,600 level, $13.60/h), `SG-EA4-NORMAL-HOURS`, `CO-STATION-SKILL`, `CO-REST-BETWEEN-SHIFTS`, `CO-OPENER-KEYHOLDER`, `SG-SFA-FSC-L1`, `SG-EA4-REST-DAY`, `SG-EA4-REST-DAY-PAY`, `SG-PT-OT-RATE`, `SG-EA4-BREAKS`, `CO-FAIRNESS`, `CO-AGE-SCOPE`.
+- The PDF gives only one URL (the MOM page above). For every other source, use the exact official page if you can retrieve it. Otherwise set `url: TODO-VERIFY`, which **fails the lint by design**, and leave that rule out of the solver until it is verified. Never guess a URL or section.
+- Synthetic `CO-*` rules use `publisher: Synthetic company policy` and `url: policy/company.yaml`.
+
+### 3.4 `policy/lint_rules.py`
+Fail with a nonzero exit if any spec is missing `id`, `title`, `kind`, every `source` subfield, `applies_when`, `params`, `message`, or has fewer than 2 `tests`, or if any field contains `TODO-VERIFY`. **A rule without a source MUST fail the build.**
+
+### 3.5 `policy/compile_cpsat.py` (OR-Tools CP-SAT)
+- `load_rules(dir) -> list[dict]`, `build_model(gap, candidates, context, rules, cfg) -> (CpModel, VarIndex)`, `solve(gap, context, rules, cfg) -> PlanResult`.
+- Decision variables: assign one candidate to the gap, or split it into at most `max_segments` contiguous segments covering `[start, end]`, so a counter-offer can be combined with another person.
+- Hard constraints: every `kind: hard` rule whose `applies_when` holds. Cost terms: overtime premium, rest-day pay and part-time rates, from `kind: cost` rules. Soft term: fairness. Plus a disruption penalty. Objective weights come from `company.yaml`. Use **integer cents** for all money.
+- Determinism: `num_search_workers = 1`, fixed `random_seed`, `max_time_in_seconds = solver_time_limit_s`.
+- Top-k: re-solve with a no-good cut after each solution to return up to `top_k_plans` distinct feasible plans. Each plan has `cost_breakdown`, `travel_min`, `arrival` and `rules_checked`.
+- After solving, run **every** ranked plan through `validate.py`. If any plan fails, raise `PlanDisagreement` (maps to `plan.disagreement`). For each rejected candidate, attach the validator's violated rule IDs and filled message parameters (`rejected_rules`).
+
+### 3.6 `policy/validate.py` (independent checker)
+- Re-implement every rule **directly from the YAML spec** in plain Python, operating on **plain dicts**.
+- It MUST NOT import `ortools`, `policy.compile_cpsat`, or any shared rule logic. **Only the YAML specs are shared.** Allowed imports: Python stdlib and `yaml`.
+- API: `validate_assignment(assignment: dict, context: dict, rules: list[dict]) -> list[RuleResult]`, where each result has `rule_id`, `status` (`ok | violation | not_applicable`), `message` (filled template) and `source_url`.
+- `part4_covered` is **computed** by `SG-EA4-COVERAGE`, never stored by hand.
+- Write a test that parses `validate.py`'s AST and fails on any forbidden import.
+
+### 3.7 Tests (`tests/`)
+- Every rule's fixtures run against **both** engines and must match `expect`.
+- Hypothesis property tests with a fixed seed (`@settings(derandomize=True)`): (a) every solver assignment passes the validator; (b) every validator-rejected assignment, when forced into the solver model, is infeasible.
+- Determinism test: same scenario and seed → identical ranking across 3 runs.
+
+### 3.8 `datagen/` — `python -m datagen build --seed 42`
+Follow §8.2 in order. Write to local JSON under `data/` and, with `--to-firestore`, into Firestore databases `(default)` and `sim`.
+1. **Outlets:** `bugis`, `tampines`, `jurong_east`, using real area names and public area coordinates. The business is fictional. Include `stations[]` (`station`, `skill`, `food_handling`, `min_count`), `opening_hours` and `keyholders[]`.
+2. **Staff (~30):** 60/40 full-time/part-time. Salaries straddle the Part 4 thresholds, so some staff are covered and some are not. Include exactly one `manager_executive`. Use every §8.1 `staff` field. All staff are aged ≥17.
+3. **Students:** part-timers aged 17 or over from polytechnic, ITE and university, with weekly timetables and exam weeks.
+4. **Certificates:** a mix of valid FSC L1 dates, lapsed (>5 years), and none (cashier-only staff).
+5. **Month to date:** `shifts` (month to date plus the next 7 days) and `ledgers/{staffId_YYYYMM}` (`ot_hours_used`, `rest_days[]`, `cover_requests_14d`). Deliberately include **one person at 70 of 72 OT hours** and **one person 11 days since their last rest day**.
+6. **Personas** go to the `sim` database only (`personas/{staffId}`): hidden availability, reply-delay distribution, accept/counter/silence tendencies, style vector and seed. **Style is sampled independently of the name.** No naming pool maps to a language or dialect (MUST).
+7. **Travel:** if a Routes API key is available, compute a transit matrix (home→outlet, outlet→outlet) once into `data/travel_cache.json` with its retrieval time. If not, write a clearly flagged placeholder (`source: "placeholder-not-routes-api"`), log it in `OPEN_ITEMS.md`, and never present it as real travel data.
+8. **Scenarios** in the §8.4 format, starting with `S-017` exactly as given. The `expect` block is **computed offline by solver + validator with a long time limit, never hand-typed**. Target 60 golden and 40 held-out scenarios (held-out is never used for tuning). If time-boxed, generate fewer and record the count honestly.
+- Every record has `synthetic: true`. The loader rejects anyone under 16.
+
+### 3.9 Baseline and comparison
+- `baseline/most_reliable_first.py` (§10.2): rank available staff by past acceptance rate and pick in order. It does **no cost or legality reasoning beyond "are they free"**. It uses the same scenarios, personas and seeds as CoverCall.
+- `evals/compare.py --set golden|heldout`: print a table with median and total overtime cost (SGD, labelled synthetic) and rule violations, CoverCall against the baseline. Time to fill is added after Slice 2. Exit nonzero if CoverCall violations > 0.
+
+**Slice 1 is done when** `ruff`, `mypy`, `python policy/lint_rules.py`, `pytest` and `python -m evals.compare --set golden` all pass. Commit, then tag `slice-1`.
+
+---
+
+## 4. VERTICAL SLICE 2 — CASCADE FOUNDATION
+
+**Exit check (§13.2):** journeys **J2 (cascade)** and **J3 (escalation)** run end to end on Cloud Run in `asia-southeast1` with simulated personas, driven from a text-only test page. Every transition appears in `gaps/{gapId}/events`, and `verify_chain(gapId)` passes.
+
+### 4.1 Firestore schema and the tamper-evident event chain (implement in `services/api/app/events.py`)
+- Collections follow §8.1 exactly: `gaps`, `gaps/{gapId}/events/{seq}`, `plans`, `offers`, `approvals`, `quarantine`, `shifts`, `ledgers`, `staff`, `outlets`. The `sim` database holds `personas`.
+- The gap document carries `state`, `version`, `last_seq` and `last_hash`, plus every §8.1 field.
+- Event document ID is `seq`, zero-padded to 6 digits (`000001`). Fields: `seq, type, from_state, to_state, actor (lead | system | staff:<id> | model:<id>), model_ids[], rule_ids[], trace_id, payload (redacted), prev_hash, hash, ts, synthetic`.
+- **Hash rule:** `canonical = json.dumps(event_without_hash, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`, then `hash = sha256(prev_hash.encode() + canonical).hexdigest()`. The genesis `prev_hash` is `"0" * 64`.
+- **Append is one Firestore transaction:** read the gap; assert the expected `version` and that `(from_state, type)` is in the transition table; write the event; update `state`, `version + 1`, `last_seq` and `last_hash` atomically. A version mismatch raises `commit.conflict` handling. A transition not in the table raises an error. **Any transition not in the table is a bug.**
+- Encode the full §5.1 transition table as a single constant `TRANSITIONS` (from-state, event, to-state), shared by the append guard and the tests.
+- `redact(payload)` runs **before** every write: NRIC/FIN pattern, Singapore phone numbers (optional +65), emails, and 13–19 digit card-like numbers. PII must never reach events, logs or traces (`pii_leak` is P0).
+- `verify_chain(gap_id) -> ChainReport` recomputes every hash. Tests cover a clean chain, a tampered payload, a deleted event and a reordered event.
+- **Idempotency:** every inbound reply carries a `message_id`. `api` drops duplicates (a transactional create of a dedup doc) before resuming any workflow.
+- Firestore security rules: clients get **read-only** access scoped to the demo tenant, and no client writes. Only the `persona-sim` service account can read the `sim` database. The planner and solver service accounts have no access to `sim`.
+
+### 4.2 `api` service (FastAPI, Cloud Run)
+- Public: `POST /gaps` (lead text or Scenario button → starts one `coverage-cascade` execution per gap, stores `workflow_execution_id`), `POST /approvals` (records a T2 approval with `nonce`, `readback_text`, `transcript`, `decision` and `channel`; one plan approval covers its cascade, including fan-out and courtesy withdrawals), `POST /replies` (staff and persona replies: dedup by `message_id`, store raw text in a server-only collection, relay **only** `{offer_id, message_id}` to the stored callback URL). The Live token-minting endpoint is a Slice 4 stub only.
+- Internal, callable **only by the workflow service account**: `POST /internal/transition` (append event via §4.1), `POST /internal/solve` (calls `solver`), `POST /internal/next-offers` (computes viable candidates, reply window, fan-out and `t_esc` via `policy/timing.py`).
+- `GET /test`: a text-only test page that can report a gap, approve a plan, show the live event log, and display the footer "All data is synthetic".
+- The callback URL is held **server-side only** in `offers`. It is never sent to the browser.
+- Keeping raw reply text out of the workflow's execution history is a design decision: record it in `docs/decisions/`.
+
+### 4.3 `policy/timing.py` (pure functions, unit-tested; §5.2)
+`mustFillBy(c) = shiftStart − travel(c) − buffer`; `slack(t) = max_c mustFillBy(c) − t`; `replyWindow(t) = min(w_max, max(w_min, slack(t)/k))`. A candidate is viable iff `t + replyWindow(t) ≤ mustFillBy(c)`. Fan out to the top `fanout_n` when `slack(t) < fanout_threshold`. `t_esc = max_c mustFillBy(c) − escalationLead`, or immediately when no viable candidate remains. All times are ISO 8601 with `+08:00`.
+
+### 4.4 `workflows/coverage_cascade.yaml` (Cloud Workflows; the only state owner)
+Implement the §5 state machine: `REPORTED → GUARDED → SOLVED → OUTREACH`, then `COMMITTING → FILLED`, `ESCALATED → RESOLVED`, `HELD`, `CANCELLED`. Every step that changes state calls `/internal/transition` first.
+- All service calls use `http.post` with `auth: {type: OIDC}` and a retry policy with exponential backoff and at most `retry_attempts` (3). The **guard step has no retry-to-pass**: any exception routes to `guard.unavailable → HELD`.
+- **REPORTED:** call `guard`. A flag or error → `HELD` (lead notified, nothing sent to staff). `ok` + complete parse → `input.guarded → GUARDED`. Missing fields → one clarifying question to the lead.
+- **GUARDED:** call `/internal/solve`. Validator agrees on every ranked candidate → `plan.solved → SOLVED`. Any disagreement → `plan.disagreement → HELD` (P0).
+- **SOLVED:** create a callback endpoint for the approval and await it. `plan.approved` → `OUTREACH` (approval stored, escalation strategy locked). `plan.rejected` → `GUARDED` with the lead's new constraint.
+- **OUTREACH (durable waits):**
+```yaml
+  - create_cb:
+      call: events.create_callback_endpoint
+      args: { http_callback_method: "POST" }
+      result: cb
+  - register_offer:   # api stores cb.url server-side in offers/{offerId}; sends the offer only if a covering T2 approval exists
+      call: http.post
+      args: { url: ${api_url + "/internal/transition"}, auth: { type: OIDC }, body: { ... } }
+  - wait_reply:
+      try:
+        call: events.await_callback
+        args: { callback: ${cb}, timeout: ${reply_window_s} }
+        result: reply
+      except:
+        as: e
+        steps:
+          - is_timeout:
+              switch:
+                - condition: ${"TimeoutError" in e.tags}
+                  next: on_offer_timeout     # → offer.timeout
+          - rethrow: { raise: ${e} }
+```
+  Each callback resumes with `{offer_id, message_id}` only. The workflow then calls `guard` (flag → `reply.flagged`: quarantine for lead review, skip that candidate) and `agent` `parse_reply` (§7.3 schema). It branches `reply.accept` → `COMMITTING`, `reply.decline`/`offer.timeout` → next offer or fan-out, or `reply.counter` → re-solve (back to `SOLVED` only on a material change: time shift >30 min or cost up).
+- **Fan-out:** when slack falls below the threshold, send the top `fanout_n` offers against one callback endpoint and loop on `events.await_callback` until the first valid accept, all decline, or timeout. Verify in the Workflows callbacks docs that one endpoint can receive multiple requests. If it cannot, use a `parallel` block with one endpoint per offer and a shared `winner` variable. Record which you used.
+- **Escalation:** at `t_esc`, or immediately when no viable candidate remains → `escalation.due → ESCALATED`. Notify the lead with ranked fallbacks (borrow, reduced service, lead covers, agency, unfilled) and await `fallback.chosen → RESOLVED`. Escalation MUST never fire after `t_esc` (`escalation_late` is P0).
+- **COMMITTING:** `api` runs a Firestore transaction on the gap's `version` with a validator re-check inside it. `commit.ok → FILLED` (roster updated, one-sentence summary, `cost_saved_sgd` recorded). `commit.conflict → OUTREACH` with a courtesy reply to the late candidate. Other open offers get courtesy withdrawals.
+- `gap.cancelled` from any state → `CANCELLED`, with open offers withdrawn.
+- Every gap MUST end in a recorded terminal outcome (`outcome_missing` is P0).
+
+### 4.5 Supporting services for J2/J3
+- `solver`: FastAPI wrapper around `policy.compile_cpsat.solve`.
+- `guard`: the stub described in §1.3. Fails closed. `guard_impl: "stub-v0"`.
+- `agent`: ADK + Gemini Flash `parse_reply` with structured output per §7.3 if the model ID is pinned. If it is not, refuse to start (no silent fallback). `explain_plan` must pass the deterministic check: no number or name absent from its input.
+- `persona-sim`: reads `sim/personas` and scenario `overrides`. Replies with seeded intent (scenario `will` wins), and the surface text is written by Gemini Flash from that fixed intent label. Deliver replies after the seeded delay through `POST /replies`. Delayed delivery and demo time compression are not specified in the PDF: pick the smallest durable mechanism using existing components, record it in `docs/decisions/`, and label any time compression visibly on the test page.
+
+### 4.6 Deploy (scripts in `infra/`, idempotent bash using gcloud)
+Region `asia-southeast1` for Cloud Run, Firestore, Workflows and BigQuery. Enable the required APIs. Create Firestore Native databases `(default)` and `sim`. Create one service account per service plus one for the workflow. Grant `roles/workflows.invoker` (includes `workflows.callbacks.send`) **only** to the `api` and `connectors` service accounts. Deploy the services and the workflow `coverage-cascade`. Keep `api` at min instances 1. Confirm Gemini availability in the region and log the result in `OPEN_ITEMS.md`. Secrets are read from Secret Manager only.
+
+### 4.7 Slice 2 tests
+- Unit tests: the full `TRANSITIONS` table (every allowed transition accepted, a sample of disallowed ones rejected); the hash chain (§4.1); `timing.py`; reply dedup; and a test that `unapproved_outbound` = 0, meaning the send path refuses any offer without a covering T2 approval.
+- An end-to-end script `evals/runners/e2e_cascade.py` against the deployed URL runs `S-017` (one decline, one counter "09:00–15:00", one silence → filled) and a "nobody replies" scenario (→ fan-out → escalated → resolved). It asserts terminal outcome, zero violations and `verify_chain` OK, and adds `time_to_fill_min` to `evals/compare.py`.
+
+**Slice 2 is done when** the e2e script passes on Cloud Run. Commit, then tag `slice-2`.
+
+---
+
+## 5. FINAL REPORT (print this when you stop)
+1. Slice status: done or partial, with the failing check named.
+2. Exact commands run and their pass/fail output (tests, lint, compare table, e2e).
+3. The `compare` table from **real runs only**. Never estimate or round in my favour.
+4. Deployed URLs and the workflow name.
+5. Every `TODO-VERIFY` and new `OPEN_ITEMS.md` entry.
+6. Every `docs/decisions/` file created, one line each.
+7. The next action for Slice 3 (lead view with Scenario buttons).

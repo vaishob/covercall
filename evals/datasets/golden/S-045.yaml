@@ -1,28 +1,27 @@
 id: S-045
-description: Synthetic absence scenario S-045 at bugis (barista)
-now: '2026-11-03T06:02:00+08:00'
-seed: 87
+description: 'Siti absent: jurong_east cashier 07:00-15:00 on 2026-11-03'
+now: '2026-11-03T05:02:00+08:00'
+seed: 4245
 gap:
-  outlet: bugis
-  station: barista
+  outlet: jurong_east
+  station: cashier
   start: 07:00
   end: '15:00'
-  absent: stf_001
-overrides:
-- staff: stf_004
-  ledger:
-    ot_hours_used: 66
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 13
-    hours_since_prev_shift_end: 14.0
+  absent: stf_012
+overrides: []
 personas:
-  stf_019:
-    will: decline
+  stf_032:
+    will: silent
 synthetic: true
 expect:
   outcome: filled
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_016
+  assignment:
+  - staff_id: stf_022
+    start: '2026-11-03T07:00:00+08:00'
+    end: '2026-11-03T15:00:00+08:00'
+  overtime_cost_cents: 0
+  total_cost_cents: 0
+  time_to_fill_min: 2.47
+  computed_by: evals.runners.local_cascade (coverage-cascade state machine, solver
+    time limit 10 s, validator); never hand-typed

@@ -1,19 +1,19 @@
 id: CO-FAIRNESS
-title: Fairness penalty for >2 cover requests in 14 days
+title: Penalise asking the same person to cover more than twice in 14 days
 kind: soft
 jurisdiction: SG
 source:
   publisher: Synthetic company policy
-  title: CoverCall synthetic company policy and design defaults
+  title: CoverCall synthetic company policy (design defaults)
   url: policy/company.yaml
   section: fairness
   source_last_updated: 2026-10-18
   retrieved: 2026-10-18
 applies_when: "true"
 params:
-  max_covers_14d: 2
-  window_days: 14
-message: "{name}: {cover_requests_14d} cover requests in the last 14 days (soft fairness threshold is {max_covers_14d})."
+  max_covers: "company:fairness.max_covers"
+  window_days: "company:fairness.window_days"
+message: "{name}: asked to cover {cover_requests_14d} times in the last {window_days} days. This would be request {request_number} (soft limit {max_covers})."
 tests:
   - fixture: fairness_high_covers_soft
     expect: violation

@@ -19,3 +19,9 @@ Section 13.1 defines the top-level directory structure of `covercall/`. To imple
 ## Alternatives Considered
 - Embedding fixtures inline in rule YAML files: rejected because §6.1 specifies `fixture: <name>` references.
 - Keeping timing formulas inline inside the FastAPI router: rejected because decoupling pure math in `policy/timing.py` enables deterministic unit testing.
+
+## Update (2026-10-18, claude/slices-1-2)
+The `/app/applet` path above was the AI Studio container and does not apply to this repo. Other
+supporting files added since: `tests/fixture_context.py` (fixture merge helper),
+`policy/fixtures/_base.yaml` (shared fixture defaults), `datagen/loader.py`, `datagen/personas.py`,
+`datagen/scenarios.py`, `evals/cascade_sim.py`, and `docs/HANDOFF.md`.

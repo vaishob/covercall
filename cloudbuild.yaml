@@ -1,0 +1,30 @@
+# Cloud Build release gate (design doc §10.3). Slices 1-2 cover steps 1-5 plus the local cascade;
+# LLM evals, accessibility, BigQuery and the deploy/promote steps arrive in Slice 6.
+# Any failing step stops the build (P0 gate). All data is synthetic.
+steps:
+  - id: install
+    name: python:3.12
+    entrypoint: bash
+    args: [-c, "pip install uv && uv venv /workspace/.venv && uv pip install --python /workspace/.venv -r pyproject.toml --extra dev"]
+  - id: lint-and-types           # 1. lint, type checks
+    name: python:3.12
+    entrypoint: bash
+    args: [-c, "/workspace/.venv/bin/ruff check . && /workspace/.venv/bin/mypy"]
+  - id: rule-spec-lint           # 2. every rule has a complete source and >= 2 tests
+    name: python:3.12
+    args: [/workspace/.venv/bin/python, policy/lint_rules.py]
+  - id: tests                    # 3-4. fixtures on both engines, property tests (fixed seed), unit tests
+    name: python:3.12
+    args: [/workspace/.venv/bin/python, -m, pytest, -q]
+  - id: golden-vs-baseline       # 5. golden scenarios through solver + validator, plus the baseline
+    name: python:3.12
+    args: [/workspace/.venv/bin/python, -m, evals.compare, --set, golden]
+  - id: cascade-j2-j3            # Slice 2: J2 and J3 through the state machine (local driver)
+    name: python:3.12
+    args: [/workspace/.venv/bin/python, -m, evals.runners.local_cascade]
+  - id: secret-scan              # §12.1: a secret scanner runs in CI
+    name: zricethezav/gitleaks:v8.18.4
+    args: [detect, --source, ., --no-banner, --redact]
+timeout: 1800s
+options:
+  logging: CLOUD_LOGGING_ONLY

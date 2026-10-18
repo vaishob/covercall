@@ -1,0 +1,139 @@
+# Shared defaults for rule fixtures. Each fixture file overrides parts of this.
+# Merge (tests/fixture_context.py): employee/ledger/gap/assignment are merged key by key;
+# shifts, other_shifts, other_staff and extra_ledgers replace the base lists.
+synthetic: true
+now: '2026-11-07T05:00:00+08:00'
+outlets:
+- outlet_id: bugis
+  name: Bugis
+  area: Bugis
+  opening_hours:
+    open: 07:00
+    close: '21:00'
+  stations:
+  - station: barista
+    skill: barista
+    food_handling: true
+    min_count: 1
+  - station: kitchen
+    skill: kitchen
+    food_handling: true
+    min_count: 1
+  - station: cashier
+    skill: cashier
+    food_handling: false
+    min_count: 1
+  keyholders:
+  - stf_k
+  synthetic: true
+employee:
+  staff_id: stf_t
+  display_name: Test Lead-Barista
+  age: 25
+  is_student: false
+  home_area: Bugis
+  home_outlet: bugis
+  contract_type: full_time
+  employee_class: non_workman
+  monthly_basic_sgd: 2400
+  hourly_basic_sgd: null
+  weekly_contract_hours: 40
+  normal_daily_hours: 8
+  skills:
+  - barista
+  - kitchen
+  - cashier
+  fsc_l1_passed_on: '2024-03-15'
+  keyholder: true
+  channel: sim
+  synthetic: true
+other_staff:
+- staff_id: stf_k
+  display_name: Test Keyholder
+  age: 30
+  is_student: false
+  home_area: Bugis
+  home_outlet: bugis
+  contract_type: full_time
+  employee_class: non_workman
+  monthly_basic_sgd: 2300
+  hourly_basic_sgd: null
+  weekly_contract_hours: 40
+  normal_daily_hours: 8
+  skills:
+  - cashier
+  fsc_l1_passed_on: null
+  keyholder: true
+  channel: sim
+  synthetic: true
+ledger:
+  ot_hours_used: 10
+  rest_days:
+  - '2026-11-01'
+  - '2026-11-08'
+  cover_requests_14d: 0
+shifts:
+- staff_id: stf_t
+  outlet: bugis
+  station: barista
+  start: '2026-11-02T07:00:00+08:00'
+  end: '2026-11-02T15:00:00+08:00'
+  status: scheduled
+  breaks:
+  - start: '2026-11-02T11:00:00+08:00'
+    duration_min: 45
+  synthetic: true
+- staff_id: stf_t
+  outlet: bugis
+  station: barista
+  start: '2026-11-03T07:00:00+08:00'
+  end: '2026-11-03T15:00:00+08:00'
+  status: scheduled
+  breaks:
+  - start: '2026-11-03T11:00:00+08:00'
+    duration_min: 45
+  synthetic: true
+- staff_id: stf_t
+  outlet: bugis
+  station: barista
+  start: '2026-11-04T07:00:00+08:00'
+  end: '2026-11-04T15:00:00+08:00'
+  status: scheduled
+  breaks:
+  - start: '2026-11-04T11:00:00+08:00'
+    duration_min: 45
+  synthetic: true
+- staff_id: stf_t
+  outlet: bugis
+  station: barista
+  start: '2026-11-05T07:00:00+08:00'
+  end: '2026-11-05T15:00:00+08:00'
+  status: scheduled
+  breaks:
+  - start: '2026-11-05T11:00:00+08:00'
+    duration_min: 45
+  synthetic: true
+- staff_id: stf_t
+  outlet: bugis
+  station: barista
+  start: '2026-11-06T07:00:00+08:00'
+  end: '2026-11-06T15:00:00+08:00'
+  status: scheduled
+  breaks:
+  - start: '2026-11-06T11:00:00+08:00'
+    duration_min: 45
+  synthetic: true
+other_shifts: []
+gap:
+  outlet: bugis
+  station: barista
+  start: '2026-11-07T07:00:00+08:00'
+  end: '2026-11-07T15:00:00+08:00'
+  absent_staff_id: stf_a
+assignment:
+  staff_id: stf_t
+  start: '2026-11-07T07:00:00+08:00'
+  end: '2026-11-07T15:00:00+08:00'
+  breaks:
+  - start: '2026-11-07T11:00:00+08:00'
+    duration_min: 45

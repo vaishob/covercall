@@ -1,37 +1,13 @@
 synthetic: true
-employee:
-  staff_id: stf_010
-  display_name: Wei
-  age: 22
-  contract_type: full_time
-  employee_class: non_workman
-  monthly_basic_sgd: 2400
-  weekly_contract_hours: 44
-  normal_daily_hours: 8
-  skills:
-  - barista
-  - kitchen
-  - cashier
-  fsc_l1_passed_on: '2024-06-01'
-  keyholder: true
-ledger:
-  ot_hours_used: 12
-  rest_days:
-  - '2026-11-01'
-  cover_requests_14d: 1
-shift:
-  outlet: bugis
-  station: barista
-  start: '2026-11-03T07:00:00+08:00'
-  end: '2026-11-03T15:00:00+08:00'
-  hours_worked_today_before_shift: 0
-  work_hours: 8
-  breaks_min: 45
-  is_rest_day: true
-  is_public_holiday: false
-  is_opening_shift: true
-  other_keyholder_present: true
-  hours_since_prev_shift_end: 14
-  hours_until_next_shift_start: 14
-  days_since_last_rest_day: 2
-description: Employer-requested work on a rest day (8h = 2 days salary)
+description: '8 h on the Sunday rest day at the employer''s request: 2 days'' basic
+  pay'
+gap:
+  start: '2026-11-08T07:00:00+08:00'
+  end: '2026-11-08T15:00:00+08:00'
+assignment:
+  staff_id: stf_t
+  start: '2026-11-08T07:00:00+08:00'
+  end: '2026-11-08T15:00:00+08:00'
+  breaks:
+  - start: '2026-11-08T11:00:00+08:00'
+    duration_min: 45

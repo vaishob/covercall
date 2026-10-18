@@ -1,17 +1,24 @@
-# Synthetic Reply Style & Singlish Corpus Review (§8.3)
+# Synthetic reply review (§8.3)
 
 **All data is synthetic.**
 
-## Anti-Stereotype Sampling Invariant (MUST)
-- In `datagen/__init__.py`, each persona's `style_profile` (`language_slice`, `singlish_particles`, `brevity`, `emoji_tendency`) is sampled from the seeded PRNG **independently of `display_name`**.
-- No naming pool maps to a language or dialect. Automated tests in `tests/test_datagen.py` verify that `style_profile` is uncorrelated with `display_name`.
+## Status: NOT STARTED
 
-## Sampled Surface Templates (Ground-Truth Intent Fixed First)
-Every simulated reply fixes its ground-truth `intent` (`accept`, `decline`, `counter`, `question`) before surface text generation:
-- `counter` (`09:00–15:00`): `"can lah but only after 9, got lecture"`
-- `decline`: `"sorry cannot, MC today"`
-- `accept`: `"ok omw"`
-- `counter` (`08:00–15:00`): `"wah 7am ah... 8 can?"`
+§8.3 asks two or three Singaporean reviewers to mark a sample of about 50 generated replies as
+natural, fake or offensive, and to remove the flagged patterns. **No human review has taken place.**
+(An earlier version of this file said the templates were "audited". That was not true and is withdrawn.)
 
-## Reviewer Audit Log
-- **Status:** Synthetic baseline templates audited for respectful, natural Singapore F&B shift messaging; offensive or stereotyped patterns excluded. Full 50-sample multi-reviewer human sign-off for Slice 5 fine-tuning corpus tracked in `docs/OPEN_ITEMS.md`.
+The reply corpus (2,000 replies) and the adversarial set (400) are Slice 5 work. Slices 1–2 generate
+no surface text with a model. `persona-sim` uses fixed stub templates labelled `stub-v0`.
+
+## What is already enforced in code
+- Each reply's intent is fixed first (`datagen/personas.py: decide_reply`), and the label is ground truth.
+- Persona style is sampled with its own seeded RNG and never reads the name.
+  `tests/test_datagen.py::test_persona_style_never_reads_the_name` checks this by parsing the source
+  and by renaming a person and comparing the personas.
+- No naming pool maps to a language or dialect: `datagen/__init__.py` has one flat name list.
+
+## Review log
+| Date | Reviewers | Sample | Natural | Fake | Offensive | Patterns removed |
+|---|---|---|---|---|---|---|
+| (none yet) | | | | | | |

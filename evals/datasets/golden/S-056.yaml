@@ -1,31 +1,22 @@
 id: S-056
-description: Synthetic absence scenario S-056 at jurong_east (cashier)
-now: '2026-11-03T06:02:00+08:00'
-seed: 98
+description: 'Wei absent: bugis cashier 07:00-15:00 on 2026-11-03'
+now: '2026-11-03T06:22:00+08:00'
+seed: 4256
 gap:
-  outlet: jurong_east
+  outlet: bugis
   station: cashier
-  start: '12:00'
-  end: '20:00'
-  absent: stf_012
-overrides:
-- staff: stf_004
-  ledger:
-    ot_hours_used: 70
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 11
-    hours_since_prev_shift_end: 9.0
-personas:
-  stf_022:
-    will: counter
-    window:
-    - 09:00
-    - '15:00'
+  start: 07:00
+  end: '15:00'
+  absent: stf_010
+overrides: []
+personas: {}
 synthetic: true
 expect:
-  outcome: filled
+  outcome: borrow
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_015
+  assignment: []
+  overtime_cost_cents: 0
+  total_cost_cents: 0
+  time_to_fill_min: null
+  computed_by: evals.runners.local_cascade (coverage-cascade state machine, solver
+    time limit 10 s, validator); never hand-typed

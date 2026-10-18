@@ -1,26 +1,38 @@
 id: H-001
-description: Held-out synthetic absence scenario H-001 at jurong_east (cashier)
-now: '2026-11-03T06:02:00+08:00'
-seed: 1043
+description: 'Nadia absent: tampines cashier 07:00-15:00 on 2026-11-07'
+now: '2026-11-07T05:14:00+08:00'
+seed: 5201
 gap:
-  outlet: jurong_east
+  outlet: tampines
   station: cashier
-  start: '12:00'
-  end: '20:00'
-  absent: stf_005
+  start: 07:00
+  end: '15:00'
+  absent: stf_008
 overrides:
-- staff: stf_004
+- staff: stf_006
   ledger:
     ot_hours_used: 71
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 13
-    hours_since_prev_shift_end: 14.0
-personas: {}
+personas:
+  stf_032:
+    will: counter
+    window:
+    - 09:00
+    - '15:00'
+  stf_030:
+    will: counter
+    window:
+    - 09:00
+    - '15:00'
 synthetic: true
 expect:
   outcome: filled
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_015
+  assignment:
+  - staff_id: stf_022
+    start: '2026-11-07T07:00:00+08:00'
+    end: '2026-11-07T15:00:00+08:00'
+  overtime_cost_cents: 0
+  total_cost_cents: 0
+  time_to_fill_min: 1.63
+  computed_by: evals.runners.local_cascade (coverage-cascade state machine, solver
+    time limit 10 s, validator); never hand-typed

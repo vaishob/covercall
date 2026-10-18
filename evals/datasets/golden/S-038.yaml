@@ -1,26 +1,25 @@
 id: S-038
-description: Synthetic absence scenario S-038 at jurong_east (cashier)
-now: '2026-11-03T06:02:00+08:00'
-seed: 80
+description: 'Farhan absent: jurong_east kitchen 07:00-15:00 on 2026-11-05'
+now: '2026-11-05T05:02:00+08:00'
+seed: 4238
 gap:
   outlet: jurong_east
-  station: cashier
-  start: '12:00'
-  end: '20:00'
-  absent: stf_009
+  station: kitchen
+  start: 07:00
+  end: '15:00'
+  absent: stf_015
 overrides:
-- staff: stf_004
+- staff: stf_003
   ledger:
     ot_hours_used: 70
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 11
-    hours_since_prev_shift_end: 14.0
 personas: {}
 synthetic: true
 expect:
-  outcome: filled
+  outcome: borrow
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_015
+  assignment: []
+  overtime_cost_cents: 0
+  total_cost_cents: 0
+  time_to_fill_min: null
+  computed_by: evals.runners.local_cascade (coverage-cascade state machine, solver
+    time limit 10 s, validator); never hand-typed

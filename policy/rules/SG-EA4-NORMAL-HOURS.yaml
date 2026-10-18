@@ -1,5 +1,5 @@
 id: SG-EA4-NORMAL-HOURS
-title: Contractual normal hours of work (up to 8 or 9 hours/day, 44 hours/week)
+title: Normal hours of work; work beyond them is overtime
 kind: cost
 jurisdiction: SG
 source:
@@ -11,12 +11,12 @@ source:
   retrieved: 2026-10-18
 applies_when: employee.part4_covered == true
 params:
-  max_normal_daily_hours_5day_or_less: 9
-  max_normal_daily_hours_more_than_5day: 8
+  max_normal_daily_hours_5_days_or_less: 9
+  max_normal_daily_hours_more_than_5_days: 8
   max_normal_weekly_hours: 44
-message: "{name}: {work_hours}h worked against {normal_daily_hours}h normal daily limit yields {ot_added}h overtime."
+message: "{name}: this shift adds {ot_added} overtime hours ({day_hours} h that day against {normal_daily_hours} h normal; {week_hours} h that week against {normal_weekly_hours} h normal)."
 tests:
-  - fixture: normal_hours_within_8h
+  - fixture: normal_hours_within_contract
     expect: ok
   - fixture: normal_hours_manager_not_covered
     expect: not_applicable

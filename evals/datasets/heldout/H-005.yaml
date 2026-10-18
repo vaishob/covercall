@@ -1,26 +1,24 @@
 id: H-005
-description: Held-out synthetic absence scenario H-005 at bugis (barista)
-now: '2026-11-03T06:02:00+08:00'
-seed: 1047
+description: 'Gloria absent: jurong_east barista 07:00-15:00 on 2026-11-04'
+now: '2026-11-04T06:12:00+08:00'
+seed: 5205
 gap:
-  outlet: bugis
+  outlet: jurong_east
   station: barista
   start: 07:00
   end: '15:00'
-  absent: stf_009
-overrides:
-- staff: stf_004
-  ledger:
-    ot_hours_used: 71
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 11
-    hours_since_prev_shift_end: 8.0
-personas: {}
+  absent: stf_006
+overrides: []
+personas:
+  stf_030:
+    will: decline
 synthetic: true
 expect:
-  outcome: filled
+  outcome: borrow
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_016
+  assignment: []
+  overtime_cost_cents: 0
+  total_cost_cents: 0
+  time_to_fill_min: null
+  computed_by: evals.runners.local_cascade (coverage-cascade state machine, solver
+    time limit 10 s, validator); never hand-typed
