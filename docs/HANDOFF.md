@@ -304,3 +304,71 @@ Problems found and fixed during Slice 2 (real defects, found by running):
 Tests added: `tests/test_events.py` (every table transition accepted; **every** (state, event) pair outside the table rejected; clean, tampered, deleted, reordered and truncated chains; redaction; dedup), `tests/test_timing.py`, `tests/test_cascade.py` (J2, J3, no offer without approval, voice approval needs a clear yes, duplicate reply dropped, late yes gets a courtesy reply, guard failure → HELD, injection quarantined and never in the event log, lead cancel through the workflow, material-change rule), `tests/test_workflow.py` (YAML vs table, retry and OIDC policy, local driver mirrors every step), `tests/test_services.py`.
 
 Not covered end to end: the re-approval path after a material counter-offer (`reply.counter` → SOLVED). The rule is unit-tested, and the YAML and driver contain the path, but no scenario exercises it.
+
+---
+
+## Frontend import (branch `integrate/web`, 2026-10-18)
+
+- **Source:** Argon (Google AI Studio) export of branch `gemini/slice-4-web` at commit `c2b071e`, from `../covercall-web-export.zip.zip` (the file has a double `.zip` extension). The export also holds stale backend files and `.aistudio/`. Only `web/` was extracted (to a temp folder outside the repo) and copied. Before the import, `main` was reset to `a80fdf5`: it had received an earlier copy of this frontend plus 16 `.aistudio/` files (2 copies of the design-doc PDF, 14 UI screenshots; scanned, no secrets, nothing from outside the project). The old tip is kept as the **local-only** tag `backup/main-before-reset` (`7c491b5`).
+- **Files:** 32, all under `web/`. Nothing in the expected list is missing and there are no extras. `src/components/` has **12** files (the brief said 13, but its own total of 32 only works with 12): ApprovalCard, CandidateList, CaptionsPanel, CascadeTimeline, EvidenceModalViews, GapCard, MockDataBadge, MockModeBanner, RosterMiniGrid, RuleWarningCard, ScenarioLauncher, VoiceStateBar. No `node_modules/` or `dist/`.
+- **Commits:** `bb61541` removes the AI Studio template, `f42c748` imports `web/` (only `web/` paths changed), and `dae875b` adds `.aistudio/` to the root `.gitignore`. `web/node_modules/` and `web/dist/` are ignored by `web/.gitignore` and by the root `node_modules/` and `dist/` patterns; neither is staged.
+- **Secrets scan** (same patterns as the Step 1 audit) over `web/`: **clean**. `web/.env.example` has only empty placeholders (`VITE_API_BASE_URL`, `VITE_FIREBASE_*`, `VITE_FIRESTORE_DATABASE_ID`, `VITE_GEMINI_LIVE_MODEL_ID`).
+- **Frontend checks** (Node 24.21.0, npm 11.19.0):
+  - `npm ci`: OK without `--legacy-peer-deps`. npm held back `esbuild@0.25.12`'s postinstall script (not approved); test and build passed anyway.
+  - `npm test`: `tests 15, pass 15, fail 0`.
+  - `npm run build` (`tsc --noEmit && vite build`): OK, built in 1.54 s. One warning: `dist/assets/index-*.js` is 537.15 kB (gzip 164.76 kB), above Vite's 500 kB advisory.
+- **Backend unaffected:** `ruff check .` All checks passed; `mypy` no issues in 54 files; `lint_rules` OK (15 rules); `pytest` 149 passed; `evals.runners.local_cascade` J2 PASS, J3 PASS, exit 0.
+- **Frontend handoff:** see `web/HANDOFF-WEB.md` (contract the UI expects in §3, remaining mocks in §5, known gaps in §8).
+
+## Frontend ↔ backend contract gaps (documented only; nothing fixed)
+
+Compared `web/src/data/{apiClient,types,dataSource}.ts` (and `voiceProvider.ts`, `mocks/state.ts` where they set contract values) with `services/api/app/main.py` and `core.py`, the documents the backend writes, and `infra/firestore.rules`. The UI currently runs in mock mode, so none of these break it today. All of them break it once `VITE_API_BASE_URL` is set.
+
+**Transport**
+1. **No CORS on `api`.** A browser on Firebase Hosting calling the Cloud Run `api` cross-origin will be blocked; there is no `CORSMiddleware`.
+2. **`FirestoreDataSource` does not use Firestore.** It sends HTTP `fetch` calls to `api` (the Firebase SDK is not installed). §11.1 says the web app reads Firestore directly through read-only listeners. On API errors it quietly falls back to mock scenario data.
+
+**Endpoints: the UI calls routes the backend does not have**
+
+| UI call | Backend has | Gap |
+|---|---|---|
+| `GET /status` → `{status, guard_impl, live_model_id, mock_mode}` | only `GET /healthz` → `{status}` | missing route |
+| `POST /voice/token` → `{ephemeral_token, expires_at, model_id, api_version: "v1alpha"}` | `POST /live/token` → HTTP 501 | path differs; response shape undefined (Slice 4 stub) |
+| `POST /gaps/{id}/fallback` | `POST /fallbacks` with `{gap_id, option}` | path differs |
+| `GET /scenarios/{key}` (a composite "scenario bundle") | none; scenarios start via `POST /gaps {scenario_id}` | missing route; no backend view assembles the bundle |
+| `GET /quarantine?gap_id=` | none | missing route |
+| `GET /evals` (BigQuery read model) | none; compare results exist only as CLI and JSON output | missing route (Slice 6) |
+| `GET /gaps/{id}/events` expects `{events: [...], chain_verified}` | returns a bare list; verification is a separate `GET /gaps/{id}/verify` → `{ok, events, errors}` | shape differs |
+
+**Request payloads**
+
+3. `POST /gaps`: the UI (voice `report_absence`) sends `{outlet, shift_start, station, staff_name?}`. The backend needs `scenario_id`, or else `{outlet, station, start, end, absent_staff_id}`, so the UI request returns **422** (no `end`, a name instead of `absent_staff_id`). The response is `{gap_id, workflow_execution_id}` with no `mock` and no `gap`.
+4. `POST /approvals`: the UI sends `approval_nonce` and `decision: "approved" | "rejected"`. The backend reads `nonce` (so it returns **409**, "no pending approval with that nonce"), and accepts only `decision == "approve"`. **"approved" would be recorded as a reject.** The UI also sends `plan_id`, which the backend ignores (it takes the plan from the pending approval). The backend's response is the full approval document (`approval_id`, `decision: approve|reject`, …).
+5. `POST /gaps/{id}/cancel`: the UI expects `{gap_id, state: "CANCELLED"}`. The backend returns `{status: "cancel requested", waits_signalled}`, because the cancel goes through the workflow, so the state is not CANCELLED yet.
+6. Fallback option IDs: the UI uses `borrow_cross_outlet, reduced_service, lead_covers, agency_temp`. The backend uses `borrow, reduced_service, lead_covers, agency, unfilled` (listed in `gaps/{id}.fallbacks`).
+
+**Field names and types (`types.ts` vs the documents the backend writes)**
+
+7. IDs: the UI uses `id` everywhere. The backend uses `gap_id`, `plan_id`, `offer_id`, `approval_id`, `staff_id`, `outlet_id`, `shift_id` and `ledger_id`. Quarantine documents have no ID field.
+8. **`GapDoc.must_fill_by` does not exist.** The backend stores `t_esc` (the latest computed) and `t_esc_locked` (locked at approval, decision 0009); must-fill-by is per candidate and is not stored. The UI's must-fill-by countdown has no backing field. Other gap fields the UI does not model: `pending_approval {nonce, readback_text, plan_id}`, which is where the nonce and read-back actually live; `fallbacks`; `summary`; `excluded`; `windows`; `accepted`; `approval_id`; `approved_plan_id`; `current_plan_id`; `reported_at`; `filled_at`; `time_scale`.
+9. **Plan shape.** Backend `plans/{id}.candidates[]` are ranked *plans*: `{rank, staff_ids[], segments[{staff_id, display_name, home_outlet, start, end, breaks, travel_min, arrival, cost_breakdown, fairness_penalty_units, rules_checked}], cost_breakdown, overtime_cost_cents, travel_min, arrival, is_cross_outlet_borrow, objective, solver_status}`. The UI expects one `staff_id` per candidate and segments of only `{start, end}`. A two-person split (as in J2) has no UI representation.
+10. **Cost breakdown.** The backend uses integer **cents**: `{base_cents, overtime_cents, rest_day_cents, total_cents}` plus `overtime_cost_cents`. The UI expects SGD floats `{incremental_cost_sgd, saves_vs_overtime_sgd, basis?}`. The backend computes no per-candidate "saves vs overtime"; only `gaps/{id}.cost_saved_sgd`, at commit, against the naive first pick (decision 0014).
+11. **`rules_checked`.** Backend: objects `{rule_id, status, kind, message, source_url}`. UI: `string[]`.
+12. **`rejected_rules` location.** Backend: at plan level, `plans/{id}.rejected_candidates[] = {staff_id, display_name, rejected_rules[{rule_id, message, source_url, params}]}`. UI: inside each `candidates[]` entry.
+13. **`rejected_rules` severity and source.** The UI requires `severity: "P0"|"P1"|"P2"`, `source_publisher` and `source_section`. The backend has no severity on rules (P0/P1/P2 are eval-metric severities, §10.1; rules have `kind: hard|cost|soft|applicability_gate|data_gate`) and does not copy the publisher or section into the plan (they are in `policy/rules/*.yaml`).
+14. `ApprovalDoc.decision`: UI `approved|rejected|pending`, backend `approve|reject`. The backend also stores `plan_id` and `exclude_staff_ids`.
+15. `OfferDoc.status`: UI `sent|accepted|declined|counter|timeout|withdrawn`, backend `open|accepted|decline|countered|timeout|withdrawn|late|flagged`. The backend offer also has `start`, `end`, `plan_id`, `rank`, `approval_id`, `fanout_group`, `attempt`, and a server-only `callback_url`.
+16. `ShiftDoc.breaks`: UI `{start, end}`, backend `{start, duration_min}`. UI status `covered` does not exist; the backend writes a new cover shift (`source: "cover:<gapId>"`) and marks the original `absent`.
+17. `LedgerDoc.month`: UI comment says `YYYYMM`, backend writes `"2026-11"` (the ID suffix is `YYYYMM`).
+18. `GapEventDoc.from_state` is `string` in the UI, but is `null` for `gap.reported`. The UI reads `payload.summary`; the backend payloads have no `summary` key. Mock events use actors such as `system:guard_stub` and `system:mock_state`, which the backend's append guard rejects (allowed: `lead | system | staff:<id> | model:<id>`).
+19. Mock-only values that differ from the generated data: outlet names ("Bugis Espresso Bar", closing 22:00) vs `name: "Bugis"` closing 21:00; full-timer `weekly_contract_hours` 44 vs 40 (decision 0007).
+
+**Read paths and `infra/firestore.rules`**
+
+20. Rules let clients read only `gaps`, `gaps/{id}/events`, `plans`, `outlets` and `shifts`. The UI also reads **`staff`** (`getStaff`, currently always mock) and **`quarantine`** (`subscribeQuarantine`). Both are denied to clients under the current rules, so either the rules or the UI must change.
+21. `gaps/{id}` is client-readable and holds `pending_approval.nonce`. The UI needs the nonce for `approve`, so this works, but it is a deliberate exposure to note in the security review.
+22. The UI has no read path for **offers** (the cascade timeline is mock-only). `offers` is server-only by design (it holds callback URLs), so the timeline needs a redacted view (events already carry offer outcomes) or a new route.
+
+**Voice**
+
+23. Token route mismatch (`/voice/token` vs `/live/token`). The backend route returns 501, so the UI falls back to text, which is correct for today. The voice model ID is `TODO-VERIFY` in `config/models.yaml` and `VITE_GEMINI_LIVE_MODEL_ID` is empty, so neither side has a pinned Live model.
