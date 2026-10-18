@@ -15,6 +15,8 @@ COPY services/common services/common
 COPY services/api services/api
 COPY services/agent services/agent
 COPY services/guard services/guard
+# /status reports persona-sim's text implementation (views.py imports it); tests/test_images.py
+COPY services/persona_sim services/persona_sim
 RUN useradd --create-home app
 USER app
 CMD ["sh", "-c", "uvicorn services.api.app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
