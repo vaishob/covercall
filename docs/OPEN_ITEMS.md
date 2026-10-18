@@ -30,3 +30,5 @@ All data in CoverCall is synthetic. This file mirrors §15.2 and adds items foun
 | Firebase CLI multi-database rules (`infra/firebase.json` array form) | TODO-VERIFY | Rules for `(default)` and `sim` | Firebase CLI docs |
 | gitleaks image tag in `cloudbuild.yaml` (`zricethezav/gitleaks:v8.18.4`) | TODO-VERIFY | CI secret scan | Docker Hub |
 | Escalation lead vs short-notice reports | FINDING | With the PDF defaults, reports under ~41 min before a shift escalate at once (docs/decisions/0009) | Product decision: keep, or lower `escalation_lead_min` |
+| Adversarial scenario (J4) in the data | OPEN | §11.3 asks for an "Adversarial" Scenario button; `GET /scenarios` lists only scenarios that exist in `evals/datasets` | No adversarial scenario has been generated yet (Slice 5: guard and adversarial set). The button is omitted rather than faked (docs/decisions/0017) |
+| Browser reads by polling | DESIGN CHOICE | The UI polls `api` every 2 s instead of Firestore listeners (docs/decisions/0015) | Revisit if read load matters during judging |

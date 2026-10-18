@@ -101,9 +101,9 @@ def test_fan_out_uses_one_endpoint_per_offer_in_a_parallel_loop() -> None:
 
 def test_local_driver_mirrors_every_yaml_step() -> None:
     names = set(_step_names(WF["main"]["steps"]))
-    internal_only = {"guard_error", "approval_timeout", "approval_rethrow", "is_timeout", "rethrow",
-                     "fallback_timeout", "fallback_rethrow", "cancel_no_approval", "resolve_unfilled"}
-    mirrored = set(re.findall(r'self\.step\("([a-z_]+)"\)', DRIVER))
+    # Error re-raises and the guard's except-branch have no driver counterpart.
+    internal_only = {"guard_error", "approval_rethrow", "is_timeout", "rethrow", "fallback_rethrow"}
+    mirrored = set(re.findall(r'(?<![A-Za-z_])step\("([a-z_]+)"\)', DRIVER))
     missing = names - internal_only - mirrored
     assert not missing, f"driver does not mirror: {sorted(missing)}"
     assert mirrored <= names, f"driver steps not in YAML: {sorted(mirrored - names)}"

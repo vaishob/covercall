@@ -1,3 +1,5 @@
+web/ owner: Claude Code (since 2026-10-18T17:51:11+08:00)
+
 # CoverCall handoff (`claude/slices-1-2`)
 
 **All data is synthetic.**
@@ -380,3 +382,80 @@ Compared `web/src/data/{apiClient,types,dataSource}.ts` (and `voiceProvider.ts`,
 **Voice**
 
 23. Token route mismatch (`/voice/token` vs `/live/token`). The backend route returns 501, so the UI falls back to text, which is correct for today. The voice model ID is `TODO-VERIFY` in `config/models.yaml` and `VITE_GEMINI_LIVE_MODEL_ID` is empty, so neither side has a pinned Live model.
+
+---
+
+## Contract alignment (branch `feat/web-contract`, 2026-10-18)
+
+The frontend now talks to the real backend. Decisions: 0015 (reads only through `api`, client-safe
+projections, Firestore deny-all), 0016 (backend shapes are canonical; one mapping layer; contract
+fixtures), 0017 (recorded replay replaces invented mock data), 0018 (local dev server).
+
+### Checks run on the final commit
+
+```
+$ ruff check .                              All checks passed!
+$ mypy                                      Success: no issues found in 59 source files
+$ python policy/lint_rules.py               OK (15 rules verified with complete sources and >=2 tests)
+$ pytest                                    164 passed
+$ python -m evals.runners.local_cascade     J2 (S-017) FILLED, PASS; J3 (S-002) RESOLVED (borrow), PASS; exit 0
+$ (web) npm test                            tests 27, pass 27, fail 0
+$ (web) npm run build                       built in 1.63s (warning: the two lazily loaded replay chunks are >500 kB raw, 25-35 kB gzip)
+$ (web) npx playwright test                 2 passed: S-017 to FILLED by tap; Nobody replies to ESCALATED then RESOLVED
+```
+
+The Playwright run starts `python -m evals.runners.dev_server` (memory store, `ALLOWED_ORIGINS=http://localhost:3000`)
+and the Vite dev server with `VITE_API_BASE_URL=http://127.0.0.1:8080`. It asserts: candidates, the Priya
+`SG-EA4-OT-CAP-72` warning with its MOM source link, the approval read-back and the timeline (decline,
+counter-offer, no reply) appear; no replay badge or banner; no console errors; axe-core reports no
+serious or critical issue on `/`, `/trace/:gapId` and `/evals`. (axe found one real issue on the first
+run, a keyboard-unreachable scrolling region in the roster strip; it was fixed.)
+
+### Contract gaps: outcome of each item
+
+| Gap | Outcome |
+|---|---|
+| 1. No CORS on `api` | **Fixed.** `ALLOWED_ORIGINS` (default `http://localhost:3000`); a wildcard is refused at start-up. Tested. |
+| 2. `FirestoreDataSource` used HTTP and fell back to mock data silently | **Fixed by decision 0015.** No Firestore SDK path; one `LiveSource` over the `api` routes; errors are shown as errors. |
+| Table: `GET /status` missing | **Fixed.** Returns `guard_impl`, `parser_impl`, model IDs from `config/models.yaml` as-is (all `TODO-VERIFY`), time scale. |
+| Table: `/voice/token` vs `/live/token` | **Fixed** (UI calls `POST /live/token`). **Voice itself stays open:** the route answers 501 with an explanation; the UI falls back hands-free → push-to-talk → text. |
+| Table: `/gaps/{id}/fallback` vs `/fallbacks` | **Fixed.** UI calls `POST /fallbacks`. |
+| Table: `GET /scenarios/{key}` bundle | **Fixed differently.** `GET /scenarios` lists the playable scenarios (S-017, S-002) from the data; `POST /gaps {scenario_id}` starts one; `GET /gaps/{id}` is the single view model. |
+| Table: `GET /quarantine?gap_id=` | **Fixed** as `GET /gaps/{id}/quarantine` (redacted text only). |
+| Table: `GET /evals` | **Fixed:** returns `no_eval_run` and no numbers. **Open:** real results need BigQuery (Slice 6). |
+| Table: events shape | **Fixed.** `GET /gaps/{id}/events` returns `{events, chain}` with the server's `verify_chain` result. |
+| 3. `POST /gaps` from voice `report_absence` | **Fixed.** The server resolves the staff name and the end time from the roster; unknown, ambiguous or unrostered → a clarifying question, never a guess, and no gap is created. |
+| 4. `/approvals` payload | **Fixed.** UI sends `nonce` and `approve`/`reject`. |
+| 5. Cancel response | **Fixed in the UI.** Cancel shows "cancel requested"; polling then shows CANCELLED once the workflow appends `gap.cancelled`. |
+| 6. Fallback option IDs | **Fixed.** UI uses the backend's `borrow, reduced_service, lead_covers, agency, unfilled`, labelled in the mapping layer. |
+| 7. `id` vs `gap_id`/`plan_id`/… | **Fixed** in `viewModel.ts`. |
+| 8. `must_fill_by` | **Fixed.** The countdown target is `t_esc_locked`; seconds remaining come from the server (`clock.seconds_to_escalation`). `pending_approval` is gone from the gap document. |
+| 9. Plan shape, two-person splits | **Fixed.** Every segment shows its own person, times, breaks, travel and arrival. |
+| 10. Cents vs SGD; per-candidate saving | **Fixed.** Cents end to end; the backend adds `saves_vs_naive_cents` per plan (decision 0014 comparator), shown as "less/more overtime than the usual first pick (Priya)", with a synthetic-wages note. |
+| 11. `rules_checked` objects | **Fixed.** |
+| 12. `rejected_rules` location | **Fixed.** Mapping reads `plan.rejected`. |
+| 13. Severity and source | **Fixed.** UI shows the rule **kind** (Hard rule, Data gate), not P0/P1/P2; publisher and section come from the rule spec through the projection. SFA and part-time rules link to their own pages (tested). |
+| 14. Approval decision values | **Fixed** (`approve`/`reject`). |
+| 15. Offer status values | **Fixed.** Backend statuses with display labels. |
+| 16. Breaks; `covered` shift status | **Fixed.** Breaks are start plus duration. The UI no longer reads shifts, so `covered` is moot. |
+| 17. Ledger `month` | **Obsolete.** The UI no longer reads ledgers. |
+| 18. Event `from_state` null, `payload.summary`, mock actors | **Fixed.** Trace view maps null to "(none)" and summarises scalar payload fields; mock events are gone. |
+| 19. Mock-only values (outlet names, 44 h) | **Fixed.** Mock data removed; replay shows recorded real responses (decision 0017). |
+| 20. Client reads of `staff`, `quarantine` | **Fixed by decision 0015.** No client Firestore reads; names come in projections; quarantine has its own route. |
+| 21. Nonce in a readable document | **Fixed.** Server-only `server/{gapId}`; only `GET /gaps/{id}/approval` returns it, only while pending. Leak test over every read route. |
+| 22. No read path for offers | **Fixed.** Offers are in the gap view, without callback URLs. |
+| 23. Voice token and model | Route **fixed**; voice **open** (Slice 4); every model ID still `TODO-VERIFY`. |
+
+### Still open
+- Voice (Slice 4), BigQuery evals (Slice 6), the guard model and an adversarial scenario (Slice 5; the J4 button is omitted, see OPEN_ITEMS).
+- Typed text: with an approval pending, it is sent as a voice-channel transcript (the server decides yes or no). Typed absence reports are not parsed in the browser; they need the voice tools.
+- Nothing is deployed. On Cloud Run, set `ALLOWED_ORIGINS` to the Firebase Hosting origin, and point the web build's `VITE_API_BASE_URL` at the `api` URL.
+- The dev server keeps one shared roster per session (decision 0018).
+
+### How to run locally
+```
+python -m evals.runners.dev_server --port 8080                     # repo root; ALLOWED_ORIGINS defaults to http://localhost:3000
+cd web && VITE_API_BASE_URL=http://127.0.0.1:8080 npm run dev      # then open http://localhost:3000
+cd web && npx playwright test                                      # starts both servers itself
+python -m evals.runners.capture_fixtures                           # after an intended backend shape change
+```

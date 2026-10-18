@@ -47,11 +47,11 @@ export function formatRuleWarningText(input: RuleWarningInput): string {
 export function getThrottledAriaCountdown(totalSecondsRemaining: number): string {
   const minutesCeiling = Math.ceil(totalSecondsRemaining / 60);
   if (totalSecondsRemaining <= 0) {
-    return 'Must-fill-by deadline reached.';
+    return 'Escalation time reached.';
   }
   if (minutesCeiling <= 5) {
-    return `${minutesCeiling} minute${minutesCeiling === 1 ? '' : 's'} remaining until must-fill-by deadline.`;
+    return `${minutesCeiling} minute${minutesCeiling === 1 ? '' : 's'} remaining until CoverCall escalates to you.`;
   }
   const bucket5 = Math.ceil(minutesCeiling / 5) * 5;
-  return `Approximately ${bucket5} minutes remaining until must-fill-by deadline.`;
+  return `Approximately ${bucket5} minutes remaining until CoverCall escalates to you.`;
 }

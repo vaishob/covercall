@@ -35,6 +35,10 @@ class SimClock:
         if t > self.current:
             self.current = t
 
+    def reset_to(self, t: datetime) -> None:
+        """Local dev server only: a new scenario sets the simulated "now" (may move back)."""
+        self.current = t
+
 
 @dataclass
 class CompressedClock:  # pragma: no cover - Cloud Run demo clock

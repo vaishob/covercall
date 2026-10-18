@@ -1,12 +1,13 @@
 """Deterministic local driver for ``workflows/coverage_cascade.yaml`` (docs/decisions/0010).
 
 Cloud Workflows has no local emulator. This driver executes the same state machine, step for step
-(``self.step("<yaml step name>")``), through the same ``api`` routes (FastAPI ``TestClient``), with:
+(``step("<yaml step name>")``), through the same ``api`` routes (FastAPI ``TestClient``), with:
 
 - a simulated clock (nothing sleeps; time jumps to the next reply or timeout),
 - ``MemoryStore`` in place of Firestore (default and ``sim`` databases kept separate),
 - simulated personas from the ``sim`` store and scenario overrides (persona-sim logic),
-- a simulated lead who approves by tap and picks the first ranked fallback immediately.
+- a lead who is either simulated ("auto": approves by tap and picks the first ranked fallback at
+  once) or real ("external": the local dev server waits for the browser's tap).
 
 ``python -m evals.runners.local_cascade`` runs J2 (S-017) and J3 (S-002, nobody replies) and exits
 non-zero unless both end in the expected terminal outcome with ``verify_chain`` OK, zero violations
@@ -18,7 +19,10 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from dataclasses import dataclass, field
+import threading
+import time
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from pathlib import Path
@@ -51,6 +55,7 @@ from services.common.store import MemoryStore
 from services.persona_sim.app import logic as persona_sim
 
 MAX_ROUNDS = 80
+Observer = Callable[[str, str], None]  # (gap_id, yaml step name) after each step
 
 
 @dataclass
@@ -62,211 +67,268 @@ class _Branch:
     done: bool = False
 
 
-@dataclass
-class LocalRun:
-    scenario: dict[str, Any]
-    data: dict[str, Any]
-    cfg: dict[str, Any]
-    rules: list[dict[str, Any]]
-    time_limit_s: float | None = None
-    guard_fails: bool = False
-    trace: list[str] = field(default_factory=list)
+class _LeadTimeout(Exception):
+    """An external lead did not answer before the wait expired (the YAML's TimeoutError path)."""
 
-    def __post_init__(self) -> None:
-        self.clock = SimClock(datetime.fromisoformat(self.scenario["now"]))
+
+class LocalRun:
+    """A local environment (stores, clock, api, persona-sim) plus the workflow driver."""
+
+    def __init__(self, scenario: dict[str, Any] | None, data: dict[str, Any], cfg: dict[str, Any],
+                 rules: list[dict[str, Any]], time_limit_s: float | None = None,
+                 guard_fails: bool = False, scenarios: list[dict[str, Any]] | None = None,
+                 allowed_origins: list[str] | None = None):
+        self.scenario = scenario
+        self.data, self.cfg, self.rules = data, cfg, rules
+        self.trace: list[str] = []
+        self.observer: Observer | None = None
+        start = (scenario or (scenarios or [{}])[0]).get("now")
+        if not start:
+            raise ValueError("need a scenario to start the simulated clock")
+        self.clock = SimClock(datetime.fromisoformat(start))
         self.store, self.sim = MemoryStore(), MemoryStore()
-        _seed(self.store, self.sim, self.data, self.scenario)
+        for scen in ([scenario] if scenario else []) + list(scenarios or []):
+            _seed(self.store, self.sim, data, scen)
         self.callbacks = QueueCallbacks()
         self.messenger = RecordingMessenger(on_offer=self._persona_receives)
-        self.api = Api(self.store, self.cfg, self.rules, self.clock, LocalGuard(fail=self.guard_fails),
-                       LocalAgent(self.cfg), self.messenger, self.callbacks, RecordingLauncher(),
-                       solver=partial(solve, time_limit_s=self.time_limit_s))
-        self.client = TestClient(create_app(self.api, internal_auth=lambda: None))
+        self.api = Api(self.store, cfg, rules, self.clock, LocalGuard(fail=guard_fails),
+                       LocalAgent(cfg), self.messenger, self.callbacks, RecordingLauncher(),
+                       solver=partial(solve, time_limit_s=time_limit_s))
+        self.app = create_app(self.api, internal_auth=lambda: None,
+                              allowed_origins=allowed_origins or ["http://localhost:3000"])
+        self.client = TestClient(self.app)
         self._cb = 0
+        self._lock = threading.Lock()
+        self.gap_id = ""
 
     # ---------------------------------------------------------------- plumbing
-    def step(self, name: str) -> None:
+    def step(self, name: str, gap_id: str = "") -> None:
         self.trace.append(name)
+        if self.observer is not None:
+            self.observer(gap_id or self.gap_id, name)
 
-    def post(self, path: str, body: dict[str, Any]) -> dict[str, Any]:
-        resp = self.client.post(path, json=body)
+    def post(self, path: str, body: dict[str, Any], client: TestClient | None = None) -> dict[str, Any]:
+        resp = (client or self.client).post(path, json=body)
         if resp.status_code != 200:
             raise RuntimeError(f"{path} -> {resp.status_code}: {resp.text}")
         return dict(resp.json())
 
-    def transition(self, key: str, body: dict[str, Any]) -> dict[str, Any]:
-        return self.post("/internal/transition", dict(body, gap_id=self.gap_id,
-                                                      idempotency_key=f"local:{self.gap_id}:{key}"))
+    def get(self, path: str, client: TestClient | None = None) -> Any:
+        resp = (client or self.client).get(path)
+        if resp.status_code != 200:
+            raise RuntimeError(f"GET {path} -> {resp.status_code}: {resp.text}")
+        return resp.json()
 
-    def create_callback(self) -> str:
-        self._cb += 1
-        return f"local://callback/{self.gap_id}/{self._cb}"
+    def transition(self, key: str, body: dict[str, Any], gap_id: str = "",
+                   client: TestClient | None = None) -> dict[str, Any]:
+        gid = gap_id or self.gap_id
+        return self.post("/internal/transition",
+                         dict(body, gap_id=gid, idempotency_key=f"local:{gid}:{key}"), client)
+
+    def create_callback(self, gap_id: str = "") -> str:
+        with self._lock:
+            self._cb += 1
+            return f"local://callback/{gap_id or self.gap_id}/{self._cb}"
 
     def _persona_receives(self, message: dict[str, Any]) -> None:
         offer = {"offer_id": message["offer_id"], "staff_id": message["staff_id"],
                  "start": message["start"], "end": message["end"], "attempt": message["attempt"]}
-        persona_sim.schedule(self.sim, offer, self.sim.get(f"scenarios/{self.scenario['id']}") or {},
-                             self.clock.now())
+        scenario = self.sim.get(f"scenarios/{message.get('scenario_id')}") or {}
+        persona_sim.schedule(self.sim, offer, scenario, self.clock.now())
 
-    def _deliver_due(self) -> None:
+    def _deliver_due(self, client: TestClient | None = None) -> None:
         for item in persona_sim.due(self.sim, self.clock.now()):
             persona_sim.mark_delivered(self.sim, item["message_id"])
             self.post("/replies", {"message_id": item["message_id"], "offer_id": item["offer_id"],
-                                   "text": item["text"], "channel": "sim"})
+                                   "text": item["text"], "channel": "sim"}, client)
 
-    def _await_single(self, url: str) -> dict[str, Any] | None:
-        """``events.await_callback`` for the lead's waits (the simulated lead answers at once)."""
-        queue = self.callbacks.queues.get(url) or []
-        return queue.pop(0) if queue else None
-
-    def _lead_acts(self, url: str, kind: str) -> None:
-        gap = self.store.get(f"gaps/{self.gap_id}") or {}
+    def _lead_acts(self, url: str, kind: str, gap_id: str = "", client: TestClient | None = None) -> None:
+        """The simulated lead: approve by tap, or pick the first ranked fallback, at once."""
+        gid = gap_id or self.gap_id
         if kind == "approval":
-            self.post("/approvals", {"gap_id": self.gap_id, "nonce": gap["pending_approval"]["nonce"],
-                                     "decision": "approve", "channel": "tap", "transcript": ""})
+            pending = self.get(f"/gaps/{gid}/approval", client)
+            self.post("/approvals", {"gap_id": gid, "nonce": pending["nonce"], "decision": "approve",
+                                     "channel": "tap", "transcript": ""}, client)
         else:
-            self.post("/fallbacks", {"gap_id": self.gap_id, "option": gap["fallbacks"][0]})
+            view = self.get(f"/gaps/{gid}", client)
+            self.post("/fallbacks", {"gap_id": gid, "option": view["gap"]["fallbacks"][0]}, client)
+
+    def _await_lead(self, url: str, kind: str, gap_id: str, client: TestClient, lead: str,
+                    timeout_s: float) -> dict[str, Any]:
+        if lead == "auto":
+            self._lead_acts(url, kind, gap_id, client)
+        deadline = time.monotonic() + timeout_s
+        while True:
+            queue = self.callbacks.queues.get(url) or []
+            if queue:
+                return queue.pop(0)
+            if lead == "auto" or time.monotonic() > deadline:
+                raise _LeadTimeout(kind)
+            time.sleep(0.1)
 
     # ---------------------------------------------------------------- the workflow
     def run(self) -> dict[str, Any]:
-        sid = self.scenario["id"]
-        self.gap_id = self.post("/gaps", {"scenario_id": sid})["gap_id"]
-        self.step("init")
-        self.step("guard_input")
-        g = self.post("/internal/guard-input", {"gap_id": self.gap_id})
-        self.step("guard_route")
+        if self.scenario is None:
+            raise ValueError("run() needs a scenario")
+        self.gap_id = self.post("/gaps", {"scenario_id": self.scenario["id"]})["gap_id"]
+        self.execute(self.gap_id)
+        return self._finish()
+
+    def execute(self, gap_id: str, client: TestClient | None = None, lead: str = "auto",
+                pace_s: float = 0.0, lead_timeout_s: float = 1800.0) -> None:
+        """Run coverage-cascade for ``gap_id`` (the YAML ``main``), step by step."""
+        c = client or self.client
+        step = partial(self.step, gap_id=gap_id)
+        tr = partial(self.transition, gap_id=gap_id, client=c)
+        post = partial(self.post, client=c)
+        step("init")
+        step("guard_input")
+        g = post("/internal/guard-input", {"gap_id": gap_id})
+        step("guard_route")
         if g["status"] == "unavailable":
-            self.step("guard_unavailable")
-            self.transition("guard.unavailable", {"type": "guard.unavailable", "actor": "system",
-                                                  "payload": {"guard_impl": "stub-v0"}})
-            return self._finish()
+            step("guard_unavailable")
+            tr("guard.unavailable", {"type": "guard.unavailable", "actor": "system",
+                                     "payload": {"guard_impl": "stub-v0"}})
+            return
         if g["status"] != "ok":
-            self.step("guard_flagged")
-            self.transition("guard.flagged", {"type": "guard.flagged", "actor": "system",
-                                              "payload": {"labels": g["labels"], "guard_impl": "stub-v0"}})
-            return self._finish()
-        self.step("guarded")
-        self.transition("input.guarded", {"type": "input.guarded", "actor": "system",
-                                          "payload": {"guard_impl": "stub-v0", "labels": g["labels"]}})
-        nxt = "solve"
-        plan_id = ""
-        rounds = 0
+            step("guard_flagged")
+            tr("guard.flagged", {"type": "guard.flagged", "actor": "system",
+                                 "payload": {"labels": g["labels"], "guard_impl": "stub-v0"}})
+            return
+        step("guarded")
+        tr("input.guarded", {"type": "input.guarded", "actor": "system",
+                             "payload": {"guard_impl": "stub-v0", "labels": g["labels"]}})
+        nxt, plan_id, rounds = "solve", "", 0
+        n: dict[str, Any] = {}
         while nxt != "done":
             if nxt == "solve":
-                self.step("solve")
-                s = self.post("/internal/solve", {"gap_id": self.gap_id})
-                self.step("solve_route")
+                step("solve")
+                s = post("/internal/solve", {"gap_id": gap_id})
+                step("solve_route")
                 if s["status"] == "disagreement":
-                    self.step("disagreement")
-                    self.transition("plan.disagreement", {"type": "plan.disagreement", "actor": "system",
-                                                          "rule_ids": s["rule_ids"],
-                                                          "payload": {"details": s["details"]}})
+                    step("disagreement")
+                    tr("plan.disagreement", {"type": "plan.disagreement", "actor": "system",
+                                             "rule_ids": s["rule_ids"], "payload": {"details": s["details"]}})
                     nxt = "done"
                     continue
-                self.step("solved")
-                self.transition(f"plan.solved:{s['plan_id']}", {
-                    "type": "plan.solved", "actor": "system", "rule_ids": s["rule_ids"],
-                    "payload": {"plan_id": s["plan_id"], "status": s["status"]}})
-                self.step("set_plan")
+                step("solved")
+                tr(f"plan.solved:{s['plan_id']}", {"type": "plan.solved", "actor": "system",
+                                                   "rule_ids": s["rule_ids"],
+                                                   "payload": {"plan_id": s["plan_id"], "status": s["status"]}})
+                step("set_plan")
                 plan_id = s["plan_id"]
                 nxt = "approval_cb"
             elif nxt == "approval_cb":
-                self.step("approval_cb")
-                acb = self.create_callback()
-                self.step("approval_req")
-                self.post("/internal/approval-request", {"gap_id": self.gap_id, "plan_id": plan_id,
-                                                         "callback_url": acb})
-                self.step("await_approval")
-                self._lead_acts(acb, "approval")
-                ar = self._await_single(acb) or {}
-                self.step("approval_route")
+                step("approval_cb")
+                acb = self.create_callback(gap_id)
+                step("approval_req")
+                post("/internal/approval-request", {"gap_id": gap_id, "plan_id": plan_id, "callback_url": acb})
+                step("await_approval")
+                try:
+                    ar = self._await_lead(acb, "approval", gap_id, c, lead, lead_timeout_s)
+                except _LeadTimeout:
+                    step("approval_timeout")
+                    step("cancel_no_approval")
+                    tr("gap.cancelled", {"type": "gap.cancelled", "actor": "system",
+                                         "payload": {"reason": "no lead approval before the wait expired"}})
+                    nxt = "done"
+                    continue
+                step("approval_route")
                 if ar.get("cancel"):
                     nxt = "cancelled"
                 elif ar.get("decision") == "approve":
-                    self.step("approved")
-                    self.transition(f"plan.approved:{ar['approval_id']}", {
-                        "type": "plan.approved", "actor": "lead", "payload": {"approval_id": ar["approval_id"]}})
+                    step("approved")
+                    tr(f"plan.approved:{ar['approval_id']}", {"type": "plan.approved", "actor": "lead",
+                                                              "payload": {"approval_id": ar["approval_id"]}})
                     nxt = "outreach"
                 else:
-                    self.step("rejected")
-                    self.transition(f"plan.rejected:{ar['approval_id']}", {
-                        "type": "plan.rejected", "actor": "lead", "payload": {"approval_id": ar["approval_id"]}})
+                    step("rejected")
+                    tr(f"plan.rejected:{ar['approval_id']}", {"type": "plan.rejected", "actor": "lead",
+                                                              "payload": {"approval_id": ar["approval_id"]}})
                     nxt = "solve"
             elif nxt == "outreach":
                 rounds += 1
                 if rounds > MAX_ROUNDS:
-                    raise RuntimeError(f"{sid}: more than {MAX_ROUNDS} outreach rounds")
-                self.step("outreach")
-                self.step("next_offers")
-                n = self.post("/internal/next-offers", {"gap_id": self.gap_id})
-                self.step("outreach_route")
+                    raise RuntimeError(f"{gap_id}: more than {MAX_ROUNDS} outreach rounds")
+                step("outreach")
+                step("next_offers")
+                n = post("/internal/next-offers", {"gap_id": gap_id})
+                step("outreach_route")
                 if n["mode"] == "escalate":
                     nxt = "escalate"
-                    self._n = n
                     continue
-                self.step("send_offers")
-                winner, cancelled = self._parallel_offers(n, rounds)
-                self.step("after_offers")
+                step("send_offers")
+                winner, cancelled = self._parallel_offers(gap_id, n, rounds, c, pace_s)
+                step("after_offers")
                 if cancelled:
                     nxt = "cancelled"
                 elif winner:
                     nxt = "commit"
                 else:
-                    self.step("counters")
-                    cr = self.post("/internal/counter-resolve", {"gap_id": self.gap_id})
-                    self.step("counter_route")
+                    step("counters")
+                    cr = post("/internal/counter-resolve", {"gap_id": gap_id})
+                    step("counter_route")
                     if cr.get("to_state") == "SOLVED":
-                        self.step("reapprove")
+                        step("reapprove")
                         plan_id = cr["plan_id"]
                         nxt = "approval_cb"
                     else:
                         nxt = "outreach"
             elif nxt == "commit":
-                self.step("commit")
-                c = self.post("/internal/commit", {"gap_id": self.gap_id})
-                self.step("commit_route")
-                nxt = "done" if c["result"] == "ok" else "outreach"
+                step("commit")
+                result = post("/internal/commit", {"gap_id": gap_id})
+                step("commit_route")
+                nxt = "done" if result["result"] == "ok" else "outreach"
             elif nxt == "escalate":
-                self.step("escalate")
-                self.transition("escalation.due", {"type": "escalation.due", "actor": "system",
-                                                   "payload": {"t_esc": self._n["t_esc"],
-                                                               "reason": self._n["reason"]}})
-                self.step("fallback_cb")
-                fcb = self.create_callback()
-                self.step("fallback_req")
-                self.post("/internal/escalation-request", {"gap_id": self.gap_id, "callback_url": fcb})
-                self.step("await_fallback")
-                self._lead_acts(fcb, "fallback")
-                fr = self._await_single(fcb) or {}
-                self.step("fallback_route")
+                step("escalate")
+                tr("escalation.due", {"type": "escalation.due", "actor": "system",
+                                      "payload": {"t_esc": n["t_esc"], "reason": n["reason"]}})
+                step("fallback_cb")
+                fcb = self.create_callback(gap_id)
+                step("fallback_req")
+                post("/internal/escalation-request", {"gap_id": gap_id, "callback_url": fcb})
+                step("await_fallback")
+                try:
+                    fr = self._await_lead(fcb, "fallback", gap_id, c, lead, lead_timeout_s)
+                except _LeadTimeout:
+                    step("fallback_timeout")
+                    step("resolve_unfilled")
+                    tr("fallback.chosen", {"type": "fallback.chosen", "actor": "system",
+                                           "payload": {"option": "unfilled",
+                                                       "reason": "no fallback chosen before the wait expired"}})
+                    nxt = "done"
+                    continue
+                step("fallback_route")
                 if fr.get("cancel"):
                     nxt = "cancelled"
                     continue
-                self.step("resolved")
-                self.transition("fallback.chosen", {"type": "fallback.chosen", "actor": "lead",
-                                                    "payload": {"option": fr["option"]}})
+                step("resolved")
+                tr("fallback.chosen", {"type": "fallback.chosen", "actor": "lead",
+                                       "payload": {"option": fr["option"]}})
                 nxt = "done"
             elif nxt == "cancelled":
-                self.step("cancelled")
-                self.transition("gap.cancelled", {"type": "gap.cancelled", "actor": "lead",
-                                                  "payload": {"reason": "lead cancelled"}})
+                step("cancelled")
+                tr("gap.cancelled", {"type": "gap.cancelled", "actor": "lead",
+                                     "payload": {"reason": "lead cancelled"}})
                 nxt = "done"
-        self.step("done")
-        return self._finish()
+        step("done")
 
-    def _parallel_offers(self, n: dict[str, Any], rnd: int) -> tuple[str | None, bool]:
+    def _parallel_offers(self, gap_id: str, n: dict[str, Any], rnd: int, c: TestClient,
+                         pace_s: float) -> tuple[str | None, bool]:
         """The ``send_offers`` parallel for-loop: one callback endpoint and one wait per offer."""
+        step = partial(self.step, gap_id=gap_id)
+        post = partial(self.post, client=c)
         branches: list[_Branch] = []
         winner: str | None = None
         cancelled = False
         start = self.clock.now()
         for offer in n["offers"]:
-            self.step("create_cb")
-            url = self.create_callback()
-            self.step("register_offer")
-            reg = self.post("/internal/offers", {
-                "gap_id": self.gap_id, "offer": offer, "callback_url": url, "window_s": n["window_s"],
-                "fanout_group": f"{n['mode']}:{rnd}", "key": f"local:{self.gap_id}:offer:{rnd}:{offer['staff_id']}"})
+            step("create_cb")
+            url = self.create_callback(gap_id)
+            step("register_offer")
+            reg = post("/internal/offers", {
+                "gap_id": gap_id, "offer": offer, "callback_url": url, "window_s": n["window_s"],
+                "fanout_group": f"{n['mode']}:{rnd}", "key": f"local:{gap_id}:offer:{rnd}:{offer['staff_id']}"})
             deadline = datetime.fromtimestamp(start.timestamp() + n["window_s_real"], start.tzinfo)
             branches.append(_Branch(offer, url, reg["offer_id"], deadline))
         while any(not b.done for b in branches):
@@ -278,65 +340,68 @@ class LocalRun:
                 reply = queue.pop(0)
                 progressed = True
                 b.done = True
-                self.step("wait_reply")
-                self.step("reply_route")
+                step("wait_reply")
+                step("reply_route")
                 if reply.get("withdrawn"):
                     continue
                 if reply.get("cancel"):
-                    self.step("mark_cancel")
+                    step("mark_cancel")
                     cancelled = True
                     continue
-                self.step("read_reply")
-                r = self.post("/internal/reply", {"offer_id": b.offer_id, "message_id": reply["message_id"]})
-                self.step("classify")
+                step("read_reply")
+                r = post("/internal/reply", {"offer_id": b.offer_id, "message_id": reply["message_id"]})
+                step("classify")
                 if r["flagged"]:
-                    self.step("on_flagged")
-                    self.post("/internal/offer-outcome", {"offer_id": b.offer_id, "outcome": "flagged",
-                                                          "info": {"guard_labels": r["guard_labels"],
-                                                                   "guard_impl": r["guard_impl"]}})
+                    step("on_flagged")
+                    post("/internal/offer-outcome", {"offer_id": b.offer_id, "outcome": "flagged",
+                                                     "info": {"guard_labels": r["guard_labels"],
+                                                              "guard_impl": r["guard_impl"]}})
                 elif r["parsed"]["intent"] == "accept":
-                    self.step("on_accept")
-                    acc = self.post("/internal/accept", {"offer_id": b.offer_id, "info": {
+                    step("on_accept")
+                    acc = post("/internal/accept", {"offer_id": b.offer_id, "info": {
                         "parser_impl": r["parsed"]["parser_impl"], "guard_impl": r["guard_impl"]}})
-                    self.step("accept_route")
+                    step("accept_route")
                     if acc["won"]:
-                        self.step("set_winner")
+                        step("set_winner")
                         winner = b.offer_id
                 elif r["parsed"]["intent"] == "counter":
-                    self.step("on_counter")
-                    self.post("/internal/counter", {"offer_id": b.offer_id, "window": r["parsed"]["counter_window"],
-                                                    "info": {"parser_impl": r["parsed"]["parser_impl"]}})
+                    step("on_counter")
+                    post("/internal/counter", {"offer_id": b.offer_id, "window": r["parsed"]["counter_window"],
+                                               "info": {"parser_impl": r["parsed"]["parser_impl"]}})
                 else:
-                    self.step("on_decline")
-                    self.post("/internal/offer-outcome", {"offer_id": b.offer_id, "outcome": "decline", "info": {
+                    step("on_decline")
+                    post("/internal/offer-outcome", {"offer_id": b.offer_id, "outcome": "decline", "info": {
                         "intent": r["parsed"]["intent"], "reason_category": r["parsed"]["reason_category"],
                         "parser_impl": r["parsed"]["parser_impl"], "guard_impl": r["guard_impl"]}})
             if progressed:
                 continue
+            if pace_s:
+                time.sleep(pace_s)  # dev server only: let a viewer see each step
             open_deadlines = [b.deadline for b in branches if not b.done]
             due = persona_sim.next_due_time(self.sim)
             if due is not None and due <= min(open_deadlines):
                 self.clock.advance_to(due)
-                self._deliver_due()
+                self._deliver_due(c)
                 continue
             t = min(open_deadlines)
             self.clock.advance_to(t)
             for b in branches:
                 if not b.done and b.deadline <= t:
                     b.done = True
-                    self.step("wait_reply")
-                    self.step("on_offer_timeout")
-                    self.post("/internal/offer-outcome", {"offer_id": b.offer_id, "outcome": "timeout"})
+                    step("wait_reply")
+                    step("on_offer_timeout")
+                    post("/internal/offer-outcome", {"offer_id": b.offer_id, "outcome": "timeout"})
         return winner, cancelled
 
-    def _finish(self) -> dict[str, Any]:
+    def _finish(self, gap_id: str = "") -> dict[str, Any]:
+        gid = gap_id or self.gap_id
         # Late replies still in the outbox arrive after the outcome: they must get a courtesy reply.
         while (due := persona_sim.next_due_time(self.sim)) is not None:
             self.clock.advance_to(due)
             self._deliver_due()
-        gap = self.store.get(f"gaps/{self.gap_id}") or {}
-        events = [ev for _, ev in self.store.list(f"gaps/{self.gap_id}/events")]
-        offers = [o for _, o in self.store.list("offers") if o["gap_id"] == self.gap_id]
+        gap = self.store.get(f"gaps/{gid}") or {}
+        events = [ev for _, ev in self.store.list(f"gaps/{gid}/events")]
+        offers = [o for _, o in self.store.list("offers") if o["gap_id"] == gid]
         segments = (gap.get("committing") or {}).get("segments") or [] if gap.get("state") == "FILLED" else []
         cost = (gap.get("committing") or {}).get("cost_breakdown") if segments else None
         cost = cost or {"base_cents": 0, "overtime_cents": 0, "rest_day_cents": 0, "total_cents": 0}
@@ -357,10 +422,10 @@ class LocalRun:
                 1 for s in segments
                 if filled.timestamp() + 60 * int(travel[s["staff_id"]][gap["outlet"]])
                 > datetime.fromisoformat(s["start"]).timestamp())
-        chain = verify_chain(self.store, self.gap_id)
+        chain = verify_chain(self.store, gid)
         return {
-            "scenario_id": self.scenario["id"],
-            "gap_id": self.gap_id,
+            "scenario_id": gap.get("scenario_id"),
+            "gap_id": gid,
             "state": gap.get("state"),
             "outcome": gap.get("outcome"),
             "assignment": [{"staff_id": s["staff_id"], "start": s["start"], "end": s["end"]} for s in segments],
@@ -387,20 +452,21 @@ class LocalRun:
 
 
 def _seed(store: MemoryStore, sim: MemoryStore, data: dict[str, Any], scenario: dict[str, Any]) -> None:
-    for sid, rec in data["staff"].items():
-        store.set(f"staff/{sid}", rec)
-    for oid, rec in data["outlets"].items():
-        store.set(f"outlets/{oid}", rec)
-    for s in data["shifts"]:
-        store.set(f"shifts/{s['shift_id']}", s)
-    for lid, rec in data["ledgers"].items():
-        store.set(f"ledgers/{lid}", rec)
-    store.set("config/travel", dict(data["travel_meta"], staff_to_outlet_min=data["travel"]))
+    if store.get("config/travel") is None:
+        for sid, rec in data["staff"].items():
+            store.set(f"staff/{sid}", rec)
+        for oid, rec in data["outlets"].items():
+            store.set(f"outlets/{oid}", rec)
+        for s in data["shifts"]:
+            store.set(f"shifts/{s['shift_id']}", s)
+        for lid, rec in data["ledgers"].items():
+            store.set(f"ledgers/{lid}", rec)
+        store.set("config/travel", dict(data["travel_meta"], staff_to_outlet_min=data["travel"]))
+        for pid, rec in data["personas"].items():
+            sim.set(f"personas/{pid}", rec)
     public: dict[str, Any] = {k: scenario[k] for k in ("id", "description", "now", "seed", "gap") if k in scenario}
     public["overrides"] = scenario.get("overrides") or []
     store.set(f"scenarios/{scenario['id']}", dict(public, synthetic=True))  # no personas here
-    for pid, rec in data["personas"].items():
-        sim.set(f"personas/{pid}", rec)
     sim.set(f"scenarios/{scenario['id']}", dict(scenario))
 
 
@@ -410,7 +476,7 @@ def run_scenario(scenario: dict[str, Any], data: dict[str, Any] | None = None,
                     time_limit_s=time_limit_s, **kw).run()
 
 
-def _load(sid: str) -> dict[str, Any]:
+def load_scenario(sid: str) -> dict[str, Any]:
     return dict(yaml.safe_load(Path(f"evals/datasets/golden/{sid}.yaml").read_text(encoding="utf-8")))
 
 
@@ -460,7 +526,7 @@ def main(argv: list[str] | None = None) -> int:
     failures: list[str] = []
     report = {}
     for journey, sid, check in (("J2", "S-017", check_j2), ("J3", "S-002", check_j3)):
-        res = run_scenario(_load(sid), data)
+        res = run_scenario(load_scenario(sid), data)
         problems = check(res) + common_checks(res)
         failures += [f"{journey} {p}" for p in problems]
         report[journey] = res
