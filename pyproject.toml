@@ -3,7 +3,7 @@ name = "covercall"
 version = "0.2.0"
 description = "CoverCall — Provably legal shift absence coverage engine and outreach cascade (All data is synthetic)"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "ortools>=9.10",
     "pyyaml>=6.0",
@@ -23,6 +23,7 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.10",
     "httpx>=0.27",
+    "types-PyYAML>=6.0",
 ]
 
 [tool.pytest.ini_options]
@@ -39,7 +40,7 @@ select = ["E", "F", "I", "W"]
 ignore = ["E501"]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 ignore_missing_imports = true
 check_untyped_defs = true
 files = ["policy", "datagen", "baseline", "evals", "services", "tests"]
