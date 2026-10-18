@@ -24,7 +24,7 @@ gcloud run services update-traffic "${SERVICE}" \
 ```
 
 ## 3. Rotate Secrets in Secret Manager
-Secrets are stored only in Secret Manager (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `ROUTES_API_KEY`).
+Secrets are stored only in Secret Manager: `GEMINI_API_KEY` (read only by `api`, to mint Live API ephemeral tokens), and from Slice 7 `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `ROUTES_API_KEY`. After adding a `GEMINI_API_KEY` version, redeploy `covercall-api` so it picks up `:latest`.
 ```bash
 echo -n "${NEW_SECRET_VALUE}" | gcloud secrets versions add TELEGRAM_BOT_TOKEN --data-file=-
 gcloud run services update covercall-connectors --region="asia-southeast1" \

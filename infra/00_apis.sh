@@ -14,6 +14,7 @@ gcloud services enable --project "$PROJECT_ID" \
   iam.googleapis.com \
   iamcredentials.googleapis.com \
   aiplatform.googleapis.com \
+  generativelanguage.googleapis.com \
   cloudtrace.googleapis.com \
   logging.googleapis.com \
   monitoring.googleapis.com \

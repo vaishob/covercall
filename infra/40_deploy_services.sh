@@ -22,12 +22,13 @@ invoker() {  # invoker <service> <caller-sa>
 
 deploy solver private 0
 deploy guard private 1
-deploy agent private 1 --update-env-vars "AGENT_IMPL=stub-v0"
+deploy agent private 1 --update-env-vars "AGENT_IMPL=stub-v0,GOOGLE_CLOUD_PROJECT=${PROJECT_ID}"
 deploy connectors private 0
-deploy api public 1
+# GEMINI_API_KEY: required Secret Manager entry (infra/25_secrets.sh checks it exists); api only.
+deploy api public 1 --update-secrets "GEMINI_API_KEY=GEMINI_API_KEY:latest"
 API_URL="$(url api)"
-deploy persona-sim private 1 --no-cpu-throttling --update-env-vars "API_URL=${API_URL},TIME_SCALE=${TIME_SCALE}"
-deploy api public 1 --update-env-vars "API_URL=${API_URL},TIME_SCALE=${TIME_SCALE},GOOGLE_CLOUD_PROJECT=${PROJECT_ID},WORKFLOW_SA_EMAIL=$(sa_email workflow),SOLVER_URL=$(url solver),GUARD_URL=$(url guard),PERSONA_SIM_URL=$(url persona-sim)"
+deploy persona-sim private 1 --no-cpu-throttling --update-env-vars "API_URL=${API_URL},TIME_SCALE=${TIME_SCALE},GOOGLE_CLOUD_PROJECT=${PROJECT_ID}"
+deploy api public 1 --update-secrets "GEMINI_API_KEY=GEMINI_API_KEY:latest" --update-env-vars "API_URL=${API_URL},TIME_SCALE=${TIME_SCALE},GOOGLE_CLOUD_PROJECT=${PROJECT_ID},WORKFLOW_SA_EMAIL=$(sa_email workflow),SOLVER_URL=$(url solver),GUARD_URL=$(url guard),PERSONA_SIM_URL=$(url persona-sim)"
 
 invoker solver api
 invoker guard api

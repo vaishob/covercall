@@ -2,7 +2,8 @@
 
 The reply intent comes from ``datagen.personas.decide_reply`` (scenario ``will`` wins). Surface text
 is a fixed template chosen from that intent: ``text_impl: stub-v0``, deterministic, NOT a model.
-Gemini Flash writes the text once the ``persona_sim`` model is pinned (config/models.yaml).
+The ``persona_sim`` model is pinned (config/models.yaml), but Gemini Flash writes the text only once
+that is explicitly enabled, through ``services.common.models.enterprise_client``.
 
 Delivery (docs/decisions/0012-persona-delivery.md): a scheduled reply is written to
 ``outbox/{message_id}`` in the ``sim`` store with ``deliver_at``; ``due`` returns what should be

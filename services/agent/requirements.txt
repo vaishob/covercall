@@ -3,3 +3,4 @@ uvicorn>=0.29
 pydantic>=2.0
 pyyaml>=6.0
 ortools>=9.10
+google-genai>=2.31

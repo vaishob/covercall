@@ -7,7 +7,8 @@
 - ``draft_offer``: a staff message under ``draft_max_chars`` stating outlet, start, end, pay basis.
 
 The model-backed implementation (ADK + Gemini Flash) is only allowed once ``config/models.yaml``
-pins the ``agent`` model; ``require_impl`` refuses to start otherwise (no silent fallback).
+pins the ``agent`` model; ``require_impl`` refuses to start otherwise (no silent fallback). Its client
+comes from ``services.common.models.enterprise_client`` (``enterprise=True``, ``location: global``).
 """
 
 from __future__ import annotations
