@@ -23,4 +23,6 @@ expect:
     end: '2026-11-03T15:00:00+08:00'
   overtime_cost_cents: 0
   total_cost_cents: 2300
-  computed_by: evals.cascade_sim (solver + validator, time limit 10 s); never hand-typed
+  time_to_fill_min: 0.82
+  computed_by: evals.runners.local_cascade (coverage-cascade state machine, solver
+    time limit 10 s, validator); never hand-typed

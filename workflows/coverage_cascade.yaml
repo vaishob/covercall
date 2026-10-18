@@ -1,0 +1,345 @@
+# coverage-cascade: Cloud Workflows state machine for one gap (design doc §5; KICKSTART §4.4).
+# The ONLY owner of a gap's state. Every state change goes through the api's internal endpoints,
+# which append one hash-chained event per transition (services/api/app/events.py TRANSITIONS).
+# Raw staff text never enters this execution's history: callbacks carry {offer_id, message_id} only
+# (docs/decisions/0013-raw-text-out-of-workflow.md). Fan-out uses one callback endpoint per offer in
+# a parallel for-loop (a callback endpoint has a single slot; docs/decisions/0011-fan-out.md).
+# Mirrored step-for-step by evals/runners/local_cascade.py for local verification.
+# All data is synthetic.
+
+main:
+  params: [args]
+  steps:
+    - init:
+        assign:
+          - gap_id: ${args.gap_id}
+          - api: ${args.api_url}
+          - exec_id: ${sys.get_env("GOOGLE_CLOUD_WORKFLOW_EXECUTION_ID")}
+          - round: 0
+          - cancelled_flag: false
+
+    # REPORTED: guard the lead's input. No retry: any error fails closed to HELD.
+    - guard_input:
+        try:
+          call: http.post
+          args:
+            url: ${api + "/internal/guard-input"}
+            auth:
+              type: OIDC
+              audience: ${api}
+            body:
+              gap_id: ${gap_id}
+            timeout: 30
+          result: g
+        except:
+          as: e
+          steps:
+            - guard_error:
+                assign:
+                  - g:
+                      body:
+                        status: "unavailable"
+    - guard_route:
+        switch:
+          - condition: ${g.body.status == "unavailable"}
+            next: guard_unavailable
+          - condition: ${g.body.status != "ok"}
+            next: guard_flagged
+        next: guarded
+    - guard_unavailable:
+        call: transition
+        args: {api: '${api}', key: '${exec_id + ":guard.unavailable"}', body: {gap_id: '${gap_id}', type: "guard.unavailable", actor: "system", payload: {guard_impl: "stub-v0"}}}
+        next: done
+    - guard_flagged:
+        call: transition
+        args: {api: '${api}', key: '${exec_id + ":guard.flagged"}', body: {gap_id: '${gap_id}', type: "guard.flagged", actor: "system", payload: {labels: '${g.body.labels}', guard_impl: "stub-v0"}}}
+        next: done
+    - guarded:
+        call: transition
+        args: {api: '${api}', key: '${exec_id + ":input.guarded"}', body: {gap_id: '${gap_id}', type: "input.guarded", actor: "system", payload: {guard_impl: "stub-v0", labels: '${g.body.labels}'}}}
+
+    # GUARDED: solve, and let the validator cross-check every ranked plan.
+    - solve:
+        call: post
+        args: {api: '${api}', path: "/internal/solve", body: {gap_id: '${gap_id}'}}
+        result: s
+    - solve_route:
+        switch:
+          - condition: ${s.body.status == "disagreement"}
+            next: disagreement
+        next: solved
+    - disagreement:
+        call: transition
+        args: {api: '${api}', key: '${exec_id + ":plan.disagreement"}', body: {gap_id: '${gap_id}', type: "plan.disagreement", actor: "system", rule_ids: '${s.body.rule_ids}', payload: {details: '${s.body.details}'}}}
+        next: done
+    - solved:
+        call: transition
+        args: {api: '${api}', key: '${exec_id + ":plan.solved:" + s.body.plan_id}', body: {gap_id: '${gap_id}', type: "plan.solved", actor: "system", rule_ids: '${s.body.rule_ids}', payload: {plan_id: '${s.body.plan_id}', status: '${s.body.status}'}}}
+    - set_plan:
+        assign:
+          - plan_id: ${s.body.plan_id}
+
+    # SOLVED: durable wait for the lead's T2 approval (voice read-back or tap).
+    - approval_cb:
+        call: events.create_callback_endpoint
+        args:
+          http_callback_method: "POST"
+        result: acb
+    - approval_req:
+        call: post
+        args: {api: '${api}', path: "/internal/approval-request", body: {gap_id: '${gap_id}', plan_id: '${plan_id}', callback_url: '${acb.url}'}}
+        result: areq
+    - await_approval:
+        try:
+          call: events.await_callback
+          args:
+            callback: ${acb}
+            timeout: 43200
+          result: ar
+        except:
+          as: e
+          steps:
+            - approval_timeout:
+                switch:
+                  - condition: ${"TimeoutError" in e.tags}
+                    next: cancel_no_approval
+            - approval_rethrow:
+                raise: ${e}
+    - approval_route:
+        switch:
+          - condition: ${map.get(ar.http_request.body, "cancel") == true}
+            next: cancelled
+          - condition: ${ar.http_request.body.decision == "approve"}
+            next: approved
+        next: rejected
+    - rejected:
+        call: transition
+        args: {api: '${api}', key: '${exec_id + ":plan.rejected:" + ar.http_request.body.approval_id}', body: {gap_id: '${gap_id}', type: "plan.rejected", actor: "lead", payload: {approval_id: '${ar.http_request.body.approval_id}'}}}
+        next: solve
+    - approved:
+        call: transition
+        args: {api: '${api}', key: '${exec_id + ":plan.approved:" + ar.http_request.body.approval_id}', body: {gap_id: '${gap_id}', type: "plan.approved", actor: "lead", payload: {approval_id: '${ar.http_request.body.approval_id}'}}}
+
+    # OUTREACH: offers with durable waits; fan-out when slack is low; escalate at t_esc.
+    - outreach:
+        assign:
+          - round: ${round + 1}
+          - winner: null
+    - next_offers:
+        call: post
+        args: {api: '${api}', path: "/internal/next-offers", body: {gap_id: '${gap_id}'}}
+        result: n
+    - outreach_route:
+        switch:
+          - condition: ${n.body.mode == "escalate"}
+            next: escalate
+    - send_offers:
+        parallel:
+          shared: [winner, cancelled_flag]
+          for:
+            value: offer
+            in: ${n.body.offers}
+            steps:
+              - create_cb:
+                  call: events.create_callback_endpoint
+                  args:
+                    http_callback_method: "POST"
+                  result: cb
+              - register_offer:   # api stores cb.url in offers/{offerId}; sends only with a covering T2 approval
+                  call: post
+                  args: {api: '${api}', path: "/internal/offers", body: {gap_id: '${gap_id}', offer: '${offer}', callback_url: '${cb.url}', window_s: '${n.body.window_s}', fanout_group: '${n.body.mode + ":" + string(round)}', key: '${exec_id + ":offer:" + string(round) + ":" + offer.staff_id}'}}
+                  result: reg
+              - wait_reply:
+                  try:
+                    call: events.await_callback
+                    args:
+                      callback: ${cb}
+                      timeout: ${n.body.window_s_real}
+                    result: reply
+                  except:
+                    as: e
+                    steps:
+                      - is_timeout:
+                          switch:
+                            - condition: ${"TimeoutError" in e.tags}
+                              next: on_offer_timeout     # -> offer.timeout
+                      - rethrow:
+                          raise: ${e}
+              - reply_route:
+                  switch:
+                    - condition: ${map.get(reply.http_request.body, "withdrawn") == true}
+                      next: continue
+                    - condition: ${map.get(reply.http_request.body, "cancel") == true}
+                      next: mark_cancel
+                  next: read_reply
+              - mark_cancel:
+                  assign:
+                    - cancelled_flag: true
+                  next: continue
+              - read_reply:   # api runs guard then parse_reply on the server-side text
+                  call: post
+                  args: {api: '${api}', path: "/internal/reply", body: {offer_id: '${reg.body.offer_id}', message_id: '${reply.http_request.body.message_id}'}}
+                  result: r
+              - classify:
+                  switch:
+                    - condition: ${r.body.flagged}
+                      next: on_flagged
+                    - condition: ${r.body.parsed.intent == "accept"}
+                      next: on_accept
+                    - condition: ${r.body.parsed.intent == "counter"}
+                      next: on_counter
+                  next: on_decline
+              - on_accept:   # first valid yes wins: a Firestore transaction in api
+                  call: post
+                  args: {api: '${api}', path: "/internal/accept", body: {offer_id: '${reg.body.offer_id}', info: {parser_impl: '${r.body.parsed.parser_impl}', guard_impl: '${r.body.guard_impl}'}}}
+                  result: acc
+              - accept_route:
+                  switch:
+                    - condition: ${acc.body.won}
+                      next: set_winner
+                  next: continue
+              - set_winner:
+                  assign:
+                    - winner: ${reg.body.offer_id}
+                  next: continue
+              - on_counter:
+                  call: post
+                  args: {api: '${api}', path: "/internal/counter", body: {offer_id: '${reg.body.offer_id}', window: '${r.body.parsed.counter_window}', info: {parser_impl: '${r.body.parsed.parser_impl}'}}}
+                  next: continue
+              - on_flagged:   # quarantined for the lead; that candidate is skipped
+                  call: post
+                  args: {api: '${api}', path: "/internal/offer-outcome", body: {offer_id: '${reg.body.offer_id}', outcome: "flagged", info: {guard_labels: '${r.body.guard_labels}', guard_impl: '${r.body.guard_impl}'}}}
+                  next: continue
+              - on_decline:
+                  call: post
+                  args: {api: '${api}', path: "/internal/offer-outcome", body: {offer_id: '${reg.body.offer_id}', outcome: "decline", info: {intent: '${r.body.parsed.intent}', reason_category: '${r.body.parsed.reason_category}', parser_impl: '${r.body.parsed.parser_impl}', guard_impl: '${r.body.guard_impl}'}}}
+                  next: continue
+              - on_offer_timeout:
+                  call: post
+                  args: {api: '${api}', path: "/internal/offer-outcome", body: {offer_id: '${reg.body.offer_id}', outcome: "timeout"}}
+                  next: continue
+    - after_offers:
+        switch:
+          - condition: ${cancelled_flag}
+            next: cancelled
+          - condition: ${winner != null}
+            next: commit
+    - counters:   # re-solve on counter-offers; back to SOLVED only on a material change
+        call: post
+        args: {api: '${api}', path: "/internal/counter-resolve", body: {gap_id: '${gap_id}'}}
+        result: cr
+    - counter_route:
+        switch:
+          - condition: ${cr.body.to_state == "SOLVED"}
+            next: reapprove
+        next: outreach
+    - reapprove:
+        assign:
+          - plan_id: ${cr.body.plan_id}
+        next: approval_cb
+
+    # COMMITTING: transaction on the gap version with a validator re-check inside it.
+    - commit:
+        call: post
+        args: {api: '${api}', path: "/internal/commit", body: {gap_id: '${gap_id}'}}
+        result: c
+    - commit_route:
+        switch:
+          - condition: ${c.body.result == "ok"}
+            next: done
+        next: outreach   # commit.conflict -> OUTREACH
+
+    # ESCALATED: ranked fallbacks to the lead; the gap always ends with a recorded outcome.
+    - escalate:
+        call: transition
+        args: {api: '${api}', key: '${exec_id + ":escalation.due"}', body: {gap_id: '${gap_id}', type: "escalation.due", actor: "system", payload: {t_esc: '${n.body.t_esc}', reason: '${n.body.reason}'}}}
+    - fallback_cb:
+        call: events.create_callback_endpoint
+        args:
+          http_callback_method: "POST"
+        result: fcb
+    - fallback_req:
+        call: post
+        args: {api: '${api}', path: "/internal/escalation-request", body: {gap_id: '${gap_id}', callback_url: '${fcb.url}'}}
+        result: freq
+    - await_fallback:
+        try:
+          call: events.await_callback
+          args:
+            callback: ${fcb}
+            timeout: 43200
+          result: fr
+        except:
+          as: e
+          steps:
+            - fallback_timeout:
+                switch:
+                  - condition: ${"TimeoutError" in e.tags}
+                    next: resolve_unfilled
+            - fallback_rethrow:
+                raise: ${e}
+    - fallback_route:
+        switch:
+          - condition: ${map.get(fr.http_request.body, "cancel") == true}
+            next: cancelled
+        next: resolved
+    - resolved:
+        call: transition
+        args: {api: '${api}', key: '${exec_id + ":fallback.chosen"}', body: {gap_id: '${gap_id}', type: "fallback.chosen", actor: "lead", payload: {option: '${fr.http_request.body.option}'}}}
+        next: done
+    - resolve_unfilled:
+        call: transition
+        args: {api: '${api}', key: '${exec_id + ":fallback.chosen"}', body: {gap_id: '${gap_id}', type: "fallback.chosen", actor: "system", payload: {option: "unfilled", reason: "no fallback chosen before the wait expired"}}}
+        next: done
+
+    - cancel_no_approval:
+        call: transition
+        args: {api: '${api}', key: '${exec_id + ":gap.cancelled"}', body: {gap_id: '${gap_id}', type: "gap.cancelled", actor: "system", payload: {reason: "no lead approval before the wait expired"}}}
+        next: done
+    - cancelled:
+        call: transition
+        args: {api: '${api}', key: '${exec_id + ":gap.cancelled"}', body: {gap_id: '${gap_id}', type: "gap.cancelled", actor: "lead", payload: {reason: "lead cancelled"}}}
+    - done:
+        return: ${gap_id}
+
+# POST to an api internal endpoint with OIDC and the retry policy (3 attempts, exponential backoff).
+post:
+  params: [api, path, body]
+  steps:
+    - call_api:
+        try:
+          call: http.post
+          args:
+            url: ${api + path}
+            auth:
+              type: OIDC
+              audience: ${api}
+            body: ${body}
+            timeout: 60
+          result: resp
+        retry:
+          predicate: ${http.default_retry_predicate}
+          max_retries: 2
+          backoff:
+            initial_delay: 1
+            max_delay: 10
+            multiplier: 2
+    - return_resp:
+        return: ${resp}
+
+# Append one event. The idempotency key makes a retried call safe.
+transition:
+  params: [api, key, body]
+  steps:
+    - add_key:
+        assign:
+          - body.idempotency_key: ${key}
+    - append:
+        call: post
+        args:
+          api: ${api}
+          path: "/internal/transition"
+          body: ${body}
+        result: resp
+    - return_event:
+        return: ${resp}

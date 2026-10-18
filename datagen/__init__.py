@@ -4,8 +4,8 @@ All data is synthetic and every record carries ``synthetic: true``. The business
 outlet areas are real Singapore place names. No staff under 16 exist: ``load_staff`` enforces
 CO-AGE-SCOPE and rejects any such record. Generated staff are 17 or over.
 
-Scenario ``expect`` blocks are computed by the solver and validator (``evals.cascade_sim``) with
-the offline time limit, never typed by hand.
+Scenario ``expect`` blocks are computed by the coverage-cascade state machine (local driver), the
+solver with the offline time limit and the validator, never typed by hand.
 """
 
 from __future__ import annotations

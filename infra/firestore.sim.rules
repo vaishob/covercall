@@ -1,0 +1,10 @@
+rules_version = '2';
+// sim database: hidden persona state. No client may read or write it. Only the persona-sim
+// service account can use it (IAM condition in infra/20_iam.sh); planner and solver cannot.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

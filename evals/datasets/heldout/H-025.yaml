@@ -17,9 +17,11 @@ expect:
   outcome: filled
   violations: 0
   assignment:
-  - staff_id: stf_015
+  - staff_id: stf_008
     start: '2026-11-06T07:00:00+08:00'
     end: '2026-11-06T15:00:00+08:00'
   overtime_cost_cents: 0
   total_cost_cents: 0
-  computed_by: evals.cascade_sim (solver + validator, time limit 10 s); never hand-typed
+  time_to_fill_min: 11.32
+  computed_by: evals.runners.local_cascade (coverage-cascade state machine, solver
+    time limit 10 s, validator); never hand-typed

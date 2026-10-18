@@ -96,18 +96,20 @@ def _random_scenario(sid: str, rng: random.Random, data: dict[str, Any], seed: i
 
 def label(scenario: dict[str, Any], data: dict[str, Any], cfg: dict[str, Any],
           rules: list[dict[str, Any]]) -> dict[str, Any]:
-    """Compute the ``expect`` block offline with the long time limit."""
-    from evals.cascade_sim import run_covercall
+    """Compute the ``expect`` block offline: the full timed state machine (local driver), the
+    solver with the long time limit, and the validator."""
+    from evals.runners.local_cascade import LocalRun
 
-    res = run_covercall(scenario, data, rules, cfg, time_limit_s=float(cfg["offline_time_limit_s"]))
+    res = LocalRun(scenario, data, cfg, rules, time_limit_s=float(cfg["offline_time_limit_s"])).run()
     return {
         "outcome": res["outcome"],
         "violations": res["violations"],
         "assignment": res["assignment"],
         "overtime_cost_cents": res["overtime_cost_cents"],
         "total_cost_cents": res["cost_breakdown"]["total_cents"],
-        "computed_by": f"evals.cascade_sim (solver + validator, time limit "
-                       f"{cfg['offline_time_limit_s']} s); never hand-typed",
+        "time_to_fill_min": res["time_to_fill_min"],
+        "computed_by": f"evals.runners.local_cascade (coverage-cascade state machine, solver time limit "
+                       f"{cfg['offline_time_limit_s']} s, validator); never hand-typed",
     }
 
 

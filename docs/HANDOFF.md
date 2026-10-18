@@ -2,11 +2,129 @@
 
 **All data is synthetic.**
 
-Status: **Step 1 (audit) done.** Steps 2 to 5 are in progress. This file is updated after every step.
+## Final report (2026-10-18)
 
-- Branch: `claude/slices-1-2` (forked from `main` at `3c5e56a docs: add design doc and kickstart prompt`).
-- `main` is never committed to, merged, rebased or pushed from this branch.
-- Sources of truth: `docs/CoverCall-Design-Doc.pdf` (§ numbers), then `docs/KICKSTART.txt`. Code is evidence only.
+**Stopped at HARD STOP 2:** both exit checks pass. Slice 1 passes in full. Slice 2 passes in its local form; nothing is deployed.
+
+| Slice | Status | Tag | Proof |
+|---|---|---|---|
+| 1. Engine and evidence | **Done** | `slice-1` | ruff clean; mypy clean; `lint_rules` 15/15; pytest green; `evals.compare --set golden` exit 0, CoverCall violations 0 |
+| 2. Cascade foundation | **Done locally, not deployed** | `slice-2-local` | pytest 149 passed; `evals.runners.local_cascade` J2 PASS, J3 PASS (`verify_chain` OK, 0 violations, every P0 counter 0); `evals.compare` exit 0 on golden and held-out with `time_to_fill_min` |
+
+The original Slice 2 exit check (J2/J3 **on Cloud Run** in `asia-southeast1`) is **not met**. This run may not touch Google Cloud. The deploy scripts are written and checked with `bash -n` and ShellCheck 0.11.0, but have never run.
+
+### Commands run on the final commit and their output
+
+```
+$ ruff check .                                  All checks passed!
+$ mypy                                          Success: no issues found in 54 source files
+$ python policy/lint_rules.py                   OK (15 rules verified with complete sources and >=2 tests)
+$ pytest                                        149 passed in 25.51s
+$ bash -n infra/*.sh ; shellcheck -x infra/*.sh all OK, shellcheck exit 0
+$ python -m evals.runners.local_cascade         (exit 0)
+J2 (S-017): state=FILLED outcome=filled time_to_fill_min=15.47 verify_chain=OK events=9 violations=0
+  p0={'unapproved_outbound': 0, 'pii_leak': 0, 'escalation_late': 0, 'outcome_missing': 0,
+      'solver_validator_disagreements': 0, 'rule_violations': 0}
+  events: gap.reported -> input.guarded -> plan.solved -> plan.approved -> reply.decline -> reply.counter
+          -> offer.timeout -> reply.accept -> commit.ok
+  offers: stf_019 07:00-15:00 decline; stf_022 07:00-15:00 countered (09:00-15:00);
+          stf_008 07:00-15:00 timeout; stf_028 07:00-09:00 accepted  => filled by stf_028 07-09 + stf_022 09-15
+  PASS
+J3 (S-002): state=RESOLVED outcome=borrow verify_chain=OK events=10 violations=0 p0=all 0
+  events: gap.reported -> input.guarded -> plan.solved -> plan.approved -> offer.timeout x4
+          -> escalation.due -> fallback.chosen
+  offers: stf_016 timeout [single:1]; stf_026, stf_031, stf_029 timeout [fanout:2]
+  PASS
+```
+
+### Compare tables (real runs only; synthetic SGD; simulated minutes)
+
+`python -m evals.compare --set golden` (exit 0):
+
+| Metric | CoverCall | Baseline (most reliable first) |
+|---|---|---|
+| Gaps filled | 50/60 | 59/60 |
+| Median overtime cost per gap | S$0.00 | S$0.00 |
+| Total overtime cost | S$75.52 | S$3,434.68 |
+| Total incremental labour cost | S$1,746.52 | S$6,322.68 |
+| Rule violations (hard rules) | **0** | 19 |
+| Scenarios with a violation | 0 | 18 |
+| Solver/validator disagreements | 0 | n/a |
+| Median time to fill (simulated min) | 1.82 | 1.78 |
+| Fills arriving after shift start | 0 | 2 |
+
+CoverCall: 10 gaps escalated and resolved by a fallback, 0 held; P0 counters all 0; 0 chains failing `verify_chain`; 0 results differing from `expect`.
+
+`python -m evals.compare --set heldout` (exit 0):
+
+| Metric | CoverCall | Baseline |
+|---|---|---|
+| Gaps filled | 36/40 | 40/40 |
+| Median overtime cost per gap | S$0.00 | S$0.00 |
+| Total overtime cost | S$0.00 | S$2,422.67 |
+| Total incremental labour cost | S$1,005.00 | S$4,142.67 |
+| Rule violations (hard rules) | **0** | 15 |
+| Scenarios with a violation | 0 | 14 |
+| Median time to fill (simulated min) | 1.06 | 3.05 |
+| Fills arriving after shift start | 0 | 2 |
+
+How to read these honestly:
+- **CoverCall fills fewer gaps than the baseline.** Most CoverCall escalations are reports less than ~41 minutes before the shift. With the PDF defaults (10-minute buffer, 15-minute escalation lead) and 16-minute travel, the slack is already below the lead, so CoverCall calls the lead at once (decision 0009). The baseline ignores travel and deadlines: 2 of its fills per set arrive after the shift starts, and its fills break hard rules 19 and 15 times.
+- Medians are S$0 for both arms. Most gaps can be covered by someone with spare contract hours. The difference is in totals and violations.
+- Staff outside Part 4 cost S$0 (no statutory overtime; contractual pay not modelled). Travel times are placeholders, not Routes API data. The guard and the reply parser are deterministic stubs (`stub-v0`), not models.
+
+### Every TODO-VERIFY and open item
+From `docs/OPEN_ITEMS.md`:
+- **Gemini model IDs (all five roles): TODO-VERIFY.** `config/models.yaml` pins nothing. Services that need a model refuse to start.
+- Submission deadline and rules; the Innovation & Feasibility weight; competitor facts; Singapore F&B evidence.
+- Whether breaks count toward the 12-hour day (engines count them; stricter).
+- Public-holiday dates for the demo week; outlet coordinates.
+- Workflows YAML on the real service (`next: continue` in a parallel for-loop, `map.get`, `sys.get_env`, OIDC `audience`).
+- `FirestoreStore` transactions; IAM condition on the Firestore database name; Firebase multi-database rules config; the gitleaks image tag.
+- Gemini availability in `asia-southeast1`.
+- Not encoded: public holidays, the shift-worker 30-hour rest form. Placeholder: Routes API travel. Not started: the §8.3 human reply review.
+- Finding: the escalation lead escalates short-notice gaps at once (product decision).
+
+### Decisions made (docs/decisions/)
+- 0001 supporting files (updated); 0002 model IDs and sources (partly superseded)
+- 0003 React template moved to `web/`; 0004 design-doc file name
+- 0005 rule semantics shared by both engines; 0006 CP-SAT formulation, weights, determinism
+- 0007 synthetic data shape; 0008 baseline behaviour and comparison
+- 0009 `t_esc` locked at approval, windows clamped (fixed a real `escalation_late` P0)
+- 0010 local verification (memory store + local driver; no emulator); 0011 fan-out with one callback per offer
+- 0012 persona delivery and time compression; 0013 raw text out of the workflow, api proxies guard/parse
+- 0014 commit re-check, cancel via callbacks, approvals, `cost_saved_sgd`
+
+### The single next action for you
+Confirm and pin the Gemini model IDs in `config/models.yaml` (see OPEN_ITEMS for what Google's page showed on 2026-10-13). Then run the deploy steps below in a dev project. The first `gcloud workflows deploy` is the only validation the workflow YAML has not yet had.
+
+---
+
+## For the human: deploy steps (not run; run them in order and approve each)
+
+Prerequisites: a Google Cloud project with billing; `gcloud` authenticated as an owner (`gcloud auth login`, `gcloud auth application-default login`); the Firebase CLI for security rules; Python 3.12 with the repo's venv (for seeding); Docker is not needed (Cloud Build builds the images). No Secret Manager entries are needed for Slices 1–2 (Telegram and Routes API secrets are Slice 7: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `ROUTES_API_KEY`).
+
+```bash
+export PROJECT_ID=<your-project-id>       # REGION defaults to asia-southeast1, TIME_SCALE to 10
+bash infra/00_apis.sh                     # enable Run, Workflows, Firestore, Artifact Registry, Build, Secret Manager, Vertex AI, Trace, Logging, Monitoring, BigQuery
+bash infra/10_firestore.sh                # Firestore Native (default) + sim in asia-southeast1; rules via firebase CLI
+bash infra/20_iam.sh                      # cc-<service> accounts; workflows.invoker only for api + connectors; sim DB only for persona-sim
+bash infra/30_images.sh                   # Artifact Registry repo + Cloud Build of 6 images (tag = git short SHA)
+bash infra/40_deploy_services.sh          # Cloud Run: api public (min 1), others private; invoker bindings
+bash infra/50_workflow.sh                 # deploy coverage-cascade under cc-workflow; run.invoker on api
+bash infra/60_seed.sh                     # datagen --to-firestore + scenarios + travel config
+# then open  <api-url>/test  and tap "Scenario: 6:02am sick call" (J2) and "Nobody replies" (J3)
+```
+
+`bash infra/deploy_all.sh` runs all seven in order. Every script is meant to be idempotent, but none has run.
+
+## For the next agent
+- **Branch:** `claude/slices-1-2`. Tags: `slice-1`, `slice-2-local`. Do not commit to `main` from here. Merge via a PR when the human approves.
+- **Do not overwrite:** `policy/rules/*.yaml` (sources verified live on 2026-10-18), `docs/decisions/0005-rule-semantics.md` (the contract both engines implement), and `data/` plus `evals/datasets/` (regenerate only with `python -m datagen build --seed 42`; a test checks `data/` matches the generator byte for byte).
+- **Keep the invariants:** `policy/validate.py` imports only the standard library and `yaml` (AST test); every hard rule change goes in the YAML, both engines and the fixtures together (property tests compare rule IDs and cost lines exactly); state changes only through `events.append_in_txn` and `TRANSITIONS`; nothing staff-facing without `_outbound` (approval check).
+- **Frontend (`web/`):** untouched except the Step 1 move. The AI Studio template there is empty boilerplate. Read-only Firestore collections for the web app are listed in `infra/firestore.rules`.
+- **Merge notes:** `main` holds only the two docs commits plus AI Studio's initial commit. This branch deletes `evals/cascade_sim.py` (it existed only inside this branch), renames the PDF, and moves the root React files to `web/`. If the frontend agent edits files on `main` at the old root paths, rebase their changes onto `web/`.
+- **Next slices:** Slice 3 (lead view with Scenario buttons) can read `gaps`, `gaps/{id}/events` and `plans` directly. `plans/{id}.rejected_candidates[].rejected_rules[]` already carries the message, rule ID and source URL for the greyed-out cards.
 
 ---
 
@@ -139,13 +257,15 @@ Results differing from scenario expect blocks: 0
 
 Held-out (`python -m evals.compare --set heldout`, exit 0): CoverCall 40/40 filled, total overtime S$37.76, total incremental S$1,291.76, 0 violations, 0 disagreements, 0 expect mismatches. Baseline: 40/40 filled, S$2,422.67 overtime, S$4,142.67 total, 15 violations in 14 scenarios.
 
+These Step 3 numbers come from the untimed Slice 1 cascade at tag `slice-1`. The final numbers from the timed state machine (Slice 2) are in the final report at the top, and they replace these.
+
 How to read these numbers honestly:
 - CoverCall escalates 3 golden gaps. S-002 is "nobody replies" by design. In **S-013 and S-038** the baseline "fills", but the person it picks cannot arrive with the 10-minute buffer (S-013), or the pick breaks the 11-hour rest rule (S-038). The baseline ignores travel and reply time.
 - Medians are S$0.00 for both arms because most gaps can be covered by someone with spare contract hours. The difference is in the totals and violations.
 - Staff outside Part 4 cost S$0 (no statutory overtime). Their contractual pay is not modelled (decision 0008).
 - Travel times are placeholders, not Routes API data.
 
-### Remaining work, ordered and mapped to exit checks
+### Work list from the audit (status at the end of the run: all 13 done)
 
 | # | Work | Exit check served |
 |---|---|---|
@@ -162,3 +282,25 @@ How to read these numbers honestly:
 | 11 | `workflows/coverage_cascade.yaml` + validator against the §5.1 table | Slice 2: pytest |
 | 12 | `evals/runners/local_cascade.py` (J2 = S-017, J3 = nobody replies) + `time_to_fill_min` in compare | Slice 2: local exit check |
 | 13 | `infra/` scripts (syntax-checked only), `cloudbuild.yaml` | Deploy steps for the human |
+
+## Step 4: Slice 2 (cascade foundation, local) — DONE, tag `slice-2-local`
+
+What was built (all new; the AI Studio files were empty):
+- `services/api/app/events.py`: the `TRANSITIONS` table (the §5.1 table, `gap.cancelled` from every non-terminal state and HELD); one-transaction append with version guard; SHA-256 chain exactly as KICKSTART §4.1 specifies; `verify_chain`; PII redaction before every write (`services/common/pii.py`); message dedup.
+- `services/common/store.py`: `Store` interface, `MemoryStore` (used), `FirestoreStore` (written, untested).
+- `policy/timing.py`: §5.2 as pure functions, plus `t_esc` locked at approval and windows clamped to it (decision 0009).
+- `services/api/app/{core,main,deps,page}.py`: public `POST /gaps`, `/approvals`, `/replies`, `/fallbacks`, `/gaps/{id}/cancel`, `GET /test` (text-only page with the "All data is synthetic" footer and a visible time-compression banner), and the internal routes the workflow calls (decision 0013). The live-token route returns 501 (Slice 4).
+- `workflows/coverage_cascade.yaml`: the §5 state machine, with fan-out in a `parallel` loop (decision 0011).
+- `services/guard` (`stub-v0`, fails closed), `services/agent` (`stub-v0` parser, explanation check, offer draft; refuses to start without an explicit implementation), `services/persona_sim` (outbox delivery, decision 0012), `services/solver`, `services/connectors` (refuses until Slice 7).
+- `evals/runners/local_cascade.py`: the local driver. `evals/compare.py` now runs the timed state machine and reports `time_to_fill_min`. Scenario labels are recomputed by the same driver. The untimed Slice 1 simulator (`evals/cascade_sim.py`) was removed, so there is one cascade semantics.
+- `infra/`: `env.sh`, `00_apis.sh` to `60_seed.sh`, `deploy_all.sh`, `build-images.yaml`, Firestore rules for `(default)` (read-only, demo collections only) and `sim` (no client access), `seed_scenarios.py`. Dockerfiles and requirements for all six services. `cloudbuild.yaml` gate for steps 1–5, the local cascade and a secret scan.
+
+Problems found and fixed during Slice 2 (real defects, found by running):
+1. `escalation_late = 6` across the golden set. `t_esc` moved after declines. Fixed by locking it at approval (decision 0009).
+2. `pii_leak` false positives: the phone and card patterns matched digit runs inside SHA-256 hashes. Fixed with word-boundary patterns; tests pin both sides.
+3. The stub parser read §8.3's own example "wah 7am ah... 8 can?" as an accept, and "sorry can't make it" as unclear. Fixed; the §8.3 examples are now tests.
+4. `evals.compare` exited 0 despite a non-zero P0 counter (an edit had not applied). Fixed; it now fails on any P0 counter or chain failure.
+
+Tests added: `tests/test_events.py` (every table transition accepted; **every** (state, event) pair outside the table rejected; clean, tampered, deleted, reordered and truncated chains; redaction; dedup), `tests/test_timing.py`, `tests/test_cascade.py` (J2, J3, no offer without approval, voice approval needs a clear yes, duplicate reply dropped, late yes gets a courtesy reply, guard failure → HELD, injection quarantined and never in the event log, lead cancel through the workflow, material-change rule), `tests/test_workflow.py` (YAML vs table, retry and OIDC policy, local driver mirrors every step), `tests/test_services.py`.
+
+Not covered end to end: the re-approval path after a material counter-offer (`reply.counter` → SOLVED). The rule is unit-tested, and the YAML and driver contain the path, but no scenario exercises it.

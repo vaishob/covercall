@@ -13,8 +13,13 @@ uv pip install --python .venv -r pyproject.toml --extra dev
 python policy/lint_rules.py              # every rule has a full source and >= 2 tests
 python -m datagen build --seed 42        # synthetic data + 60 golden / 40 held-out scenarios
 pytest                                   # fixtures on both engines, property tests, determinism
-python -m evals.compare --set golden     # CoverCall vs most-reliable-first baseline; exit 1 on any violation
+python -m evals.compare --set golden     # CoverCall vs most-reliable-first baseline; exit 1 on any violation or P0
+python -m evals.runners.local_cascade    # J2 (cascade) and J3 (escalation) through the workflow state machine, locally
 ```
+
+Slice 2 is verified locally only: an in-memory store stands in for Firestore, and a local driver runs
+`workflows/coverage_cascade.yaml` step by step through the real `api` routes. Deploy scripts are in `infra/`
+and have not been run. See `docs/HANDOFF.md`.
 
 ## How legality is decided
 

@@ -16,7 +16,7 @@ from datagen import build_synthetic_dataset
 from datagen.loader import DataGateError, load_data, load_staff
 from datagen.personas import decide_reply, make_persona
 from datagen.scenarios import S017
-from evals.cascade_sim import run_covercall
+from evals.runners.local_cascade import LocalRun
 from policy.compile_cpsat import load_company_config, load_rules
 from policy.validate import blocking_violations, compute_part4_covered, validate_assignment
 
@@ -164,12 +164,11 @@ def test_s017_is_exactly_as_specified() -> None:
 
 
 def test_s017_cascade_hits_decline_counter_silence() -> None:
-    data = load_data()
-    res = run_covercall(dict(S017), data, RULES, CFG)
-    intents = {o["staff_id"]: o["intent"] for o in res["offers"]}
-    assert intents["stf_019"] == "decline"
-    assert intents["stf_022"] == "counter"
-    assert intents["stf_008"] == "silent"
+    res = LocalRun(dict(S017, synthetic=True), load_data(), CFG, RULES).run()
+    status = {o["staff_id"]: o["status"] for o in res["offers"]}
+    assert status["stf_019"] == "decline"
+    assert status["stf_022"] == "countered"
+    assert status["stf_008"] == "timeout"
     assert res["outcome"] == "filled" and res["violations"] == 0
 
 
@@ -177,7 +176,7 @@ def test_expect_blocks_reproduce() -> None:
     """Labels must come from the solver: recompute a sample and compare (§3.8 step 8)."""
     data = load_data()
     for s in [x for x in _scenarios("golden") if x["id"] in ("S-002", "S-017", "S-031", "S-050")]:
-        res = run_covercall(s, data, RULES, CFG, time_limit_s=float(CFG["offline_time_limit_s"]))
+        res = LocalRun(s, data, CFG, RULES, time_limit_s=float(CFG["offline_time_limit_s"])).run()
         assert res["outcome"] == s["expect"]["outcome"]
         assert res["assignment"] == s["expect"]["assignment"]
         assert res["overtime_cost_cents"] == s["expect"]["overtime_cost_cents"]

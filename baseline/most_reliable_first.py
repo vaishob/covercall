@@ -5,6 +5,8 @@ No cost or legality reasoning beyond "are they free" (not absent, not already on
 overlaps the gap) and "can they work this station" (decision 0008). A counter-offer is treated as a
 no: the manager wants the whole shift. Same scenarios, personas and seeds as CoverCall.
 The chosen assignment is then audited by the independent validator, which also prices it.
+Simulated time to fill: one call at a time; each reply takes the persona's seeded delay, and the
+manager waits at most ``w_max_min`` for an answer before calling the next person.
 """
 
 from __future__ import annotations
@@ -44,11 +46,15 @@ def run_baseline(
 ) -> dict[str, Any]:
     gap, context = scenario_context(scenario, data, cfg)
     offers = []
+    waited_s = 0.0
+    patience_s = float(cfg["w_max_min"]) * 60
     for sid in ranked_pool(gap, context):
         offer = {"start": gap["start"], "end": gap["end"]}
         reply = decide_reply(data["personas"][sid], offer, scenario)
         offers.append({"staff_id": sid, "intent": reply["intent"]})
-        if reply["intent"] != "accept":
+        answered = reply["intent"] != "silent" and reply["delay_s"] <= patience_s
+        waited_s += reply["delay_s"] if answered else patience_s
+        if reply["intent"] != "accept" or not answered:
             continue
         tz = datetime.fromisoformat(gap["start"]).tzinfo
         start = int(datetime.fromisoformat(gap["start"]).timestamp() // 60)
@@ -59,12 +65,17 @@ def run_baseline(
         results = validate_assignment(asg, context, rules)
         cost = cost_breakdown(results)
         violated = [r.rule_id for r in blocking_violations(results)]
+        # Leaves when the yes arrives; arrives after the shift starts if the call chain took too long.
+        leaves = datetime.fromisoformat(scenario["now"]).timestamp() + waited_s
+        arrives = leaves + 60 * int(context["travel"][sid][gap["outlet"]])
         return {
             "scenario_id": scenario["id"], "outcome": "filled",
             "assignment": [{"staff_id": sid, "start": gap["start"], "end": gap["end"]}],
             "cost_breakdown": cost,
             "overtime_cost_cents": cost["overtime_cents"] + cost["rest_day_cents"],
             "violations": len(violated), "violated_rules": violated, "offers": offers,
+            "time_to_fill_min": round(waited_s / 60, 2),
+            "late_arrivals": int(arrives > datetime.fromisoformat(gap["start"]).timestamp()),
             "synthetic": True,
         }
     return {
@@ -72,5 +83,5 @@ def run_baseline(
         "cost_breakdown": {"base_cents": 0, "overtime_cents": 0, "rest_day_cents": 0,
                            "total_cents": 0},
         "overtime_cost_cents": 0, "violations": 0, "violated_rules": [], "offers": offers,
-        "synthetic": True,
+        "time_to_fill_min": None, "late_arrivals": 0, "synthetic": True,
     }

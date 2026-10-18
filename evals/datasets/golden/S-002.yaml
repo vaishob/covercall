@@ -78,9 +78,11 @@ personas:
     will: silent
 synthetic: true
 expect:
-  outcome: escalated
+  outcome: borrow
   violations: 0
   assignment: []
   overtime_cost_cents: 0
   total_cost_cents: 0
-  computed_by: evals.cascade_sim (solver + validator, time limit 10 s); never hand-typed
+  time_to_fill_min: null
+  computed_by: evals.runners.local_cascade (coverage-cascade state machine, solver
+    time limit 10 s, validator); never hand-typed
