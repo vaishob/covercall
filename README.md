@@ -42,7 +42,7 @@ and have not been run. See `docs/HANDOFF.md`.
 | `guard` | `services/guard/` | Cloud Run (CPU) | Deterministic stub `stub-v0` until the Gemma guard (Slice 5); not a model |
 | `persona-sim` | `services/persona_sim/` | Cloud Run (Gemini Flash) | Deterministic stub text locally |
 | State and event log | `services/api/app/events.py` | Firestore (`(default)` and `sim`) | See `docs/HANDOFF.md` |
-| Deploy scripts | `infra/` | gcloud | Written and syntax-checked, not run |
+| Deploy scripts | `infra/` | gcloud, Firebase CLI | Run 2026-10-18 on `covercall-demo-2026`; see `docs/HANDOFF.md` "Deployment" |
 
 ---
 *All data is synthetic.*
