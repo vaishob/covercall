@@ -3,7 +3,7 @@
 **A shift lead at a small three-outlet café chain in Singapore gets a sick call at 6:02am. The outlet opens at 7:00.** CoverCall finds legal, low-cost cover in seconds, reads the plan back for approval, messages candidates, re-plans on declines and counter-offers, and escalates to the lead with ranked fallbacks when time runs out. **The one design rule: a language model never decides legality and never owns control flow.** Legality and cost come from a constraint solver and an independent validator. The state machine runs in Cloud Workflows. Gemini only listens, speaks and reads replies.
 
 - **Live app:** https://covercall-demo-2026.web.app (no sign-in)
-- **Demo video:** [DEMO VIDEO LINK]
+- **Demo video:** [DEMO VIDEO LINK](https://youtu.be/0daFPWX4gI4)
 - **Theme:** Future of Work & Enterprise Productivity
 - **All data is synthetic.** No real staff, employers or messages.
 
