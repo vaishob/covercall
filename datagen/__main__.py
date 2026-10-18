@@ -13,8 +13,10 @@ from datagen import build_synthetic_dataset
 def _seed_firestore(data_dir: Path) -> None:
     from google.cloud import firestore  # type: ignore[import-untyped]
 
+    from services.common.store import SIM_DATABASE
+
     default_db = firestore.Client(database="(default)")
-    sim_db = firestore.Client(database="sim")
+    sim_db = firestore.Client(database=SIM_DATABASE)
 
     outlets = json.loads((data_dir / "outlets.json").read_text(encoding="utf-8"))
     for o in outlets:

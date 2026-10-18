@@ -132,8 +132,13 @@ class MemoryStore:
         return self._docs
 
 
+# Firestore database IDs must be 4-63 characters, so the "sim" database is named covercall-sim
+# (docs/decisions/0022-sim-database-id.md). Keep in step with SIM_DB_ID in infra/env.sh.
+SIM_DATABASE = "covercall-sim"
+
+
 class FirestoreStore:  # pragma: no cover - needs a Firestore project or emulator
-    """Firestore (Native mode) implementation. One instance per database ((default) or sim)."""
+    """Firestore (Native mode) implementation. One instance per database ((default) or SIM_DATABASE)."""
 
     def __init__(self, database: str = "(default)", project: str | None = None):
         from google.cloud import firestore

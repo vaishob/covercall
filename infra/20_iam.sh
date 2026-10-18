@@ -19,7 +19,7 @@ bind() {  # bind <member-sa> <role> [condition]
 }
 
 DEFAULT_DB="expression=resource.name==\"projects/${PROJECT_ID}/databases/(default)\",title=default-db-only"
-SIM_DB="expression=resource.name==\"projects/${PROJECT_ID}/databases/sim\",title=sim-db-only"
+SIM_DB="expression=resource.name==\"projects/${PROJECT_ID}/databases/${SIM_DB_ID}\",title=sim-db-only"
 
 bind api roles/datastore.user "$DEFAULT_DB"
 bind api roles/workflows.invoker
