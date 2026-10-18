@@ -38,7 +38,7 @@ and have not been run. See `docs/HANDOFF.md`.
 | `coverage-cascade` | `workflows/coverage_cascade.yaml` | Cloud Workflows | See `docs/HANDOFF.md` |
 | `api` | `services/api/` | Cloud Run (FastAPI) | See `docs/HANDOFF.md` |
 | `solver` | `services/solver/` | Cloud Run (OR-Tools) | See `docs/HANDOFF.md` |
-| `agent` | `services/agent/` | Cloud Run (ADK, Gemini Flash on Vertex AI) | Model ID `TODO-VERIFY`; deterministic stub parser locally |
+| `agent` | `services/agent/` | Cloud Run (ADK, Gemini Flash on Vertex AI) | Model `gemini-3.8-flash` pinned (`global` endpoint); runs the deterministic stub parser until enabled |
 | `guard` | `services/guard/` | Cloud Run (CPU) | Deterministic stub `stub-v0` until the Gemma guard (Slice 5); not a model |
 | `persona-sim` | `services/persona_sim/` | Cloud Run (Gemini Flash) | Deterministic stub text locally |
 | State and event log | `services/api/app/events.py` | Firestore (`(default)` and `sim`) | See `docs/HANDOFF.md` |

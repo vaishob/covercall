@@ -12,7 +12,7 @@ dependencies = [
     "uvicorn>=0.29",
     "google-cloud-firestore>=2.16",
     "google-cloud-workflows>=1.14",
-    "google-genai>=1.0",
+    "google-genai>=2.31",  # enterprise=True client flag (checked on 2.31.0)
     "google-adk>=0.1",
 ]
 

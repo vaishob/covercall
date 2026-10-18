@@ -31,6 +31,8 @@
 - **Model IDs:** not verified for this project. Google's Gemini API model page (updated 2026-10-13)
   lists `gemini-3.1-flash-live-preview` as a legacy preview and the `gemini-2.5` family as limited to
   earlier users. Every `model_id` in `config/models.yaml` is now `TODO-VERIFY` (see `docs/OPEN_ITEMS.md`).
+  Later the same day the IDs were pinned against Google's current pages: decisions 0019 (voice,
+  `v1beta`), 0020 (eval judge) and 0021 (`global` endpoint).
 - **Part-time source:** the rule now cites the exact page, "Overtime for part-time employees"
   (`/employment-practices/part-time-employment/overtime`, section "Calculating overtime pay",
   updated 25 July 2025), not the part-time hub page.

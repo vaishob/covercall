@@ -58,7 +58,7 @@ export const VoiceStateBar: React.FC<VoiceStateBarProps> = ({
           bg: tokens.legalPassBg,
           color: tokens.legalPassText,
           border: tokens.legalPassBorder,
-          sublabel: 'Gemini Live v1alpha',
+          sublabel: 'Gemini Live v1beta',
         };
       case 'Thinking':
         return {

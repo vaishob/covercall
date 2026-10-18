@@ -29,11 +29,13 @@ def captured(data: dict[str, Any]) -> dict[str, tuple[dict[str, Any], list[tuple
     return {sid: capture(sid, data) for sid in SCENARIOS.values()}
 
 
-def test_status_reports_impls_and_unverified_models(data: dict[str, Any]) -> None:
+def test_status_reports_impls_and_registry_models(data: dict[str, Any]) -> None:
     run = LocalRun(load_scenario("S-017"), data, CFG, RULES)
     status = run.get("/status")
     assert status["guard_impl"] == "stub-v0" and status["parser_impl"] == "stub-v0"
-    assert {m["model_id"] for m in status["models"].values()} == {"TODO-VERIFY"}
+    roles = yaml.safe_load(Path("config/models.yaml").read_text(encoding="utf-8"))["roles"]
+    assert {k: m["model_id"] for k, m in status["models"].items()} == {k: r["model_id"] for k, r in roles.items()}
+    assert status["models"]["guard"]["model_id"] == "TODO-VERIFY"  # stub-v0 runs; no guard model yet
     assert status["time_scale"] == 1.0 and status["synthetic"] is True
 
 

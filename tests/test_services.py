@@ -40,11 +40,16 @@ def test_guard_never_described_as_a_model() -> None:
     assert "NOT a model" in text
 
 
-def test_agent_refuses_to_start_without_an_explicit_impl() -> None:
+def test_agent_refuses_to_start_without_an_explicit_impl(tmp_path: Path) -> None:
     with pytest.raises(StartupRefused, match="role 'agent'"):
         require_impl({})
-    with pytest.raises(StartupRefused, match="TODO-VERIFY"):
+    # The model is pinned, but the Gemini implementation is not built: the stub stays.
+    with pytest.raises(StartupRefused, match="role 'agent': Gemini implementation is not built yet"):
         require_impl({"AGENT_IMPL": "gemini"})
+    unpinned = tmp_path / "models.yaml"
+    unpinned.write_text("roles:\n  agent: {model_id: TODO-VERIFY}\n", encoding="utf-8")
+    with pytest.raises(StartupRefused, match="TODO-VERIFY"):
+        require_impl({"AGENT_IMPL": "gemini"}, models_path=unpinned)
     assert require_impl({"AGENT_IMPL": "stub-v0"}) == "stub-v0"
 
 
@@ -107,7 +112,7 @@ def test_model_registry_is_honest() -> None:
         assert {"provider", "api_version", "model_id", "pinned_at"} <= set(role), name
         if role["model_id"] == "TODO-VERIFY":
             assert role["pinned_at"] is None
-    assert roles["voice"]["api_version"] == "v1alpha"
+    assert roles["voice"]["api_version"] == "v1beta"  # decision 0019
 
 
 def test_connectors_refuse_until_slice_7() -> None:

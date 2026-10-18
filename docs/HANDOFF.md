@@ -77,7 +77,7 @@ How to read these honestly:
 
 ### Every TODO-VERIFY and open item
 From `docs/OPEN_ITEMS.md`:
-- **Gemini model IDs (all five roles): TODO-VERIFY.** `config/models.yaml` pins nothing. Services that need a model refuse to start.
+- **Gemini model IDs: pinned 2026-10-18** (`chore/pin-models`, decisions 0019–0021) for voice, agent, persona_sim and eval_judge; `guard` stays TODO-VERIFY until Slice 5. Still open: ephemeral tokens are Preview; availability in `asia-southeast1` is unverified (model calls use `global`).
 - Submission deadline and rules; the Innovation & Feasibility weight; competitor facts; Singapore F&B evidence.
 - Whether breaks count toward the 12-hour day (engines count them; stricter).
 - Public-holiday dates for the demo week; outlet coordinates.
@@ -98,19 +98,27 @@ From `docs/OPEN_ITEMS.md`:
 - 0014 commit re-check, cancel via callbacks, approvals, `cost_saved_sgd`
 
 ### The single next action for you
-Confirm and pin the Gemini model IDs in `config/models.yaml` (see OPEN_ITEMS for what Google's page showed on 2026-10-13). Then run the deploy steps below in a dev project. The first `gcloud workflows deploy` is the only validation the workflow YAML has not yet had.
+Create the `GEMINI_API_KEY` Secret Manager entry (model IDs are pinned since 2026-10-18). Then run the deploy steps below in a dev project. The first `gcloud workflows deploy` is the only validation the workflow YAML has not yet had.
 
 ---
 
 ## For the human: deploy steps (not run; run them in order and approve each)
 
-Prerequisites: a Google Cloud project with billing; `gcloud` authenticated as an owner (`gcloud auth login`, `gcloud auth application-default login`); the Firebase CLI for security rules; Python 3.12 with the repo's venv (for seeding); Docker is not needed (Cloud Build builds the images). No Secret Manager entries are needed for Slices 1–2 (Telegram and Routes API secrets are Slice 7: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `ROUTES_API_KEY`).
+Prerequisites: a Google Cloud project with billing; `gcloud` authenticated as an owner (`gcloud auth login`, `gcloud auth application-default login`); the Firebase CLI for security rules; Python 3.12 with the repo's venv (for seeding); Docker is not needed (Cloud Build builds the images).
+
+**Required Secret Manager entry: `GEMINI_API_KEY`** (a Gemini Developer API key; only `api` reads it, to mint Live API ephemeral tokens, decision 0019). Create it by hand before step 3, reading the value from stdin so it never lands in the repo, a file or shell history. `infra/25_secrets.sh` stops the deploy if it is missing and grants `api` read access:
+```bash
+gcloud secrets create GEMINI_API_KEY --project "$PROJECT_ID" --replication-policy=automatic
+read -rs KEY && printf '%s' "$KEY" | gcloud secrets versions add GEMINI_API_KEY --project "$PROJECT_ID" --data-file=- ; unset KEY
+```
+Telegram and Routes API secrets are Slice 7: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `ROUTES_API_KEY`.
 
 ```bash
 export PROJECT_ID=<your-project-id>       # REGION defaults to asia-southeast1, TIME_SCALE to 10
-bash infra/00_apis.sh                     # enable Run, Workflows, Firestore, Artifact Registry, Build, Secret Manager, Vertex AI, Trace, Logging, Monitoring, BigQuery
+bash infra/00_apis.sh                     # enable Run, Workflows, Firestore, Artifact Registry, Build, Secret Manager, Vertex AI, Gemini API, Trace, Logging, Monitoring, BigQuery
 bash infra/10_firestore.sh                # Firestore Native (default) + sim in asia-southeast1; rules via firebase CLI
 bash infra/20_iam.sh                      # cc-<service> accounts; workflows.invoker only for api + connectors; sim DB only for persona-sim
+bash infra/25_secrets.sh                  # checks GEMINI_API_KEY exists; secretAccessor for api only
 bash infra/30_images.sh                   # Artifact Registry repo + Cloud Build of 6 images (tag = git short SHA)
 bash infra/40_deploy_services.sh          # Cloud Run: api public (min 1), others private; invoker bindings
 bash infra/50_workflow.sh                 # deploy coverage-cascade under cc-workflow; run.invoker on api
@@ -118,7 +126,7 @@ bash infra/60_seed.sh                     # datagen --to-firestore + scenarios +
 # then open  <api-url>/test  and tap "Scenario: 6:02am sick call" (J2) and "Nobody replies" (J3)
 ```
 
-`bash infra/deploy_all.sh` runs all seven in order. Every script is meant to be idempotent, but none has run.
+`bash infra/deploy_all.sh` runs all eight in order. Every script is meant to be idempotent, but none has run.
 
 ## For the next agent
 - **Branch:** `claude/slices-1-2`. Tags: `slice-1`, `slice-2-local`. Do not commit to `main` from here. Merge via a PR when the human approves.
@@ -409,7 +417,7 @@ run, a keyboard-unreachable scrolling region in the roster strip; it was fixed.)
 |---|---|
 | 1. No CORS on `api` | **Fixed.** `ALLOWED_ORIGINS` (default `http://localhost:3000`); a wildcard is refused at start-up. Tested. |
 | 2. `FirestoreDataSource` used HTTP and fell back to mock data silently | **Fixed by decision 0015.** No Firestore SDK path; one `LiveSource` over the `api` routes; errors are shown as errors. |
-| Table: `GET /status` missing | **Fixed.** Returns `guard_impl`, `parser_impl`, model IDs from `config/models.yaml` as-is (all `TODO-VERIFY`), time scale. |
+| Table: `GET /status` missing | **Fixed.** Returns `guard_impl`, `parser_impl`, model IDs from `config/models.yaml` as-is (pinned since `chore/pin-models`; `guard` still `TODO-VERIFY`), time scale. |
 | Table: `/voice/token` vs `/live/token` | **Fixed** (UI calls `POST /live/token`). **Voice itself stays open:** the route answers 501 with an explanation; the UI falls back hands-free → push-to-talk → text. |
 | Table: `/gaps/{id}/fallback` vs `/fallbacks` | **Fixed.** UI calls `POST /fallbacks`. |
 | Table: `GET /scenarios/{key}` bundle | **Fixed differently.** `GET /scenarios` lists the playable scenarios (S-017, S-002) from the data; `POST /gaps {scenario_id}` starts one; `GET /gaps/{id}` is the single view model. |
@@ -436,7 +444,7 @@ run, a keyboard-unreachable scrolling region in the roster strip; it was fixed.)
 | 20. Client reads of `staff`, `quarantine` | **Fixed by decision 0015.** No client Firestore reads; names come in projections; quarantine has its own route. |
 | 21. Nonce in a readable document | **Fixed.** Server-only `server/{gapId}`; only `GET /gaps/{id}/approval` returns it, only while pending. Leak test over every read route. |
 | 22. No read path for offers | **Fixed.** Offers are in the gap view, without callback URLs. |
-| 23. Voice token and model | Route **fixed**; voice **open** (Slice 4); every model ID still `TODO-VERIFY`. |
+| 23. Voice token and model | Route **fixed**; voice **open** (Slice 4). Model pinned later (`gemini-3.8-live`, `v1beta`; decision 0019), and the web client now expects `v1beta` tokens. |
 
 ### Still open
 - Voice (Slice 4), BigQuery evals (Slice 6), the guard model and an adversarial scenario (Slice 5; the J4 button is omitted, see OPEN_ITEMS).
