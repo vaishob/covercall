@@ -1,32 +1,11 @@
 rules_version = '2';
-// (default) database. Clients (the web app) get READ-ONLY access to the demo tenant's public
-// collections and no writes anywhere. Server-only collections (offers with callback URLs,
-// approvals, replies_raw, quarantine, inputs, server, dedup, outbound, applied, offer_keys)
-// are not readable by clients. Services use IAM, which bypasses these rules.
+// (default) database: NO client access at all (docs/decisions/0015-reads-through-api.md).
+// The web app reads only through api's client-safe projections. Services use IAM service
+// accounts, which bypass these rules. All data is synthetic.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /{document=**} {
       allow read, write: if false;
-    }
-    match /gaps/{gapId} {
-      allow read: if true;
-      allow write: if false;
-      match /events/{seq} {
-        allow read: if true;
-        allow write: if false;
-      }
-    }
-    match /plans/{planId} {
-      allow read: if true;
-      allow write: if false;
-    }
-    match /outlets/{id} {
-      allow read: if true;
-      allow write: if false;
-    }
-    match /shifts/{id} {
-      allow read: if true;
-      allow write: if false;
     }
   }
 }

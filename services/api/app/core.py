@@ -162,37 +162,109 @@ class Api:
                 h, m = (int(x) for x in hhmm.split(":"))
                 return now.replace(hour=h, minute=m, second=0, microsecond=0).isoformat()
 
+            reset = getattr(self.clock, "reset_to", None)
+            if callable(reset):  # simulated clock (local dev server): the scenario sets "now"
+                reset(now)
             spec = {"outlet": scen["gap"]["outlet"], "station": scen["gap"]["station"],
                     "start": at(scen["gap"]["start"]), "end": at(scen["gap"]["end"]),
                     "absent_staff_id": scen["gap"]["absent"], "scenario_id": scen["id"],
                     "seed": int(scen["seed"]), "overrides": scen.get("overrides") or []}
             text = f"Scenario {scen['id']}: {scen['description']}"
+            source = "scenario"
         else:
-            missing = [k for k in ("outlet", "station", "start", "end", "absent_staff_id") if not body.get(k)]
-            if missing:
-                raise ApiError(422, f"missing fields: {missing}")
-            spec = {k: body[k] for k in ("outlet", "station", "start", "end", "absent_staff_id")}
-            spec.update(scenario_id=None, seed=int(body.get("seed", self.cfg["solver_seed"])), overrides=[])
+            resolved = self._resolve_absence(body)
+            if resolved.get("status") == "clarify":
+                return resolved
+            spec = dict(resolved["spec"], scenario_id=None, overrides=[],
+                        seed=int(body.get("seed", self.cfg["solver_seed"])))
             text = str(body.get("text") or "")
+            source = "lead"
         n = len(self.store.list("gaps")) + 1
         gap_id = f"{self.id_prefix}-{n:04d}"
+        # Raw lead text stays server-side (inputs/, read only by the guard): never in events or views.
         self.store.set(f"inputs/{gap_id}", {"gap_id": gap_id, "text": text, "ts": self._now(),
                                             "synthetic": True})
         fields = dict(spec, excluded=[], windows={}, accepted={}, pending_counters=[], plan_id=None,
-                      current_plan_id=None, approval_id=None, outcome=None, cost_saved_sgd=None,
-                      workflow_execution_id=None, reported_at=self._now(), offer_seq=0,
-                      time_scale=self.time_scale)
+                      current_plan_id=None, approval_id=None, approval_pending=False, outcome=None,
+                      cost_saved_sgd=None, cost_saved_cents=None, workflow_execution_id=None,
+                      reported_at=self._now(), offer_seq=0, time_scale=self.time_scale)
         self.store.transaction(lambda txn: append_in_txn(
             txn, gap_id, "gap.reported", actor="lead", ts=self._now(),
-            payload={"input": text, "scenario_id": spec["scenario_id"]}, gap_fields=fields))
+            payload={"source": source, "scenario_id": spec["scenario_id"]}, gap_fields=fields))
         execution = self.launcher.start(gap_id)
         self._meta(gap_id, {"workflow_execution_id": execution})
-        return {"gap_id": gap_id, "workflow_execution_id": execution}
+        return {"status": "created", "gap_id": gap_id, "workflow_execution_id": execution}
+
+    def _resolve_absence(self, body: dict[str, Any]) -> dict[str, Any]:
+        """Voice ``report_absence(outlet, shift_start, station, staff_name?)`` -> a gap spec, or one
+        clarifying question. Names and end times come from the roster, never from a guess."""
+        missing = [k for k in ("outlet", "station") if not body.get(k)]
+        start_in = body.get("shift_start") or body.get("start")
+        if missing or not start_in:
+            raise ApiError(422, f"missing fields: {missing + ([] if start_in else ['shift_start'])}")
+        outlet, station = str(body["outlet"]), str(body["station"])
+        if self.store.get(f"outlets/{outlet}") is None:
+            raise ApiError(422, f"unknown outlet {outlet}")
+        if "T" in str(start_in):
+            start = datetime.fromisoformat(str(start_in))
+        else:
+            h, m = (int(x) for x in str(start_in).split(":"))
+            start = self.clock.now().replace(hour=h, minute=m, second=0, microsecond=0)
+        start_iso = start.isoformat()
+        staff = {k: v for k, v in self.store.list("staff")}
+        slot = [s for _, s in self.store.list("shifts")
+                if s["outlet"] == outlet and s["station"] == station and s["start"] == start_iso
+                and s.get("status", "scheduled") == "scheduled"]
+        when = start.strftime("%a %d %b %H:%M")
+        if body.get("absent_staff_id"):
+            sid = str(body["absent_staff_id"])
+            matches = [s for s in slot if s["staff_id"] == sid]
+        elif body.get("staff_name"):
+            name = str(body["staff_name"]).strip().casefold()
+            named = sorted(sid for sid, rec in staff.items()
+                           if rec["display_name"].casefold() == name
+                           or rec["display_name"].casefold().split(" ")[0] == name)
+            if not named:
+                return {"status": "clarify", "question": f"I can't find anyone called "
+                        f"{body['staff_name']} on the roster. Who is absent?", "candidates": []}
+            if len(named) > 1:
+                return {"status": "clarify", "question": f"Which {body['staff_name']} is absent?",
+                        "candidates": [{"staff_id": s, "display_name": staff[s]["display_name"],
+                                        "home_outlet": staff[s]["home_outlet"]} for s in named]}
+            matches = [s for s in slot if s["staff_id"] == named[0]]
+            if not matches:
+                return {"status": "clarify", "question": f"{staff[named[0]]['display_name']} has no "
+                        f"{station} shift at {outlet} starting {when}. Which shift is it?",
+                        "candidates": []}
+        else:
+            matches = slot
+        if len(matches) != 1:
+            return {"status": "clarify",
+                    "question": (f"Nobody is rostered on {station} at {outlet} starting {when}. "
+                                 "Which shift is it?") if not matches else
+                                f"More than one person starts {station} at {outlet} {when}. Who is absent?",
+                    "candidates": [{"staff_id": s["staff_id"],
+                                    "display_name": staff[s["staff_id"]]["display_name"],
+                                    "home_outlet": staff[s["staff_id"]]["home_outlet"]} for s in matches]}
+        shift = matches[0]
+        return {"status": "resolved", "spec": {"outlet": outlet, "station": station,
+                                               "start": shift["start"], "end": shift["end"],
+                                               "absent_staff_id": shift["staff_id"]}}
+
+    def pending_approval(self, gap_id: str) -> dict[str, Any]:
+        """The read-back and nonce, only while an approval is pending (GET /gaps/{id}/approval)."""
+        gap = self._gap(gap_id)
+        pending = (self.store.get(f"server/{gap_id}") or {}).get("pending_approval")
+        if not pending or gap["state"] != "SOLVED":
+            raise ApiError(404, "no approval is pending for this gap")
+        return {"gap_id": gap_id, "nonce": pending["nonce"], "readback_text": pending["readback_text"],
+                "plan_id": pending["plan_id"], "tier": "T2", "synthetic": True}
 
     def record_approval(self, body: dict[str, Any]) -> dict[str, Any]:
         gap = self._gap(body["gap_id"])
-        pending = gap.get("pending_approval") or {}
-        if not pending or body.get("nonce") != pending.get("nonce"):
+        server_doc = self.store.get(f"server/{gap['gap_id']}") or {}
+        pending = server_doc.get("pending_approval") or {}
+        if not pending or not body.get("nonce") or body.get("nonce") != pending.get("nonce"):
             raise ApiError(409, "no pending approval with that nonce")
         channel = body.get("channel", "tap")
         transcript = str(body.get("transcript") or "")
@@ -208,10 +280,11 @@ class Api:
                "exclude_staff_ids": list(body.get("exclude_staff_ids") or []), "ts": self._now(),
                "synthetic": True}
         self.store.transaction(lambda txn: txn.create(f"approvals/{approval_id}", doc))
-        self._meta(gap["gap_id"], {"pending_approval": None})
-        server = self.store.get(f"server/{gap['gap_id']}") or {}
-        self.callbacks.send(server["approval_callback"], {"approval_id": approval_id, "decision": decision})
-        return doc
+        server_doc["pending_approval"] = None
+        self.store.set(f"server/{gap['gap_id']}", server_doc)
+        self._meta(gap["gap_id"], {"approval_pending": False})
+        self.callbacks.send(server_doc["approval_callback"], {"approval_id": approval_id, "decision": decision})
+        return {k: v for k, v in doc.items() if k != "nonce"}
 
     def receive_reply(self, body: dict[str, Any]) -> dict[str, Any]:
         message_id = str(body.get("message_id") or "")
@@ -330,16 +403,26 @@ class Api:
         except PlanDisagreement as exc:
             rule_ids = sorted({r for d in exc.details for r in d.get("validator", []) + d.get("compiler", [])})
             return {"status": "disagreement", "details": redact(exc.details), "rule_ids": rule_ids}
-        n = len(self.store.list("plans")) + 1
-        plan_id = f"plan-{gap_id}-{n:03d}"
-        doc = dict(result.to_dict(), plan_id=plan_id, gap_id=gap_id, created_at=self._now())
-        self.store.transaction(lambda txn: txn.create(f"plans/{plan_id}", doc))
+        plan_id = self._store_plan(gap_id, result, ctx)
         self._meta(gap_id, {"current_plan_id": plan_id})
         top = result.candidates[0] if result.candidates else None
         rule_ids = sorted({r["rule_id"] for s in (top or {}).get("segments", []) for r in s["rules_checked"]})
         return {"status": "solved" if top else "no_plan", "plan_id": plan_id,
                 "top": _plan_summary(top), "rule_ids": rule_ids,
                 "rejected": [r["staff_id"] for r in result.rejected_candidates]}
+
+    def _store_plan(self, gap_id: str, result: Any, ctx: dict[str, Any]) -> str:
+        """Write an immutable plan doc, with the naive first pick and each option's saving vs it."""
+        naive = self._naive_first_pick(ctx)
+        doc = dict(result.to_dict(), gap_id=gap_id, created_at=self._now(), naive_first_pick=naive)
+        for cand in doc["candidates"]:
+            ot = cand["overtime_cost_cents"]
+            cand["saves_vs_naive_cents"] = None if naive is None else naive["overtime_cents"] - ot
+        n = len(self.store.list("plans")) + 1
+        plan_id = f"plan-{gap_id}-{n:03d}"
+        doc["plan_id"] = plan_id
+        self.store.transaction(lambda txn: txn.create(f"plans/{plan_id}", doc))
+        return plan_id
 
     def approval_request(self, gap_id: str, plan_id: str, callback_url: str) -> dict[str, Any]:
         gap = self._gap(gap_id)
@@ -355,11 +438,13 @@ class Api:
         else:
             readback = (f"No legal cover is available for the {gap['outlet']} {gap['station']} shift "
                         f"({when}). Escalate to you with fallbacks now. Approve?")
+        # The nonce lives only in the server-only doc; clients see it via GET /gaps/{id}/approval.
         server = self.store.get(f"server/{gap_id}") or {"gap_id": gap_id}
         server["approval_callback"] = callback_url
+        server["pending_approval"] = {"nonce": nonce, "readback_text": readback, "plan_id": plan_id}
         self.store.set(f"server/{gap_id}", server)
-        self._meta(gap_id, {"pending_approval": {"nonce": nonce, "readback_text": readback, "plan_id": plan_id}})
-        return {"status": "awaiting_approval", "readback_text": readback}
+        self._meta(gap_id, {"approval_pending": True})
+        return {"status": "awaiting_approval"}
 
     def next_offers(self, gap_id: str) -> dict[str, Any]:
         gap = self._gap(gap_id)
@@ -372,10 +457,7 @@ class Api:
         except PlanDisagreement as exc:  # P0; fail closed to the lead
             return {"mode": "escalate", "reason": "plan.disagreement", "t_esc": now.isoformat(),
                     "details": redact(exc.details), "offers": [], "window_s": 0, "window_s_real": 0}
-        n = len(self.store.list("plans")) + 1
-        plan_id = f"plan-{gap_id}-{n:03d}"
-        self.store.transaction(lambda txn: txn.create(
-            f"plans/{plan_id}", dict(result.to_dict(), plan_id=plan_id, gap_id=gap_id, created_at=self._now())))
+        plan_id = self._store_plan(gap_id, result, ctx)
         accepted = gap.get("accepted") or {}
         remaining = _remaining(gap, ctx, {r["staff_id"] for r in result.rejected_candidates})
         ranked: list[Candidate] = []
@@ -570,11 +652,7 @@ class Api:
         to_state = "SOLVED" if material else "OUTREACH"
         plan_id = None
         if new_top is not None:
-            n = len(self.store.list("plans")) + 1
-            plan_id = f"plan-{gap_id}-{n:03d}"
-            self.store.transaction(lambda txn: txn.create(
-                f"plans/{plan_id}", dict(result.to_dict(), plan_id=plan_id, gap_id=gap_id,
-                                         created_at=self._now())))
+            plan_id = self._store_plan(gap_id, result, ctx)
         fields: dict[str, Any] = {"pending_counters": []}
         if material:
             fields.update(approval_id=None, current_plan_id=plan_id)
@@ -620,7 +698,10 @@ class Api:
                 if (shift["staff_id"] == gap["absent_staff_id"] and shift["status"] == "scheduled"
                         and shift["start"] < gap["end"] and shift["end"] > gap["start"]):
                     txn.update(f"shifts/{sid}", {"status": "absent"})
-            saved = self._cost_saved_cents(gap, ctx, plan["cost_breakdown"])
+            naive = self._naive_first_pick(ctx)
+            cost = plan["cost_breakdown"]
+            saved = (0 if naive is None
+                     else naive["overtime_cents"] - (cost["overtime_cents"] + cost["rest_day_cents"]))
             names = " + ".join(f"{ctx['staff'][s['staff_id']]['display_name']} "
                                f"{s['start'][11:16]}-{s['end'][11:16]}" for s in plan["segments"])
             ot = plan["cost_breakdown"]["overtime_cents"] + plan["cost_breakdown"]["rest_day_cents"]
@@ -631,7 +712,8 @@ class Api:
                                    "cost_breakdown": plan["cost_breakdown"]},
                           rule_ids=[r["id"] for r in self.rules],
                           gap_fields={"outcome": "filled", "plan_id": plan["plan_id"],
-                                      "cost_saved_sgd": round(saved / 100, 2), "summary": summary,
+                                      "cost_saved_sgd": round(saved / 100, 2), "cost_saved_cents": saved,
+                                      "summary": summary,
                                       "filled_at": self._now()})
             return {"result": "ok", "summary": summary}
 
@@ -648,19 +730,24 @@ class Api:
                 self._outbound(gap, sid, "courtesy", "Thanks! We could not confirm this shift after all.")
         return result
 
-    def _cost_saved_cents(self, gap: dict[str, Any], ctx: dict[str, Any], cost: dict[str, int]) -> int:
-        """vs the naive first pick (most reliable free person), priced by the validator (decision 0014)."""
-        pool = ranked_pool(ctx["gap"], ctx)
+    def _naive_first_pick(self, ctx: dict[str, Any]) -> dict[str, Any] | None:
+        """Decision 0014 comparator: the most reliable free person with the station skill (the
+        baseline's rule, planner-visible data only), priced by the validator. May be illegal."""
+        gap = ctx["gap"]
+        pool = ranked_pool(gap, ctx)
         if not pool:
-            return 0
+            return None
         start = int(datetime.fromisoformat(gap["start"]).timestamp() // 60)
         end = int(datetime.fromisoformat(gap["end"]).timestamp() // 60)
         tz = datetime.fromisoformat(gap["start"]).tzinfo
         breaks = [{"start": datetime.fromtimestamp(a * 60, tz).isoformat(), "duration_min": b - a}
                   for a, b in planned_breaks(start, end, self.cfg)]
         asg = {"staff_id": pool[0], "start": gap["start"], "end": gap["end"], "breaks": breaks}
-        naive = cost_breakdown(validate_assignment(asg, ctx, self.rules))
-        return (naive["overtime_cents"] + naive["rest_day_cents"]) - (cost["overtime_cents"] + cost["rest_day_cents"])
+        results = validate_assignment(asg, ctx, self.rules)
+        naive = cost_breakdown(results)
+        return {"staff_id": pool[0], "display_name": ctx["staff"][pool[0]]["display_name"],
+                "overtime_cents": naive["overtime_cents"] + naive["rest_day_cents"],
+                "blocking_rule_ids": [r.rule_id for r in blocking_violations(results)]}
 
     def escalation_request(self, gap_id: str, callback_url: str) -> dict[str, Any]:
         gap = self._gap(gap_id)

@@ -8,11 +8,23 @@ from collections.abc import Callable
 from typing import Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 
+from services.api.app import views
 from services.api.app.core import Api, ApiError
-from services.api.app.events import verify_chain
 from services.api.app.page import TEST_PAGE
+
+DEFAULT_ALLOWED_ORIGINS = ("http://localhost:3000",)
+
+
+def allowed_origins_from_env() -> list[str]:
+    """Comma-separated ``ALLOWED_ORIGINS``. A wildcard is refused (decision 0015)."""
+    raw = os.environ.get("ALLOWED_ORIGINS", "")
+    origins = [o.strip() for o in raw.split(",") if o.strip()] or list(DEFAULT_ALLOWED_ORIGINS)
+    if any("*" in o for o in origins):
+        raise ValueError("ALLOWED_ORIGINS must list exact origins; '*' is not allowed")
+    return origins
 
 
 def require_workflow_caller(authorization: str = Header(default="")) -> None:
@@ -34,9 +46,15 @@ def require_workflow_caller(authorization: str = Header(default="")) -> None:
 
 
 def create_app(api: Api, internal_auth: Callable[..., None] = require_workflow_caller,
-               time_scale_label: str = "") -> FastAPI:
+               time_scale_label: str = "", allowed_origins: list[str] | None = None,
+               environment: str = "local") -> FastAPI:
     app = FastAPI(title="covercall-api", description="All data is synthetic.")
     app.state.api = api
+    origins = allowed_origins if allowed_origins is not None else allowed_origins_from_env()
+    if any("*" in o for o in origins):
+        raise ValueError("allowed_origins must list exact origins; '*' is not allowed")
+    app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["GET", "POST"],
+                       allow_headers=["Content-Type"], allow_credentials=False)
     internal = [Depends(internal_auth)]
 
     @app.exception_handler(ApiError)
@@ -52,25 +70,34 @@ def create_app(api: Api, internal_auth: Callable[..., None] = require_workflow_c
     def create_gap(body: dict[str, Any]) -> dict[str, Any]:
         return api.create_gap(body)
 
+    # Read routes: client-safe projections only (services/api/app/views.py).
+    @app.get("/status")
+    def status() -> dict[str, Any]:
+        return views.status_view(api, environment)
+
+    @app.get("/scenarios")
+    def scenarios() -> list[dict[str, Any]]:
+        return views.scenarios_view(api)
+
     @app.get("/gaps/{gap_id}")
     def get_gap(gap_id: str) -> dict[str, Any]:
-        gap = api._gap(gap_id)
-        return {k: v for k, v in gap.items() if k not in ("overrides",)}
+        return views.gap_view(api, gap_id)
 
     @app.get("/gaps/{gap_id}/events")
-    def get_events(gap_id: str) -> list[dict[str, Any]]:
-        return [ev for _, ev in api.store.list(f"gaps/{gap_id}/events")]
+    def get_events(gap_id: str) -> dict[str, Any]:
+        return views.events_view(api, gap_id)
 
-    @app.get("/gaps/{gap_id}/verify")
-    def verify(gap_id: str) -> dict[str, Any]:
-        return verify_chain(api.store, gap_id).to_dict()
+    @app.get("/gaps/{gap_id}/quarantine")
+    def get_quarantine(gap_id: str) -> list[dict[str, Any]]:
+        return views.quarantine_view(api, gap_id)
 
-    @app.get("/plans/{plan_id}")
-    def get_plan(plan_id: str) -> dict[str, Any]:
-        plan = api.store.get(f"plans/{plan_id}")
-        if plan is None:
-            raise HTTPException(404)
-        return plan
+    @app.get("/gaps/{gap_id}/approval")
+    def get_approval(gap_id: str) -> dict[str, Any]:
+        return api.pending_approval(gap_id)
+
+    @app.get("/evals")
+    def evals() -> dict[str, Any]:
+        return views.evals_view()
 
     @app.post("/approvals")
     def approvals(body: dict[str, Any]) -> dict[str, Any]:
@@ -91,7 +118,11 @@ def create_app(api: Api, internal_auth: Callable[..., None] = require_workflow_c
     @app.post("/live/token")
     def live_token() -> JSONResponse:
         # Slice 4: single-use ephemeral Live API token. Not built; never returns a key.
-        return JSONResponse(status_code=501, content={"error": "voice is Slice 4; use text or Scenario buttons"})
+        return JSONResponse(status_code=501, content={
+            "error": "not_implemented",
+            "message": "Voice is not available yet: Gemini Live ephemeral tokens are Slice 4, and the "
+                       "voice model ID in config/models.yaml is TODO-VERIFY. Use the Scenario buttons "
+                       "or text."})
 
     @app.get("/test", response_class=HTMLResponse)
     def test_page() -> str:
@@ -172,7 +203,7 @@ def _cloud_app() -> FastAPI:  # pragma: no cover - Cloud Run wiring, not run in 
               agent=LocalAgent(cfg), messenger=HttpMessenger(os.environ["PERSONA_SIM_URL"]),
               callbacks=HttpCallbacks(),
               launcher=WorkflowsLauncher(), solver=HttpSolver(os.environ["SOLVER_URL"]), time_scale=scale)
-    return create_app(api, time_scale_label=f"x{scale:g}" if scale != 1 else "")
+    return create_app(api, time_scale_label=f"x{scale:g}" if scale != 1 else "", environment="cloud")
 
 
 class _RealClock:  # pragma: no cover

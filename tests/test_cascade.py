@@ -57,7 +57,8 @@ def test_no_offer_without_covering_approval(data: dict[str, Any]) -> None:
         run.api.register_offer(gap_id, offer, "local://x", 600)
     # A rejection is not an approval: plan.approved is refused with it.
     run.post("/internal/approval-request", {"gap_id": gap_id, "plan_id": plan_id, "callback_url": "local://a"})
-    nonce = run.store.require(f"gaps/{gap_id}")["pending_approval"]["nonce"]
+    assert "nonce" not in str(run.store.require(f"gaps/{gap_id}"))  # never in the readable gap doc
+    nonce = run.get(f"/gaps/{gap_id}/approval")["nonce"]
     rej = run.post("/approvals", {"gap_id": gap_id, "nonce": nonce, "decision": "reject", "channel": "tap"})
     with pytest.raises(ApiError):
         run.api.transition({"gap_id": gap_id, "type": "plan.approved", "actor": "lead",
@@ -73,8 +74,11 @@ def test_voice_approval_needs_a_clear_yes(data: dict[str, Any]) -> None:
     run = LocalRun(scenario("S-017"), data, CFG, RULES)
     gap_id = run.post("/gaps", {"scenario_id": "S-017"})["gap_id"]
     run.gap_id = gap_id
-    run.post("/internal/approval-request", {"gap_id": gap_id, "plan_id": "p", "callback_url": "local://a"})
-    nonce = run.store.require(f"gaps/{gap_id}")["pending_approval"]["nonce"]
+    run.transition("guarded", {"type": "input.guarded", "actor": "system"})
+    plan_id = run.post("/internal/solve", {"gap_id": gap_id})["plan_id"]
+    run.transition("solved", {"type": "plan.solved", "actor": "system", "payload": {"plan_id": plan_id}})
+    run.post("/internal/approval-request", {"gap_id": gap_id, "plan_id": plan_id, "callback_url": "local://a"})
+    nonce = run.get(f"/gaps/{gap_id}/approval")["nonce"]
     maybe = run.post("/approvals", {"gap_id": gap_id, "nonce": nonce, "channel": "voice",
                                     "transcript": "hmm maybe later"})
     assert maybe["decision"] == "reject"
@@ -138,8 +142,8 @@ def test_injected_reply_is_quarantined_and_never_reaches_the_planner(data: dict[
 
 
 class _CancelRun(LocalRun):
-    def _lead_acts(self, url: str, kind: str) -> None:
-        self.post(f"/gaps/{self.gap_id}/cancel", {})
+    def _lead_acts(self, url: str, kind: str, gap_id: str = "", client: Any = None) -> None:
+        self.post(f"/gaps/{gap_id or self.gap_id}/cancel", {}, client)
 
 
 def test_lead_cancel_goes_through_the_workflow(data: dict[str, Any]) -> None:

@@ -1,3 +1,5 @@
+web/ owner: Claude Code (since 2026-10-18T17:51:11+08:00)
+
 # CoverCall handoff (`claude/slices-1-2`)
 
 **All data is synthetic.**
