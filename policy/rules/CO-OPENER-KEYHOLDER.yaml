@@ -1,0 +1,20 @@
+id: CO-OPENER-KEYHOLDER
+title: Opening shifts require at least one key-holder
+kind: hard
+jurisdiction: SG
+source:
+  publisher: Synthetic company policy
+  title: CoverCall synthetic company policy and design defaults
+  url: policy/company.yaml
+  section: opener_keyholder
+  source_last_updated: 2026-10-18
+  retrieved: 2026-10-18
+applies_when: shift.is_opening_shift == true
+params:
+  require_keyholder_on_open: true
+message: "{name}: opening shift at {outlet} requires a key-holder, and no other key-holder is rostered."
+tests:
+  - fixture: opener_no_keyholder_violation
+    expect: violation
+  - fixture: opener_non_opening_shift_na
+    expect: not_applicable

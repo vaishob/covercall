@@ -1,0 +1,662 @@
+{
+  "stf_001": {
+    "staff_id": "stf_001",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 33,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "singlish",
+      "singlish_particles": true,
+      "brevity": "medium",
+      "emoji_tendency": "none"
+    },
+    "seed": 43,
+    "synthetic": true
+  },
+  "stf_002": {
+    "staff_id": "stf_002",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 89,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "singlish",
+      "singlish_particles": false,
+      "brevity": "short",
+      "emoji_tendency": "light"
+    },
+    "seed": 44,
+    "synthetic": true
+  },
+  "stf_003": {
+    "staff_id": "stf_003",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 47,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "singlish",
+      "singlish_particles": false,
+      "brevity": "short",
+      "emoji_tendency": "none"
+    },
+    "seed": 45,
+    "synthetic": true
+  },
+  "stf_004": {
+    "staff_id": "stf_004",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 53,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "hokkien",
+      "singlish_particles": true,
+      "brevity": "medium",
+      "emoji_tendency": "none"
+    },
+    "seed": 46,
+    "synthetic": true
+  },
+  "stf_005": {
+    "staff_id": "stf_005",
+    "hidden_availability": "busy_morning",
+    "reply_delay_s": {
+      "mean": 49,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "tamil",
+      "singlish_particles": false,
+      "brevity": "short",
+      "emoji_tendency": "none"
+    },
+    "seed": 47,
+    "synthetic": true
+  },
+  "stf_006": {
+    "staff_id": "stf_006",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 66,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "tamil",
+      "singlish_particles": true,
+      "brevity": "medium",
+      "emoji_tendency": "light"
+    },
+    "seed": 48,
+    "synthetic": true
+  },
+  "stf_007": {
+    "staff_id": "stf_007",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 41,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "tamil",
+      "singlish_particles": true,
+      "brevity": "short",
+      "emoji_tendency": "light"
+    },
+    "seed": 49,
+    "synthetic": true
+  },
+  "stf_008": {
+    "staff_id": "stf_008",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 24,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "genz",
+      "singlish_particles": false,
+      "brevity": "medium",
+      "emoji_tendency": "light"
+    },
+    "seed": 50,
+    "synthetic": true
+  },
+  "stf_009": {
+    "staff_id": "stf_009",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 38,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "mandarin",
+      "singlish_particles": false,
+      "brevity": "short",
+      "emoji_tendency": "none"
+    },
+    "seed": 51,
+    "synthetic": true
+  },
+  "stf_010": {
+    "staff_id": "stf_010",
+    "hidden_availability": "busy_morning",
+    "reply_delay_s": {
+      "mean": 37,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "singlish",
+      "singlish_particles": false,
+      "brevity": "short",
+      "emoji_tendency": "none"
+    },
+    "seed": 52,
+    "synthetic": true
+  },
+  "stf_011": {
+    "staff_id": "stf_011",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 79,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "hokkien",
+      "singlish_particles": false,
+      "brevity": "short",
+      "emoji_tendency": "none"
+    },
+    "seed": 53,
+    "synthetic": true
+  },
+  "stf_012": {
+    "staff_id": "stf_012",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 20,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "mandarin",
+      "singlish_particles": false,
+      "brevity": "short",
+      "emoji_tendency": "none"
+    },
+    "seed": 54,
+    "synthetic": true
+  },
+  "stf_013": {
+    "staff_id": "stf_013",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 87,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "genz",
+      "singlish_particles": true,
+      "brevity": "medium",
+      "emoji_tendency": "light"
+    },
+    "seed": 55,
+    "synthetic": true
+  },
+  "stf_014": {
+    "staff_id": "stf_014",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 27,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "singlish",
+      "singlish_particles": true,
+      "brevity": "short",
+      "emoji_tendency": "none"
+    },
+    "seed": 56,
+    "synthetic": true
+  },
+  "stf_015": {
+    "staff_id": "stf_015",
+    "hidden_availability": "busy_morning",
+    "reply_delay_s": {
+      "mean": 80,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "singlish",
+      "singlish_particles": true,
+      "brevity": "medium",
+      "emoji_tendency": "light"
+    },
+    "seed": 57,
+    "synthetic": true
+  },
+  "stf_016": {
+    "staff_id": "stf_016",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 77,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "hokkien",
+      "singlish_particles": true,
+      "brevity": "short",
+      "emoji_tendency": "none"
+    },
+    "seed": 58,
+    "synthetic": true
+  },
+  "stf_017": {
+    "staff_id": "stf_017",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 20,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "singlish",
+      "singlish_particles": true,
+      "brevity": "short",
+      "emoji_tendency": "none"
+    },
+    "seed": 59,
+    "synthetic": true
+  },
+  "stf_018": {
+    "staff_id": "stf_018",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 55,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "singlish",
+      "singlish_particles": false,
+      "brevity": "short",
+      "emoji_tendency": "none"
+    },
+    "seed": 60,
+    "synthetic": true
+  },
+  "stf_019": {
+    "staff_id": "stf_019",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 32,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "singlish",
+      "singlish_particles": true,
+      "brevity": "medium",
+      "emoji_tendency": "light"
+    },
+    "seed": 61,
+    "synthetic": true
+  },
+  "stf_020": {
+    "staff_id": "stf_020",
+    "hidden_availability": "busy_morning",
+    "reply_delay_s": {
+      "mean": 71,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "english",
+      "singlish_particles": false,
+      "brevity": "short",
+      "emoji_tendency": "none"
+    },
+    "seed": 62,
+    "synthetic": true
+  },
+  "stf_021": {
+    "staff_id": "stf_021",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 29,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "singlish",
+      "singlish_particles": false,
+      "brevity": "short",
+      "emoji_tendency": "none"
+    },
+    "seed": 63,
+    "synthetic": true
+  },
+  "stf_022": {
+    "staff_id": "stf_022",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 82,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "mandarin",
+      "singlish_particles": false,
+      "brevity": "short",
+      "emoji_tendency": "light"
+    },
+    "seed": 64,
+    "synthetic": true
+  },
+  "stf_023": {
+    "staff_id": "stf_023",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 74,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "malay",
+      "singlish_particles": false,
+      "brevity": "short",
+      "emoji_tendency": "none"
+    },
+    "seed": 65,
+    "synthetic": true
+  },
+  "stf_024": {
+    "staff_id": "stf_024",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 81,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "english",
+      "singlish_particles": true,
+      "brevity": "short",
+      "emoji_tendency": "none"
+    },
+    "seed": 66,
+    "synthetic": true
+  },
+  "stf_025": {
+    "staff_id": "stf_025",
+    "hidden_availability": "busy_morning",
+    "reply_delay_s": {
+      "mean": 51,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "english",
+      "singlish_particles": true,
+      "brevity": "short",
+      "emoji_tendency": "light"
+    },
+    "seed": 67,
+    "synthetic": true
+  },
+  "stf_026": {
+    "staff_id": "stf_026",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 53,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "singlish",
+      "singlish_particles": false,
+      "brevity": "short",
+      "emoji_tendency": "light"
+    },
+    "seed": 68,
+    "synthetic": true
+  },
+  "stf_027": {
+    "staff_id": "stf_027",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 32,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "mandarin",
+      "singlish_particles": true,
+      "brevity": "short",
+      "emoji_tendency": "light"
+    },
+    "seed": 69,
+    "synthetic": true
+  },
+  "stf_028": {
+    "staff_id": "stf_028",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 89,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "genz",
+      "singlish_particles": false,
+      "brevity": "short",
+      "emoji_tendency": "light"
+    },
+    "seed": 70,
+    "synthetic": true
+  },
+  "stf_029": {
+    "staff_id": "stf_029",
+    "hidden_availability": "available",
+    "reply_delay_s": {
+      "mean": 33,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "english",
+      "singlish_particles": true,
+      "brevity": "medium",
+      "emoji_tendency": "light"
+    },
+    "seed": 71,
+    "synthetic": true
+  },
+  "stf_030": {
+    "staff_id": "stf_030",
+    "hidden_availability": "busy_morning",
+    "reply_delay_s": {
+      "mean": 52,
+      "std": 10
+    },
+    "tendencies": {
+      "accept": 0.65,
+      "decline": 0.2,
+      "counter": 0.1,
+      "silent": 0.05
+    },
+    "style_profile": {
+      "language_slice": "mandarin",
+      "singlish_particles": true,
+      "brevity": "short",
+      "emoji_tendency": "light"
+    },
+    "seed": 72,
+    "synthetic": true
+  }
+}

@@ -1,0 +1,22 @@
+id: SG-EA4-BREAKS
+title: Mandatory meal breaks for continuous work
+kind: hard
+jurisdiction: SG
+source:
+  publisher: Ministry of Manpower (MOM)
+  title: Hours of work, overtime and rest day
+  url: https://www.mom.gov.sg/employment-practices/hours-of-work-overtime-and-rest-days
+  section: Break times
+  source_last_updated: 2025-07-24
+  retrieved: 2026-10-18
+applies_when: employee.part4_covered == true
+params:
+  max_consecutive_hours_without_break: 6
+  min_meal_break_min_for_8h_continuous: 45
+  continuous_work_threshold_hours: 8
+message: "{name}: {work_hours}h shift has only {breaks_min} min break (EA Part 4 requires at least {min_break_min} min meal break for shifts >= 8h, and no more than 6h without break)."
+tests:
+  - fixture: breaks_8h_no_break_violation
+    expect: violation
+  - fixture: breaks_8h_with_45min_ok
+    expect: ok

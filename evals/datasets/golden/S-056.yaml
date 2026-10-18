@@ -1,0 +1,31 @@
+id: S-056
+description: Synthetic absence scenario S-056 at jurong_east (cashier)
+now: '2026-11-03T06:02:00+08:00'
+seed: 98
+gap:
+  outlet: jurong_east
+  station: cashier
+  start: '12:00'
+  end: '20:00'
+  absent: stf_012
+overrides:
+- staff: stf_004
+  ledger:
+    ot_hours_used: 70
+- staff: stf_006
+  shift_context:
+    days_since_last_rest_day: 11
+    hours_since_prev_shift_end: 9.0
+personas:
+  stf_022:
+    will: counter
+    window:
+    - 09:00
+    - '15:00'
+synthetic: true
+expect:
+  outcome: filled
+  violations: 0
+  overtime_cost_sgd: 0.0
+  total_cost_sgd: 0.0
+  assigned_staff_id: stf_015

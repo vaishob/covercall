@@ -1,0 +1,23 @@
+id: SG-SFA-FSC-L1
+title: WSQ Food Safety Course Level 1 required for food and beverage handlers
+kind: hard
+jurisdiction: SG
+source:
+  publisher: Singapore Food Agency (SFA)
+  title: WSQ Food Safety Course (FSC) Level 1
+  url: https://www.sfa.gov.sg/food-handler-hygiene-officer/training-courses/wsq-food-safety-course-level-1
+  section: "Who must attain WSQ FSC Level 1 certification?"
+  source_last_updated: 2026-08-24
+  retrieved: 2026-10-18
+applies_when: shift.station in ["kitchen", "barista"]
+params:
+  fsc_l1_refresher_years: 5
+  stations_requiring_fsc:
+    - kitchen
+    - barista
+message: "{name}: WSQ Food Safety Course Level 1 is {cert_status} (required for {station} station; refresher due within 5 years)."
+tests:
+  - fixture: fsc_lapsed_barista_violation
+    expect: violation
+  - fixture: fsc_cashier_station_na
+    expect: not_applicable

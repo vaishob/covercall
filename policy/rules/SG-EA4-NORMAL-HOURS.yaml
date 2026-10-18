@@ -1,0 +1,22 @@
+id: SG-EA4-NORMAL-HOURS
+title: Contractual normal hours of work (up to 8 or 9 hours/day, 44 hours/week)
+kind: cost
+jurisdiction: SG
+source:
+  publisher: Ministry of Manpower (MOM)
+  title: Hours of work, overtime and rest day
+  url: https://www.mom.gov.sg/employment-practices/hours-of-work-overtime-and-rest-days
+  section: Normal hours of work
+  source_last_updated: 2025-07-24
+  retrieved: 2026-10-18
+applies_when: employee.part4_covered == true
+params:
+  max_normal_daily_hours_5day_or_less: 9
+  max_normal_daily_hours_more_than_5day: 8
+  max_normal_weekly_hours: 44
+message: "{name}: {work_hours}h worked against {normal_daily_hours}h normal daily limit yields {ot_added}h overtime."
+tests:
+  - fixture: normal_hours_within_8h
+    expect: ok
+  - fixture: normal_hours_manager_not_covered
+    expect: not_applicable

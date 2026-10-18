@@ -1,0 +1,31 @@
+id: S-017
+description: Bugis opener sick; nearest barista is near the overtime cap
+now: '2026-11-03T06:02:00+08:00'
+seed: 17
+gap:
+  outlet: bugis
+  station: barista
+  start: 07:00
+  end: '15:00'
+  absent: stf_011
+overrides:
+- staff: stf_004
+  ledger:
+    ot_hours_used: 70
+personas:
+  stf_019:
+    will: decline
+  stf_022:
+    will: counter
+    window:
+    - 09:00
+    - '15:00'
+  stf_008:
+    will: silent
+synthetic: true
+expect:
+  outcome: filled
+  violations: 0
+  overtime_cost_sgd: 0.0
+  total_cost_sgd: 0.0
+  assigned_staff_id: stf_001

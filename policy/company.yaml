@@ -1,0 +1,41 @@
+# Synthetic company policy and design defaults (§3.1, §5.2, §6.4)
+# All data is synthetic.
+
+synthetic: true
+
+buffer_min: 10              # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+w_min_min: 3                # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+w_max_min: 10               # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+k: 3                        # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+fanout_threshold_min: 25    # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+fanout_n: 3                 # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+escalation_lead_min: 15     # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+
+solver_time_limit_s: 2      # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+solver_seed: 42             # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+top_k_plans: 3              # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+max_segments: 2             # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+
+material_change:            # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+  time_shift_min: 30        # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+  cost_up: true             # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+
+parse_confidence_min: 0.7   # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+draft_max_chars: 300        # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+retry_attempts: 3           # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+
+fairness:                   # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+  max_covers: 2             # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+  window_days: 14           # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+
+rest_between_shifts_h: 11   # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+ft_pt_ratio: [60, 40]       # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+
+objective_weights:          # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+  cost: 1                   # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+  fairness: 500             # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+  disruption: 300           # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)
+
+# Linked to §15.2 open item: SFA defines a food handler as any person who handles and prepares
+# food and beverages within SFA-licensed premises (verified on sfa.gov.sg, see docs/OPEN_ITEMS.md).
+enforce_fsc_on_barista: true # design default (chosen, see docs/decisions/0002-model-ids-and-sources.md)

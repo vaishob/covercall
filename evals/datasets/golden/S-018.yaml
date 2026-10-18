@@ -1,0 +1,26 @@
+id: S-018
+description: Synthetic absence scenario S-018 at bugis (barista)
+now: '2026-11-03T06:02:00+08:00'
+seed: 60
+gap:
+  outlet: bugis
+  station: barista
+  start: 07:00
+  end: '15:00'
+  absent: stf_011
+overrides:
+- staff: stf_004
+  ledger:
+    ot_hours_used: 70
+- staff: stf_006
+  shift_context:
+    days_since_last_rest_day: 13
+    hours_since_prev_shift_end: 14.0
+personas: {}
+synthetic: true
+expect:
+  outcome: filled
+  violations: 0
+  overtime_cost_sgd: 0.0
+  total_cost_sgd: 0.0
+  assigned_staff_id: stf_016

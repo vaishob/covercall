@@ -1,0 +1,23 @@
+id: SG-EA4-OT-CAP-72
+title: Monthly overtime cap
+kind: hard # hard | cost | soft
+jurisdiction: SG
+source:
+  publisher: Ministry of Manpower (MOM)
+  title: Hours of work, overtime and rest day
+  url: https://www.mom.gov.sg/employment-practices/hours-of-work-overtime-and-rest-days
+  section: Maximum hours of overtime
+  source_last_updated: 2025-07-24
+  retrieved: 2026-10-18
+applies_when: employee.part4_covered == true
+params:
+  max_overtime_hours_per_month: 72
+  rest_day_and_ph_hours_count_only_beyond_normal_day: true
+message: "{name}: {ot_used} of {max} overtime hours used this month. This shift adds {ot_added}. Breaches the EA Part 4 monthly cap."
+tests:
+  - fixture: ot_cap_70_plus_3
+    expect: violation
+  - fixture: ot_cap_manager_not_covered
+    expect: not_applicable
+  - fixture: ot_cap_69_plus_3
+    expect: ok

@@ -1,0 +1,23 @@
+id: CO-STATION-SKILL
+title: Assignee holds the required station skill tag
+kind: hard
+jurisdiction: SG
+source:
+  publisher: Synthetic company policy
+  title: CoverCall synthetic company policy and design defaults
+  url: policy/company.yaml
+  section: station_skill
+  source_last_updated: 2026-10-18
+  retrieved: 2026-10-18
+applies_when: "true"
+params:
+  allowed_skills:
+    - barista
+    - kitchen
+    - cashier
+message: "{name}: does not hold the required '{station}' station skill (holds: {skills})."
+tests:
+  - fixture: skill_missing_barista
+    expect: violation
+  - fixture: skill_has_barista
+    expect: ok

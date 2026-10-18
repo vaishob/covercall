@@ -1,0 +1,1442 @@
+[
+  {
+    "shift_id": "shf_0001",
+    "outlet": "bugis",
+    "station": "barista",
+    "staff_id": "stf_002",
+    "start": "2026-11-01T07:00:00+08:00",
+    "end": "2026-11-01T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-01T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0002",
+    "outlet": "bugis",
+    "station": "kitchen",
+    "staff_id": "stf_003",
+    "start": "2026-11-01T07:00:00+08:00",
+    "end": "2026-11-01T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-01T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0003",
+    "outlet": "bugis",
+    "station": "cashier",
+    "staff_id": "stf_004",
+    "start": "2026-11-01T07:00:00+08:00",
+    "end": "2026-11-01T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-01T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0004",
+    "outlet": "tampines",
+    "station": "barista",
+    "staff_id": "stf_005",
+    "start": "2026-11-01T07:00:00+08:00",
+    "end": "2026-11-01T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-01T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0005",
+    "outlet": "tampines",
+    "station": "kitchen",
+    "staff_id": "stf_006",
+    "start": "2026-11-01T07:00:00+08:00",
+    "end": "2026-11-01T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-01T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0006",
+    "outlet": "tampines",
+    "station": "cashier",
+    "staff_id": "stf_007",
+    "start": "2026-11-01T07:00:00+08:00",
+    "end": "2026-11-01T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-01T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0007",
+    "outlet": "jurong_east",
+    "station": "barista",
+    "staff_id": "stf_008",
+    "start": "2026-11-01T07:00:00+08:00",
+    "end": "2026-11-01T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-01T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0008",
+    "outlet": "jurong_east",
+    "station": "kitchen",
+    "staff_id": "stf_009",
+    "start": "2026-11-01T07:00:00+08:00",
+    "end": "2026-11-01T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-01T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0009",
+    "outlet": "jurong_east",
+    "station": "cashier",
+    "staff_id": "stf_010",
+    "start": "2026-11-01T07:00:00+08:00",
+    "end": "2026-11-01T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-01T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0010",
+    "outlet": "bugis",
+    "station": "barista",
+    "staff_id": "stf_003",
+    "start": "2026-11-02T07:00:00+08:00",
+    "end": "2026-11-02T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-02T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0011",
+    "outlet": "bugis",
+    "station": "kitchen",
+    "staff_id": "stf_004",
+    "start": "2026-11-02T07:00:00+08:00",
+    "end": "2026-11-02T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-02T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0012",
+    "outlet": "bugis",
+    "station": "cashier",
+    "staff_id": "stf_005",
+    "start": "2026-11-02T07:00:00+08:00",
+    "end": "2026-11-02T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-02T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0013",
+    "outlet": "tampines",
+    "station": "barista",
+    "staff_id": "stf_006",
+    "start": "2026-11-02T07:00:00+08:00",
+    "end": "2026-11-02T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-02T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0014",
+    "outlet": "tampines",
+    "station": "kitchen",
+    "staff_id": "stf_007",
+    "start": "2026-11-02T07:00:00+08:00",
+    "end": "2026-11-02T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-02T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0015",
+    "outlet": "tampines",
+    "station": "cashier",
+    "staff_id": "stf_008",
+    "start": "2026-11-02T07:00:00+08:00",
+    "end": "2026-11-02T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-02T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0016",
+    "outlet": "jurong_east",
+    "station": "barista",
+    "staff_id": "stf_009",
+    "start": "2026-11-02T07:00:00+08:00",
+    "end": "2026-11-02T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-02T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0017",
+    "outlet": "jurong_east",
+    "station": "kitchen",
+    "staff_id": "stf_010",
+    "start": "2026-11-02T07:00:00+08:00",
+    "end": "2026-11-02T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-02T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0018",
+    "outlet": "jurong_east",
+    "station": "cashier",
+    "staff_id": "stf_011",
+    "start": "2026-11-02T07:00:00+08:00",
+    "end": "2026-11-02T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-02T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0019",
+    "outlet": "bugis",
+    "station": "barista",
+    "staff_id": "stf_011",
+    "start": "2026-11-03T07:00:00+08:00",
+    "end": "2026-11-03T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-03T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0020",
+    "outlet": "bugis",
+    "station": "kitchen",
+    "staff_id": "stf_005",
+    "start": "2026-11-03T07:00:00+08:00",
+    "end": "2026-11-03T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-03T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0021",
+    "outlet": "bugis",
+    "station": "cashier",
+    "staff_id": "stf_006",
+    "start": "2026-11-03T07:00:00+08:00",
+    "end": "2026-11-03T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-03T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0022",
+    "outlet": "tampines",
+    "station": "barista",
+    "staff_id": "stf_007",
+    "start": "2026-11-03T07:00:00+08:00",
+    "end": "2026-11-03T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-03T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0023",
+    "outlet": "tampines",
+    "station": "kitchen",
+    "staff_id": "stf_008",
+    "start": "2026-11-03T07:00:00+08:00",
+    "end": "2026-11-03T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-03T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0024",
+    "outlet": "tampines",
+    "station": "cashier",
+    "staff_id": "stf_009",
+    "start": "2026-11-03T07:00:00+08:00",
+    "end": "2026-11-03T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-03T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0025",
+    "outlet": "jurong_east",
+    "station": "barista",
+    "staff_id": "stf_010",
+    "start": "2026-11-03T07:00:00+08:00",
+    "end": "2026-11-03T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-03T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0026",
+    "outlet": "jurong_east",
+    "station": "kitchen",
+    "staff_id": "stf_011",
+    "start": "2026-11-03T07:00:00+08:00",
+    "end": "2026-11-03T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-03T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0027",
+    "outlet": "jurong_east",
+    "station": "cashier",
+    "staff_id": "stf_012",
+    "start": "2026-11-03T07:00:00+08:00",
+    "end": "2026-11-03T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-03T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0028",
+    "outlet": "bugis",
+    "station": "barista",
+    "staff_id": "stf_005",
+    "start": "2026-11-04T07:00:00+08:00",
+    "end": "2026-11-04T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-04T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0029",
+    "outlet": "bugis",
+    "station": "kitchen",
+    "staff_id": "stf_006",
+    "start": "2026-11-04T07:00:00+08:00",
+    "end": "2026-11-04T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-04T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0030",
+    "outlet": "bugis",
+    "station": "cashier",
+    "staff_id": "stf_007",
+    "start": "2026-11-04T07:00:00+08:00",
+    "end": "2026-11-04T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-04T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0031",
+    "outlet": "tampines",
+    "station": "barista",
+    "staff_id": "stf_008",
+    "start": "2026-11-04T07:00:00+08:00",
+    "end": "2026-11-04T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-04T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0032",
+    "outlet": "tampines",
+    "station": "kitchen",
+    "staff_id": "stf_009",
+    "start": "2026-11-04T07:00:00+08:00",
+    "end": "2026-11-04T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-04T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0033",
+    "outlet": "tampines",
+    "station": "cashier",
+    "staff_id": "stf_010",
+    "start": "2026-11-04T07:00:00+08:00",
+    "end": "2026-11-04T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-04T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0034",
+    "outlet": "jurong_east",
+    "station": "barista",
+    "staff_id": "stf_011",
+    "start": "2026-11-04T07:00:00+08:00",
+    "end": "2026-11-04T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-04T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0035",
+    "outlet": "jurong_east",
+    "station": "kitchen",
+    "staff_id": "stf_012",
+    "start": "2026-11-04T07:00:00+08:00",
+    "end": "2026-11-04T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-04T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0036",
+    "outlet": "jurong_east",
+    "station": "cashier",
+    "staff_id": "stf_013",
+    "start": "2026-11-04T07:00:00+08:00",
+    "end": "2026-11-04T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-04T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0037",
+    "outlet": "bugis",
+    "station": "barista",
+    "staff_id": "stf_006",
+    "start": "2026-11-05T07:00:00+08:00",
+    "end": "2026-11-05T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-05T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0038",
+    "outlet": "bugis",
+    "station": "kitchen",
+    "staff_id": "stf_007",
+    "start": "2026-11-05T07:00:00+08:00",
+    "end": "2026-11-05T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-05T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0039",
+    "outlet": "bugis",
+    "station": "cashier",
+    "staff_id": "stf_008",
+    "start": "2026-11-05T07:00:00+08:00",
+    "end": "2026-11-05T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-05T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0040",
+    "outlet": "tampines",
+    "station": "barista",
+    "staff_id": "stf_009",
+    "start": "2026-11-05T07:00:00+08:00",
+    "end": "2026-11-05T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-05T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0041",
+    "outlet": "tampines",
+    "station": "kitchen",
+    "staff_id": "stf_010",
+    "start": "2026-11-05T07:00:00+08:00",
+    "end": "2026-11-05T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-05T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0042",
+    "outlet": "tampines",
+    "station": "cashier",
+    "staff_id": "stf_011",
+    "start": "2026-11-05T07:00:00+08:00",
+    "end": "2026-11-05T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-05T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0043",
+    "outlet": "jurong_east",
+    "station": "barista",
+    "staff_id": "stf_012",
+    "start": "2026-11-05T07:00:00+08:00",
+    "end": "2026-11-05T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-05T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0044",
+    "outlet": "jurong_east",
+    "station": "kitchen",
+    "staff_id": "stf_013",
+    "start": "2026-11-05T07:00:00+08:00",
+    "end": "2026-11-05T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-05T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0045",
+    "outlet": "jurong_east",
+    "station": "cashier",
+    "staff_id": "stf_014",
+    "start": "2026-11-05T07:00:00+08:00",
+    "end": "2026-11-05T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-05T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0046",
+    "outlet": "bugis",
+    "station": "barista",
+    "staff_id": "stf_007",
+    "start": "2026-11-06T07:00:00+08:00",
+    "end": "2026-11-06T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-06T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0047",
+    "outlet": "bugis",
+    "station": "kitchen",
+    "staff_id": "stf_008",
+    "start": "2026-11-06T07:00:00+08:00",
+    "end": "2026-11-06T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-06T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0048",
+    "outlet": "bugis",
+    "station": "cashier",
+    "staff_id": "stf_009",
+    "start": "2026-11-06T07:00:00+08:00",
+    "end": "2026-11-06T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-06T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0049",
+    "outlet": "tampines",
+    "station": "barista",
+    "staff_id": "stf_010",
+    "start": "2026-11-06T07:00:00+08:00",
+    "end": "2026-11-06T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-06T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0050",
+    "outlet": "tampines",
+    "station": "kitchen",
+    "staff_id": "stf_011",
+    "start": "2026-11-06T07:00:00+08:00",
+    "end": "2026-11-06T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-06T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0051",
+    "outlet": "tampines",
+    "station": "cashier",
+    "staff_id": "stf_012",
+    "start": "2026-11-06T07:00:00+08:00",
+    "end": "2026-11-06T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-06T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0052",
+    "outlet": "jurong_east",
+    "station": "barista",
+    "staff_id": "stf_013",
+    "start": "2026-11-06T07:00:00+08:00",
+    "end": "2026-11-06T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-06T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0053",
+    "outlet": "jurong_east",
+    "station": "kitchen",
+    "staff_id": "stf_014",
+    "start": "2026-11-06T07:00:00+08:00",
+    "end": "2026-11-06T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-06T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0054",
+    "outlet": "jurong_east",
+    "station": "cashier",
+    "staff_id": "stf_015",
+    "start": "2026-11-06T07:00:00+08:00",
+    "end": "2026-11-06T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-06T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0055",
+    "outlet": "bugis",
+    "station": "barista",
+    "staff_id": "stf_008",
+    "start": "2026-11-07T07:00:00+08:00",
+    "end": "2026-11-07T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-07T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0056",
+    "outlet": "bugis",
+    "station": "kitchen",
+    "staff_id": "stf_009",
+    "start": "2026-11-07T07:00:00+08:00",
+    "end": "2026-11-07T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-07T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0057",
+    "outlet": "bugis",
+    "station": "cashier",
+    "staff_id": "stf_010",
+    "start": "2026-11-07T07:00:00+08:00",
+    "end": "2026-11-07T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-07T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0058",
+    "outlet": "tampines",
+    "station": "barista",
+    "staff_id": "stf_011",
+    "start": "2026-11-07T07:00:00+08:00",
+    "end": "2026-11-07T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-07T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0059",
+    "outlet": "tampines",
+    "station": "kitchen",
+    "staff_id": "stf_012",
+    "start": "2026-11-07T07:00:00+08:00",
+    "end": "2026-11-07T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-07T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0060",
+    "outlet": "tampines",
+    "station": "cashier",
+    "staff_id": "stf_013",
+    "start": "2026-11-07T07:00:00+08:00",
+    "end": "2026-11-07T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-07T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0061",
+    "outlet": "jurong_east",
+    "station": "barista",
+    "staff_id": "stf_014",
+    "start": "2026-11-07T07:00:00+08:00",
+    "end": "2026-11-07T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-07T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0062",
+    "outlet": "jurong_east",
+    "station": "kitchen",
+    "staff_id": "stf_015",
+    "start": "2026-11-07T07:00:00+08:00",
+    "end": "2026-11-07T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-07T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0063",
+    "outlet": "jurong_east",
+    "station": "cashier",
+    "staff_id": "stf_016",
+    "start": "2026-11-07T07:00:00+08:00",
+    "end": "2026-11-07T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-07T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0064",
+    "outlet": "bugis",
+    "station": "barista",
+    "staff_id": "stf_009",
+    "start": "2026-11-08T07:00:00+08:00",
+    "end": "2026-11-08T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-08T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0065",
+    "outlet": "bugis",
+    "station": "kitchen",
+    "staff_id": "stf_010",
+    "start": "2026-11-08T07:00:00+08:00",
+    "end": "2026-11-08T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-08T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0066",
+    "outlet": "bugis",
+    "station": "cashier",
+    "staff_id": "stf_011",
+    "start": "2026-11-08T07:00:00+08:00",
+    "end": "2026-11-08T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-08T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0067",
+    "outlet": "tampines",
+    "station": "barista",
+    "staff_id": "stf_012",
+    "start": "2026-11-08T07:00:00+08:00",
+    "end": "2026-11-08T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-08T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0068",
+    "outlet": "tampines",
+    "station": "kitchen",
+    "staff_id": "stf_013",
+    "start": "2026-11-08T07:00:00+08:00",
+    "end": "2026-11-08T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-08T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0069",
+    "outlet": "tampines",
+    "station": "cashier",
+    "staff_id": "stf_014",
+    "start": "2026-11-08T07:00:00+08:00",
+    "end": "2026-11-08T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-08T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0070",
+    "outlet": "jurong_east",
+    "station": "barista",
+    "staff_id": "stf_015",
+    "start": "2026-11-08T07:00:00+08:00",
+    "end": "2026-11-08T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-08T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0071",
+    "outlet": "jurong_east",
+    "station": "kitchen",
+    "staff_id": "stf_016",
+    "start": "2026-11-08T07:00:00+08:00",
+    "end": "2026-11-08T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-08T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0072",
+    "outlet": "jurong_east",
+    "station": "cashier",
+    "staff_id": "stf_017",
+    "start": "2026-11-08T07:00:00+08:00",
+    "end": "2026-11-08T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-08T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0073",
+    "outlet": "bugis",
+    "station": "barista",
+    "staff_id": "stf_010",
+    "start": "2026-11-09T07:00:00+08:00",
+    "end": "2026-11-09T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-09T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0074",
+    "outlet": "bugis",
+    "station": "kitchen",
+    "staff_id": "stf_011",
+    "start": "2026-11-09T07:00:00+08:00",
+    "end": "2026-11-09T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-09T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0075",
+    "outlet": "bugis",
+    "station": "cashier",
+    "staff_id": "stf_012",
+    "start": "2026-11-09T07:00:00+08:00",
+    "end": "2026-11-09T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-09T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0076",
+    "outlet": "tampines",
+    "station": "barista",
+    "staff_id": "stf_013",
+    "start": "2026-11-09T07:00:00+08:00",
+    "end": "2026-11-09T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-09T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0077",
+    "outlet": "tampines",
+    "station": "kitchen",
+    "staff_id": "stf_014",
+    "start": "2026-11-09T07:00:00+08:00",
+    "end": "2026-11-09T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-09T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0078",
+    "outlet": "tampines",
+    "station": "cashier",
+    "staff_id": "stf_015",
+    "start": "2026-11-09T07:00:00+08:00",
+    "end": "2026-11-09T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-09T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0079",
+    "outlet": "jurong_east",
+    "station": "barista",
+    "staff_id": "stf_016",
+    "start": "2026-11-09T07:00:00+08:00",
+    "end": "2026-11-09T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-09T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0080",
+    "outlet": "jurong_east",
+    "station": "kitchen",
+    "staff_id": "stf_017",
+    "start": "2026-11-09T07:00:00+08:00",
+    "end": "2026-11-09T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-09T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0081",
+    "outlet": "jurong_east",
+    "station": "cashier",
+    "staff_id": "stf_018",
+    "start": "2026-11-09T07:00:00+08:00",
+    "end": "2026-11-09T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-09T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0082",
+    "outlet": "bugis",
+    "station": "barista",
+    "staff_id": "stf_011",
+    "start": "2026-11-10T07:00:00+08:00",
+    "end": "2026-11-10T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-10T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0083",
+    "outlet": "bugis",
+    "station": "kitchen",
+    "staff_id": "stf_012",
+    "start": "2026-11-10T07:00:00+08:00",
+    "end": "2026-11-10T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-10T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0084",
+    "outlet": "bugis",
+    "station": "cashier",
+    "staff_id": "stf_013",
+    "start": "2026-11-10T07:00:00+08:00",
+    "end": "2026-11-10T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-10T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0085",
+    "outlet": "tampines",
+    "station": "barista",
+    "staff_id": "stf_014",
+    "start": "2026-11-10T07:00:00+08:00",
+    "end": "2026-11-10T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-10T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0086",
+    "outlet": "tampines",
+    "station": "kitchen",
+    "staff_id": "stf_015",
+    "start": "2026-11-10T07:00:00+08:00",
+    "end": "2026-11-10T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-10T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0087",
+    "outlet": "tampines",
+    "station": "cashier",
+    "staff_id": "stf_016",
+    "start": "2026-11-10T07:00:00+08:00",
+    "end": "2026-11-10T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-10T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0088",
+    "outlet": "jurong_east",
+    "station": "barista",
+    "staff_id": "stf_017",
+    "start": "2026-11-10T07:00:00+08:00",
+    "end": "2026-11-10T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-10T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0089",
+    "outlet": "jurong_east",
+    "station": "kitchen",
+    "staff_id": "stf_018",
+    "start": "2026-11-10T07:00:00+08:00",
+    "end": "2026-11-10T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-10T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  },
+  {
+    "shift_id": "shf_0090",
+    "outlet": "jurong_east",
+    "station": "cashier",
+    "staff_id": "stf_019",
+    "start": "2026-11-10T07:00:00+08:00",
+    "end": "2026-11-10T15:00:00+08:00",
+    "breaks": [
+      {
+        "start": "2026-11-10T11:00:00+08:00",
+        "duration_min": 45
+      }
+    ],
+    "status": "scheduled",
+    "synthetic": true
+  }
+]

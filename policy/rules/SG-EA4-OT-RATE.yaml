@@ -1,0 +1,25 @@
+id: SG-EA4-OT-RATE
+title: Statutory overtime pay rate (1.5x basic hourly rate)
+kind: cost
+jurisdiction: SG
+source:
+  publisher: Ministry of Manpower (MOM)
+  title: Hours of work, overtime and rest day
+  url: https://www.mom.gov.sg/employment-practices/hours-of-work-overtime-and-rest-days
+  section: Overtime pay
+  source_last_updated: 2025-07-24
+  retrieved: 2026-10-18
+applies_when: employee.part4_covered == true and employee.contract_type == "full_time"
+params:
+  ot_multiplier: 1.5
+  months_per_year: 12
+  weeks_per_year: 52
+  weekly_hours_divisor: 44
+  non_workman_salary_cap_sgd: 2600
+  non_workman_hourly_cap_sgd: 13.60
+message: "{name}: {ot_hours} overtime hours at 1.5x basic rate (${hourly_rate}/h) adds ${ot_cost_sgd} overtime cost."
+tests:
+  - fixture: ot_rate_ft_covered
+    expect: ok
+  - fixture: ot_rate_manager_exempt
+    expect: not_applicable

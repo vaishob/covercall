@@ -1,0 +1,21 @@
+id: CO-AGE-SCOPE
+title: Minimum staff age data gate (no staff under 16)
+kind: data_gate
+jurisdiction: SG
+source:
+  publisher: Synthetic company policy
+  title: CoverCall synthetic company policy and design defaults
+  url: policy/company.yaml
+  section: age_scope
+  source_last_updated: 2026-10-18
+  retrieved: 2026-10-18
+applies_when: "true"
+params:
+  min_allowed_age: 16
+  generated_staff_min_age: 17
+message: "{name}: age {age} is under the minimum scope threshold of {min_allowed_age} (§2.6)."
+tests:
+  - fixture: age_scope_under_16_violation
+    expect: violation
+  - fixture: age_scope_18_ok
+    expect: ok

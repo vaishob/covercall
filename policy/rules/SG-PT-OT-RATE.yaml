@@ -1,0 +1,23 @@
+id: SG-PT-OT-RATE
+title: Part-time employee overtime and extra hours pay rate
+kind: cost
+jurisdiction: SG
+source:
+  publisher: Ministry of Manpower (MOM)
+  title: Part-time employment
+  url: https://www.mom.gov.sg/employment-practices/part-time-employment
+  section: Overtime
+  source_last_updated: 2025-07-25
+  retrieved: 2026-10-18
+applies_when: employee.contract_type == "part_time"
+params:
+  part_time_weekly_threshold_hours: 35
+  comparable_full_timer_normal_daily_hours: 8
+  within_ft_normal_multiplier: 1.0
+  beyond_ft_normal_multiplier: 1.5
+message: "{name}: part-time shift ({work_hours}h at ${hourly_basic_sgd}/h) costs ${pt_cost_sgd} ({ot_hours}h beyond {ft_normal}h at 1.5x)."
+tests:
+  - fixture: pt_ot_rate_part_timer
+    expect: ok
+  - fixture: pt_ot_rate_full_timer_na
+    expect: not_applicable

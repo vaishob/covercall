@@ -1,0 +1,21 @@
+id: SG-EA4-DAILY-MAX-12H
+title: Maximum daily hours of work (12 hours)
+kind: hard
+jurisdiction: SG
+source:
+  publisher: Ministry of Manpower (MOM)
+  title: Hours of work, overtime and rest day
+  url: https://www.mom.gov.sg/employment-practices/hours-of-work-overtime-and-rest-days
+  section: Maximum hours of work
+  source_last_updated: 2025-07-24
+  retrieved: 2026-10-18
+applies_when: employee.part4_covered == true
+params:
+  max_daily_hours: 12
+  allow_statutory_exceptions: false
+message: "{name}: {daily_hours} hours of work on this day exceeds the {max_daily_hours}-hour EA Part 4 daily maximum."
+tests:
+  - fixture: daily_max_14h_double
+    expect: violation
+  - fixture: daily_max_12h_exact
+    expect: ok

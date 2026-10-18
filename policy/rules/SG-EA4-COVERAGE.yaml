@@ -1,0 +1,23 @@
+id: SG-EA4-COVERAGE
+title: Employment Act Part 4 applicability gate
+kind: applicability_gate
+jurisdiction: SG
+source:
+  publisher: Ministry of Manpower (MOM)
+  title: "Employment Act: who it covers"
+  url: https://www.mom.gov.sg/employment-practices/employment-act/who-is-covered
+  section: Who is covered under Part 4
+  source_last_updated: 2025-07-24
+  retrieved: 2026-10-18
+applies_when: "true"
+params:
+  exclude_employee_classes:
+    - manager_executive
+  workman_basic_salary_cap_sgd: 4500
+  non_workman_basic_salary_cap_sgd: 2600
+message: "{name}: Part 4 coverage is {part4_status} ({employee_class}, monthly basic ${monthly_basic_sgd})."
+tests:
+  - fixture: coverage_non_workman_covered
+    expect: ok
+  - fixture: coverage_manager_excluded
+    expect: not_applicable

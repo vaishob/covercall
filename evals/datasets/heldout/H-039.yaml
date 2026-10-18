@@ -1,0 +1,26 @@
+id: H-039
+description: Held-out synthetic absence scenario H-039 at tampines (kitchen)
+now: '2026-11-03T06:02:00+08:00'
+seed: 1081
+gap:
+  outlet: tampines
+  station: kitchen
+  start: 08:00
+  end: '16:00'
+  absent: stf_013
+overrides:
+- staff: stf_004
+  ledger:
+    ot_hours_used: 71
+- staff: stf_006
+  shift_context:
+    days_since_last_rest_day: 11
+    hours_since_prev_shift_end: 14.0
+personas: {}
+synthetic: true
+expect:
+  outcome: filled
+  violations: 0
+  overtime_cost_sgd: 0.0
+  total_cost_sgd: 0.0
+  assigned_staff_id: stf_016

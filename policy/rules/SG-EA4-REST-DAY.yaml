@@ -1,0 +1,22 @@
+id: SG-EA4-REST-DAY
+title: Weekly rest day and maximum 12 days between two rest days
+kind: hard
+jurisdiction: SG
+source:
+  publisher: Ministry of Manpower (MOM)
+  title: Hours of work, overtime and rest day
+  url: https://www.mom.gov.sg/employment-practices/hours-of-work-overtime-and-rest-days
+  section: Rest day
+  source_last_updated: 2025-07-24
+  retrieved: 2026-10-18
+applies_when: employee.part4_covered == true
+params:
+  max_days_between_rest_days: 12
+  shift_worker_continuous_rest_hours: 30
+  compelled_rest_day_work_allowed: false
+message: "{name}: {days_since_rest} consecutive days since last rest day exceeds the EA Part 4 maximum of {max_days} days between rest days."
+tests:
+  - fixture: rest_day_13_days_violation
+    expect: violation
+  - fixture: rest_day_5_days_ok
+    expect: ok
