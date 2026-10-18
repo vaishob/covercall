@@ -252,13 +252,15 @@ class Api:
                                                "absent_staff_id": shift["staff_id"]}}
 
     def pending_approval(self, gap_id: str) -> dict[str, Any]:
-        """The read-back and nonce, only while an approval is pending (GET /gaps/{id}/approval)."""
+        """The read-back and nonce, only while an approval is pending (GET /gaps/{id}/approval).
+        Otherwise ``{"pending": false}`` with no nonce (200, so a poll racing an approval is not an error)."""
         gap = self._gap(gap_id)
         pending = (self.store.get(f"server/{gap_id}") or {}).get("pending_approval")
         if not pending or gap["state"] != "SOLVED":
-            raise ApiError(404, "no approval is pending for this gap")
-        return {"gap_id": gap_id, "nonce": pending["nonce"], "readback_text": pending["readback_text"],
-                "plan_id": pending["plan_id"], "tier": "T2", "synthetic": True}
+            return {"gap_id": gap_id, "pending": False, "synthetic": True}
+        return {"gap_id": gap_id, "pending": True, "nonce": pending["nonce"],
+                "readback_text": pending["readback_text"], "plan_id": pending["plan_id"], "tier": "T2",
+                "synthetic": True}
 
     def record_approval(self, body: dict[str, Any]) -> dict[str, Any]:
         gap = self._gap(body["gap_id"])

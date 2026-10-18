@@ -1,4 +1,4 @@
-import type { VoiceMode, VoiceState } from '../mocks/state.ts';
+import type { VoiceMode, VoiceState } from './types.ts';
 import type { ApiClient } from '../data/apiClient.ts';
 
 /**
@@ -9,8 +9,9 @@ import type { ApiClient } from '../data/apiClient.ts';
  * - get_status(gap_id)
  * - cancel_gap(gap_id)
  *
- * The browser forwards each tool call to `api`, which validates it.
- * Nothing executes locally.
+ * The browser forwards each tool call to `api`, which validates it. Nothing executes locally.
+ * Voice itself (Gemini Live with ephemeral tokens) is Slice 4: `POST /live/token` answers 501
+ * until then, and the providers fall back hands-free -> push-to-talk -> text.
  */
 export type VoiceToolName =
   | 'report_absence'
@@ -32,7 +33,7 @@ export interface VoiceToolDeclaration {
 export const VOICE_TOOL_DECLARATIONS: readonly VoiceToolDeclaration[] = [
   {
     name: 'report_absence',
-    description: 'Report a staff absence to create a shift gap via the API service.',
+    description: 'Report a staff absence. The server resolves the name and shift, or asks a question.',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -46,12 +47,12 @@ export const VOICE_TOOL_DECLARATIONS: readonly VoiceToolDeclaration[] = [
   },
   {
     name: 'approve',
-    description: 'Record a Tier T2 plan approval or rejection with the server-issued approval_nonce.',
+    description: 'Record a Tier T2 approval or rejection with the server-issued approval_nonce.',
     parameters: {
       type: 'OBJECT',
       properties: {
         plan_id: { type: 'STRING', description: 'Plan ID being approved or rejected' },
-        decision: { type: 'STRING', description: 'approved or rejected' },
+        decision: { type: 'STRING', description: 'approve or reject' },
         approval_nonce: {
           type: 'STRING',
           description: 'Server-issued single-use approval_nonce read back to the lead',
@@ -69,7 +70,7 @@ export const VOICE_TOOL_DECLARATIONS: readonly VoiceToolDeclaration[] = [
         gap_id: { type: 'STRING', description: 'Gap ID' },
         option: {
           type: 'STRING',
-          description: 'Fallback option ID (borrow_cross_outlet, reduced_service, lead_covers, agency_temp)',
+          description: 'Fallback option ID (borrow, reduced_service, lead_covers, agency, unfilled)',
         },
       },
       required: ['gap_id', 'option'],
@@ -88,7 +89,7 @@ export const VOICE_TOOL_DECLARATIONS: readonly VoiceToolDeclaration[] = [
   },
   {
     name: 'cancel_gap',
-    description: 'Cancel an active shift gap and withdraw open offers via the API service.',
+    description: 'Ask the workflow to cancel an active gap (open offers are withdrawn).',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -106,8 +107,8 @@ export const FIXED_FALLBACK_ORDER: readonly VoiceMode[] = [
 ] as const;
 
 /**
- * Spoken approval policy (§5.3 & §7.2):
- * "Only a clear affirmative counts; anything else is a no."
+ * Spoken approval policy (§5.3 & §7.2): "Only a clear affirmative counts; anything else is a no."
+ * The server applies the same rule to the transcript; this copy only decides what to send.
  */
 const CLEAR_AFFIRMATIVE_PATTERNS = [
   /^yes\b/i,
@@ -144,6 +145,11 @@ export interface VoiceProviderCallbacks {
   onCaption: (speaker: 'Lead' | 'CoverCall', text: string) => void;
 }
 
+export interface ToolContext {
+  /** The gap the lead is looking at; approve() is about this gap. */
+  gapId: string | null;
+}
+
 export interface VoiceProvider {
   readonly mode: VoiceMode;
   readonly modelId: string | null;
@@ -153,121 +159,78 @@ export interface VoiceProvider {
   forwardToolCall(
     toolName: VoiceToolName,
     args: Record<string, string>,
+    context: ToolContext,
     transcript?: string
   ): Promise<unknown>;
 }
 
-/**
- *Forwards any voice model tool call to `api`. Never executes state changes locally (§7.2).
- */
+/** Forwards a voice tool call to `api`. Never executes state changes locally (§7.2). */
 export async function forwardVoiceToolCallToApi(
-  apiClient: ApiClient,
+  apiClient: ApiClient | null,
   toolName: VoiceToolName,
   args: Record<string, string>,
+  context: ToolContext,
   transcript?: string
 ): Promise<unknown> {
+  if (!apiClient) {
+    throw new Error('Recorded replay: voice tools need a live API (set VITE_API_BASE_URL).');
+  }
   switch (toolName) {
     case 'report_absence':
-      return apiClient.createGap({
+      return apiClient.reportAbsence({
         outlet: args.outlet,
         shift_start: args.shift_start,
         station: args.station,
         staff_name: args.staff_name,
+        text: transcript,
       });
 
     case 'approve': {
       const nonce = args.approval_nonce?.trim();
       if (!nonce) {
-        throw new Error('approve requires server-issued approval_nonce (§7.2).');
+        throw new Error('approve requires the server-issued approval_nonce (§7.2).');
       }
-      // Anything other than a clear yes counts as a no (§5.3, §7.2)
+      if (!context.gapId) {
+        throw new Error('approve needs an active gap.');
+      }
+      // Anything other than a clear yes counts as a no (§5.3, §7.2).
       const isYes =
-        args.decision === 'approved' &&
+        args.decision === 'approve' &&
         (transcript === undefined || isClearAffirmativeTranscript(transcript));
-      const decision: 'approved' | 'rejected' = isYes ? 'approved' : 'rejected';
-
       return apiClient.submitApproval({
-        gap_id: args.gap_id || 'active_gap',
-        plan_id: args.plan_id,
-        decision,
-        approval_nonce: nonce,
+        gap_id: context.gapId,
+        nonce,
+        decision: isYes ? 'approve' : 'reject',
         transcript: transcript ?? '',
         channel: 'voice',
       });
     }
 
     case 'choose_fallback':
-      return apiClient.chooseFallback({
-        gap_id: args.gap_id,
-        option: args.option,
-      });
+      return apiClient.chooseFallback(args.gap_id, args.option);
 
     case 'get_status':
-      return apiClient.getGapStatus(args.gap_id);
+      return apiClient.getGap(args.gap_id);
 
     case 'cancel_gap':
       return apiClient.cancelGap(args.gap_id);
   }
 }
 
-/**
- * 1. LiveVoiceProvider (hands-free mode):
- * Connects to Gemini Live API (`v1alpha`) authenticated ONLY with an ephemeral token
- * fetched from `api` (`POST /voice/token`). Never accepts or holds a client API key.
- * Model ID comes strictly from env/server token response (`VITE_GEMINI_LIVE_MODEL_ID`).
- * Automatically falls back along `hands-free` -> `push-to-talk` -> `text` on failure.
- */
-export class LiveVoiceProvider implements VoiceProvider {
-  public readonly mode: VoiceMode = 'hands-free';
-  public readonly modelId: string | null;
-  private readonly apiClient: ApiClient;
-  private readonly callbacks: VoiceProviderCallbacks;
+abstract class TokenVoiceProvider implements VoiceProvider {
+  abstract readonly mode: VoiceMode;
+  readonly modelId: string | null;
+  protected readonly apiClient: ApiClient | null;
+  protected readonly callbacks: VoiceProviderCallbacks;
 
-  constructor(
-    apiClient: ApiClient,
-    callbacks: VoiceProviderCallbacks,
-    configuredModelId?: string | null
-  ) {
+  constructor(apiClient: ApiClient | null, callbacks: VoiceProviderCallbacks, configuredModelId?: string | null) {
     this.apiClient = apiClient;
     this.callbacks = callbacks;
     this.modelId = configuredModelId?.trim() || null;
   }
 
-  async connect(): Promise<void> {
-    if (this.apiClient.isMockMode || !this.apiClient.baseUrl) {
-      const reason =
-        'Voice unavailable in mock mode (no API URL configured). Fell back to text input.';
-      this.callbacks.onStateChange('Offline', reason);
-      this.callbacks.onModeFallback('text', reason);
-      return;
-    }
-
-    try {
-      this.callbacks.onStateChange('Thinking', 'Minting v1alpha ephemeral token from api…');
-      const tokenResp = await this.apiClient.mintLiveEphemeralToken();
-      if (tokenResp.api_version !== 'v1alpha' || !tokenResp.ephemeral_token) {
-        throw new Error('Ephemeral token requires Live API v1alpha.');
-      }
-      const resolvedModel = this.modelId || tokenResp.model_id;
-      if (!resolvedModel) {
-        throw new Error('VITE_GEMINI_LIVE_MODEL_ID is not configured.');
-      }
-      this.callbacks.onStateChange(
-        'Listening',
-        `Live session active (${resolvedModel}, v1alpha ephemeral token)`
-      );
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Live session failed';
-      const fallbackReason = `Hands-free unavailable (${msg}). Falling back to push-to-talk.`;
-      this.callbacks.onStateChange('Offline', fallbackReason);
-      this.callbacks.onModeFallback('push-to-talk', fallbackReason);
-    }
-  }
-
-  disconnect(): void {
-    // Store no audio (§7.2)
-    this.callbacks.onStateChange('Muted', 'Voice session closed (no audio stored).');
-  }
+  abstract connect(): Promise<void>;
+  abstract disconnect(): void;
 
   async sendText(text: string): Promise<void> {
     this.callbacks.onCaption('Lead', text);
@@ -276,51 +239,67 @@ export class LiveVoiceProvider implements VoiceProvider {
   async forwardToolCall(
     toolName: VoiceToolName,
     args: Record<string, string>,
+    context: ToolContext,
     transcript?: string
   ): Promise<unknown> {
-    return forwardVoiceToolCallToApi(this.apiClient, toolName, args, transcript);
+    return forwardVoiceToolCallToApi(this.apiClient, toolName, args, context, transcript);
   }
 }
 
 /**
- * 2. PushToTalkProvider (`push-to-talk` mode):
- * Second step in the fixed fallback order (`hands-free` -> `push-to-talk` -> `text`).
- * Falls back to `text` if `api` is unreachable or in mock mode.
+ * 1. LiveVoiceProvider (hands-free): Gemini Live (`v1alpha`) authenticated ONLY with an ephemeral
+ * token from `api` (`POST /live/token`). Never holds a client API key.
  */
-export class PushToTalkProvider implements VoiceProvider {
-  public readonly mode: VoiceMode = 'push-to-talk';
-  public readonly modelId: string | null;
-  private readonly apiClient: ApiClient;
-  private readonly callbacks: VoiceProviderCallbacks;
-
-  constructor(
-    apiClient: ApiClient,
-    callbacks: VoiceProviderCallbacks,
-    configuredModelId?: string | null
-  ) {
-    this.apiClient = apiClient;
-    this.callbacks = callbacks;
-    this.modelId = configuredModelId?.trim() || null;
-  }
+export class LiveVoiceProvider extends TokenVoiceProvider {
+  readonly mode: VoiceMode = 'hands-free';
 
   async connect(): Promise<void> {
-    if (this.apiClient.isMockMode || !this.apiClient.baseUrl) {
-      const reason =
-        'Push-to-talk unavailable in mock mode (no API URL configured). Fell back to text input.';
+    if (!this.apiClient) {
+      const reason = 'Voice needs a live API (recorded replay). Fell back to text input.';
       this.callbacks.onStateChange('Offline', reason);
       this.callbacks.onModeFallback('text', reason);
       return;
     }
-
     try {
-      const tokenResp = await this.apiClient.mintLiveEphemeralToken();
-      if (!tokenResp.ephemeral_token) {
-        throw new Error('Missing ephemeral token');
+      this.callbacks.onStateChange('Thinking', 'Requesting a v1alpha ephemeral token from api…');
+      const tokenResp = await this.apiClient.mintLiveToken();
+      if (tokenResp.api_version !== 'v1alpha' || !tokenResp.ephemeral_token) {
+        throw new Error('Ephemeral token requires Live API v1alpha.');
       }
+      const resolvedModel = this.modelId || tokenResp.model_id;
+      if (!resolvedModel) throw new Error('No Live model ID is configured.');
+      this.callbacks.onStateChange('Listening', `Live session active (${resolvedModel}, v1alpha ephemeral token)`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Live session failed';
+      const fallbackReason = `Hands-free unavailable: ${msg} Falling back to push-to-talk.`;
+      this.callbacks.onStateChange('Offline', fallbackReason);
+      this.callbacks.onModeFallback('push-to-talk', fallbackReason);
+    }
+  }
+
+  disconnect(): void {
+    this.callbacks.onStateChange('Muted', 'Voice session closed (no audio stored).');
+  }
+}
+
+/** 2. PushToTalkProvider: second step of the fixed fallback order. */
+export class PushToTalkProvider extends TokenVoiceProvider {
+  readonly mode: VoiceMode = 'push-to-talk';
+
+  async connect(): Promise<void> {
+    if (!this.apiClient) {
+      const reason = 'Push-to-talk needs a live API (recorded replay). Fell back to text input.';
+      this.callbacks.onStateChange('Offline', reason);
+      this.callbacks.onModeFallback('text', reason);
+      return;
+    }
+    try {
+      const tokenResp = await this.apiClient.mintLiveToken();
+      if (!tokenResp.ephemeral_token) throw new Error('Missing ephemeral token.');
       this.callbacks.onStateChange('Muted', 'Push-to-talk ready (hold button to speak).');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'PTT token error';
-      const fallbackReason = `Push-to-talk failed (${msg}). Falling back to text input.`;
+      const fallbackReason = `Push-to-talk unavailable: ${msg} Falling back to text input.`;
       this.callbacks.onStateChange('Offline', fallbackReason);
       this.callbacks.onModeFallback('text', fallbackReason);
     }
@@ -329,57 +308,19 @@ export class PushToTalkProvider implements VoiceProvider {
   disconnect(): void {
     this.callbacks.onStateChange('Muted', 'Push-to-talk disconnected (no audio stored).');
   }
-
-  async sendText(text: string): Promise<void> {
-    this.callbacks.onCaption('Lead', text);
-  }
-
-  async forwardToolCall(
-    toolName: VoiceToolName,
-    args: Record<string, string>,
-    transcript?: string
-  ): Promise<unknown> {
-    return forwardVoiceToolCallToApi(this.apiClient, toolName, args, transcript);
-  }
 }
 
-/**
- * 3. TextProvider (`text` mode):
- * Terminal fallback mode (`hands-free` -> `push-to-talk` -> `text`).
- * Works both when connected to `api` and in mock mode without faking a voice session.
- */
-export class TextProvider implements VoiceProvider {
-  public readonly mode: VoiceMode = 'text';
-  public readonly modelId: string | null = null;
-  private readonly apiClient: ApiClient;
-  private readonly callbacks: VoiceProviderCallbacks;
-
-  constructor(apiClient: ApiClient, callbacks: VoiceProviderCallbacks) {
-    this.apiClient = apiClient;
-    this.callbacks = callbacks;
-  }
+/** 3. TextProvider: terminal fallback. Works live and in recorded replay. */
+export class TextProvider extends TokenVoiceProvider {
+  readonly mode: VoiceMode = 'text';
 
   async connect(): Promise<void> {
-    const reason = this.apiClient.isMockMode
-      ? 'Voice unavailable in mock mode (no API URL). Text mode active.'
-      : 'Text mode active.';
-    this.callbacks.onStateChange(this.apiClient.isMockMode ? 'Offline' : 'Muted', reason);
+    const reason = this.apiClient ? 'Text mode active.' : 'Recorded replay: text input is display-only.';
+    this.callbacks.onStateChange(this.apiClient ? 'Muted' : 'Offline', reason);
   }
 
   disconnect(): void {
     // No-op
-  }
-
-  async sendText(text: string): Promise<void> {
-    this.callbacks.onCaption('Lead', text);
-  }
-
-  async forwardToolCall(
-    toolName: VoiceToolName,
-    args: Record<string, string>,
-    transcript?: string
-  ): Promise<unknown> {
-    return forwardVoiceToolCallToApi(this.apiClient, toolName, args, transcript);
   }
 }
 

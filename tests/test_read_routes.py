@@ -105,7 +105,8 @@ def test_approval_route_only_while_pending(data: dict[str, Any], captured: dict[
     assert pending and all(s["gap"]["gap"]["state"] == "SOLVED" for s in pending)
     run = LocalRun(load_scenario("S-017"), data, CFG, RULES)
     gap_id = run.post("/gaps", {"scenario_id": "S-017"})["gap_id"]
-    assert run.client.get(f"/gaps/{gap_id}/approval").status_code == 404
+    idle = run.client.get(f"/gaps/{gap_id}/approval")
+    assert idle.status_code == 200 and idle.json() == {"gap_id": gap_id, "pending": False, "synthetic": True}
 
 
 def _secrets(run_store: Any) -> tuple[set[str], set[str], set[str]]:
@@ -153,7 +154,8 @@ def test_no_read_route_leaks_nonce_callback_url_or_raw_text(data: dict[str, Any]
                 for nonce in nonces:
                     assert nonce not in dumped, (path, nonce)
             assert "callback" not in dumped, path
-        assert any(path.endswith("/approval") and "nonce" in body for path, body in responses)
+        assert any(path.endswith("/approval") and body.get("pending") and body.get("nonce") for path, body in responses)
+        assert all("nonce" not in body for path, body in responses if path.endswith("/approval") and not body.get("pending"))
 
 
 def test_cors_allows_only_configured_origins(data: dict[str, Any]) -> None:

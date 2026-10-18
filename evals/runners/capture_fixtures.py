@@ -43,6 +43,8 @@ def capture(sid: str, data: dict[str, Any] | None = None) -> tuple[dict[str, Any
             return
         gap = read(f"/gaps/{gap_id}")
         approval = read(f"/gaps/{gap_id}/approval") if gap["gap"]["approval_pending"] else None
+        if approval is not None and not approval.get("pending"):
+            approval = None
         quarantine = read(f"/gaps/{gap_id}/quarantine")
         snap = {"gap": gap, "approval": approval, "quarantine": quarantine}
         key = json.dumps(snap, sort_keys=True)

@@ -1,23 +1,23 @@
 import React from 'react';
 import { Box, Paper, Typography, useTheme } from '@mui/material';
 import SubtitlesOutlinedIcon from '@mui/icons-material/SubtitlesOutlined';
-import { CaptionExchange, VoiceState } from '../mocks/state';
+import type { CaptionExchange, VoiceState } from '../voice/types';
 import { formatTime12h } from '../utils/formatters';
 import { DARK_TOKENS, LIGHT_TOKENS } from '../theme';
-import { MockDataBadge } from './MockDataBadge';
+import { ReplayBadge } from './ReplayBadge';
 
 interface CaptionsPanelProps {
   captions: CaptionExchange[];
   voiceState: VoiceState;
   statusAnnouncement: string;
-  isMockMode?: boolean;
+  isReplay?: boolean;
 }
 
 export const CaptionsPanel: React.FC<CaptionsPanelProps> = ({
   captions,
   voiceState,
   statusAnnouncement,
-  isMockMode = true,
+  isReplay = false,
 }) => {
   const theme = useTheme();
   const tokens = theme.palette.mode === 'light' ? LIGHT_TOKENS : DARK_TOKENS;
@@ -55,7 +55,7 @@ export const CaptionsPanel: React.FC<CaptionsPanelProps> = ({
           >
             Live Captions
           </Typography>
-          <MockDataBadge isMockMode={isMockMode} />
+          <ReplayBadge show={isReplay} />
         </Box>
         <Typography
           variant="caption"
@@ -80,7 +80,7 @@ export const CaptionsPanel: React.FC<CaptionsPanelProps> = ({
       >
         {captions.map((exchange) => {
           const isLead = exchange.speaker === 'Lead';
-          const isGuard = exchange.speaker === 'Guard (stub)';
+          const isGuard = false; // guard results show in the cascade timeline, not as captions
 
           return (
             <Box
