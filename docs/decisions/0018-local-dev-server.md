@@ -12,6 +12,6 @@
 - Simulated time jumps to the next reply or timeout, paced by `--pace` real seconds per step so a
   viewer can follow it. A new scenario resets the simulated clock to its `now`.
 - Internal routes are open on this server (no workflow identity locally), so it binds to 127.0.0.1.
-- Limits: one shared roster in memory, so re-running a scenario in the same session sees the earlier
-  run's cover shifts; restart the server for a clean run.
+- Limits: one shared roster in memory. Since decision 0023, scenario gaps commit to their own overlay,
+  so re-running a scenario gives the same plan; lead-reported gaps still change the roster.
 - `web/playwright.config.ts` starts this server and the Vite dev server for the end-to-end check.

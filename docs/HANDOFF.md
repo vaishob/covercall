@@ -508,3 +508,40 @@ No ERROR log entries and no 5xx responses on any service after the final redeplo
 - The roster in `(default)` now holds `gap-0004`'s cover shifts; a second S-017 run sees them. Reseed (`60_seed.sh`) for a clean demo.
 - Cost: api, guard, agent and persona-sim keep one warm instance each (persona-sim with CPU always on).
 - Voice (Slice 4), BigQuery evals (Slice 6), the guard model (Slice 5), and the IAM deny side of the database conditions remain as before.
+
+---
+
+## Final engineering (branch `feat/final`, 2026-10-18/19). Frozen after this.
+
+### What is live (production frozen at 00:05 SGT, 2026-10-19)
+| Thing | Value |
+|---|---|
+| Images | tag `a6507f5` on all six services (revisions `*-00004-*`); previous working revisions `*-00003-*` (tag `a195d43`) kept for rollback |
+| Time scale | `TIME_SCALE=60` on api and persona-sim; `/status` reports `time_scale: 60` (the UI label reads it) |
+| Reply parser | `gemini-3.8-flash` on the Enterprise Agent Platform, `global` (`PARSER_IMPL=gemini`, decision 0023). Fails closed to `unclear`. The guard (`stub-v0`) runs first |
+| Persona text | `gemini-3.8-flash`, temperature 0.8, seeded intent kept; template fallback when the text does not parse back to the intent (`PERSONA_TEXT_IMPL=gemini`) |
+| Scenario gaps | commit to `overlays/{gapId}`; the seeded roster is never changed (decision 0023). Production reseeded at ~23:40 SGT |
+| Web | https://covercall-demo-2026.web.app (`/about` labels each implementation from `/status`) |
+| IAM change | `cc-api` has `roles/aiplatform.user` (parse runs in api) |
+
+### Production runs after the redeploy (tap only, Playwright against Hosting)
+| Run | Elapsed | Outcome | verify_chain | Execution | Gemini evidence |
+|---|---|---|---|---|---|
+| S-017 #1 `gap-0005` | 1.1 min | FILLED: Fiona 07:00-09:00 + Lucas 09:00-15:00, saved 15105 cents | OK, 9 events | `1cede986-21b6-4d26-a298-04031b4d13d0` | events: `parser_impl gemini-3.8-flash`, `prompt_sha256 002a6891…`; `text_impl gemini-3.8-flash`, `text_prompt_sha256 bd95d271…` (one reply fell back to `stub-v0` text) |
+| S-017 #2 `gap-0006` | 1.1 min | identical to #1 (same plan, same saving, same offers) | OK, 9 events | `ab592ab3-b4a8-46bb-97c8-c19d5a684cc8` | same as #1 |
+| Nobody replies `gap-0007` | 2.6 min | ESCALATED then RESOLVED (borrow) | OK, 18 events | `1d27d76a-725a-41f9-b6f2-6574a660926e` | no replies, so no parse (by design) |
+
+Outcomes match the local cascade (J2 FILLED with the same plan and saving; J3 RESOLVED). Local
+checks on the final commit: ruff, mypy, lint_rules, pytest 185 passed, local_cascade exit 0,
+npm test 28/28, build, local Playwright 2/2. One live Gemini call was also made locally: "wah 7am
+ah... only after 9 can, got lecture" → counter 09:00–15:00, reason school, confidence 0.95, 4.7 s.
+
+### Clean-up (item 4)
+- `gap-0002`: **CANCELLED** through `POST /gaps/gap-0002/cancel` (1 wait signalled; the workflow appended `gap.cancelled`).
+- `gap-0001`: **not cancelled.** `POST /gaps/gap-0001/cancel` returns 500: its execution already FAILED, so its open offer's callback no longer exists. Left in OUTREACH; not edited by hand.
+
+### Still open
+- Production still runs on the real clock (scenario dates 3–4 Nov): offers go one at a time and the countdown shows ~15 days. `TIME_SCALE=60` makes the waits short; it does not change the dates.
+- A failed execution strands its gap (`gap-0001`); the cancel route cannot reach it. Needs a top-level error handler in the YAML and a cancel path that works without a live execution.
+- Persona text: when Gemini's wording does not parse back to the seeded intent, the template is used (seen once per S-017 run).
+- Voice (Slice 4), BigQuery evals (Slice 6), the guard model (Slice 5).

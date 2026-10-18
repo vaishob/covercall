@@ -38,9 +38,9 @@ and have not been run. See `docs/HANDOFF.md`.
 | `coverage-cascade` | `workflows/coverage_cascade.yaml` | Cloud Workflows | See `docs/HANDOFF.md` |
 | `api` | `services/api/` | Cloud Run (FastAPI) | See `docs/HANDOFF.md` |
 | `solver` | `services/solver/` | Cloud Run (OR-Tools) | See `docs/HANDOFF.md` |
-| `agent` | `services/agent/` | Cloud Run (ADK, Gemini Flash on Vertex AI) | Model `gemini-3.8-flash` pinned (`global` endpoint); runs the deterministic stub parser until enabled |
+| `agent` | `services/agent/` | Cloud Run (ADK, Gemini Flash on Vertex AI) | `parse_reply` runs in `api`: `gemini-3.8-flash` (global) in production (`PARSER_IMPL=gemini`), fails closed to `unclear`; deterministic stub locally |
 | `guard` | `services/guard/` | Cloud Run (CPU) | Deterministic stub `stub-v0` until the Gemma guard (Slice 5); not a model |
-| `persona-sim` | `services/persona_sim/` | Cloud Run (Gemini Flash) | Deterministic stub text locally |
+| `persona-sim` | `services/persona_sim/` | Cloud Run (Gemini Flash) | Seeded intent; `gemini-3.8-flash` writes the words in production (`PERSONA_TEXT_IMPL=gemini`, template fallback); templates locally |
 | State and event log | `services/api/app/events.py` | Firestore (`(default)` and `sim`) | See `docs/HANDOFF.md` |
 | Deploy scripts | `infra/` | gcloud, Firebase CLI | Run 2026-10-18 on `covercall-demo-2026`; see `docs/HANDOFF.md` "Deployment" |
 

@@ -22,6 +22,13 @@ interface EvidenceViewsProps {
 }
 
 /** P0 metric definitions from §10.1 (text only; values come from the release gate in Slice 6). */
+/** What the implementation ID reported by /status means. */
+function implNote(impl: string): string {
+  return impl.startsWith('stub')
+    ? 'deterministic stub, not a model'
+    : 'Gemini model on the Enterprise Agent Platform, global endpoint; fails closed';
+}
+
 const P0_DEFINITIONS: Array<[string, string]> = [
   ['rule_violations', 'Proposed or committed assignments that fail the validator'],
   ['solver_validator_disagreements', 'Cases where the solver and validator disagree'],
@@ -168,7 +175,8 @@ export const EvidenceViews: React.FC<EvidenceViewsProps> = ({ activeRoute, gapHa
           {status && (
             <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }} className="mono-tabular">
               <li>guard: {status.guard_impl} (deterministic stub, not a model)</li>
-              <li>reply parser: {status.parser_impl} (deterministic stub, not a model)</li>
+              <li>reply parser: {status.parser_impl} ({implNote(status.parser_impl)})</li>
+              <li>persona reply text: {status.persona_text_impl} ({implNote(status.persona_text_impl)})</li>
               {Object.entries(status.models).map(([role, m]) => (
                 <li key={role}>
                   {role}: {m.model_id} ({m.api_version})
