@@ -3,7 +3,7 @@
 set -euo pipefail
 source "$(dirname "$0")/env.sh"
 
-for db in "(default)" "sim"; do
+for db in "(default)" "$SIM_DB_ID"; do
   if gcloud firestore databases describe --database="$db" --project "$PROJECT_ID" >/dev/null 2>&1; then
     echo "Firestore database $db exists"
   else

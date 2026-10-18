@@ -1,6 +1,6 @@
 {
   "firestore": [
     { "database": "(default)", "rules": "firestore.rules" },
-    { "database": "sim", "rules": "firestore.sim.rules" }
+    { "database": "covercall-sim", "rules": "firestore.sim.rules" }
   ]
 }

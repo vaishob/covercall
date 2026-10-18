@@ -580,14 +580,13 @@ class Api:
                 and s["end"] <= accepted[s["staff_id"]][1]
                 for s in chosen["segments"]
             )
-            txn.update(f"offers/{offer_id}", {"status": "accepted", "closed_at": self._now()})
             if not complete:
+                txn.update(f"offers/{offer_id}", {"status": "accepted", "closed_at": self._now()})
                 txn.update(gap_path(offer["gap_id"]), {"accepted": accepted})
                 return {"won": False, "partial": True}
-            for oid, other in txn.list("offers"):
-                if other["gap_id"] == offer["gap_id"] and other["status"] == "open" and oid != offer_id:
-                    txn.update(f"offers/{oid}", {"status": "withdrawn", "closed_at": self._now()})
-                    withdrawn.append(other)
+            # Firestore: every read before the first write (append_in_txn reads the gap first).
+            others = [(oid, other) for oid, other in txn.list("offers")
+                      if other["gap_id"] == offer["gap_id"] and other["status"] == "open" and oid != offer_id]
             append_in_txn(txn, offer["gap_id"], "reply.accept", actor=f"staff:{offer['staff_id']}",
                           ts=self._now(), payload=dict(info or {}, offer_id=offer_id, plan_id=offer["plan_id"],
                                                        rank=offer["rank"]),
@@ -597,6 +596,10 @@ class Api:
                                                                                      "breaks")}
                                                                   for s in chosen["segments"]],
                                                      "cost_breakdown": chosen["cost_breakdown"]}})
+            txn.update(f"offers/{offer_id}", {"status": "accepted", "closed_at": self._now()})
+            for oid, other in others:
+                txn.update(f"offers/{oid}", {"status": "withdrawn", "closed_at": self._now()})
+                withdrawn.append(other)
             return {"won": True}
 
         result = self.store.transaction(run)
@@ -690,16 +693,10 @@ class Api:
                               gap_fields={"excluded": sorted(set(gap.get("excluded") or []) | set(bad)),
                                           "accepted": {}, "committing": None})
                 return {"result": "conflict", "violations": bad}
-            for i, seg in enumerate(plan["segments"], start=1):
-                txn.create(f"shifts/cover-{gap_id}-{i}", {
-                    "shift_id": f"cover-{gap_id}-{i}", "outlet": gap["outlet"], "station": gap["station"],
-                    "staff_id": seg["staff_id"], "start": seg["start"], "end": seg["end"],
-                    "breaks": seg.get("breaks") or [], "status": "scheduled", "source": f"cover:{gap_id}",
-                    "synthetic": True})
-            for sid, shift in txn.list("shifts"):
-                if (shift["staff_id"] == gap["absent_staff_id"] and shift["status"] == "scheduled"
-                        and shift["start"] < gap["end"] and shift["end"] > gap["start"]):
-                    txn.update(f"shifts/{sid}", {"status": "absent"})
+            # Firestore: every read before the first write (append_in_txn reads the gap first).
+            absent = [sid for sid, shift in txn.list("shifts")
+                      if shift["staff_id"] == gap["absent_staff_id"] and shift["status"] == "scheduled"
+                      and shift["start"] < gap["end"] and shift["end"] > gap["start"]]
             naive = self._naive_first_pick(ctx)
             cost = plan["cost_breakdown"]
             saved = (0 if naive is None
@@ -717,6 +714,14 @@ class Api:
                                       "cost_saved_sgd": round(saved / 100, 2), "cost_saved_cents": saved,
                                       "summary": summary,
                                       "filled_at": self._now()})
+            for i, seg in enumerate(plan["segments"], start=1):
+                txn.create(f"shifts/cover-{gap_id}-{i}", {
+                    "shift_id": f"cover-{gap_id}-{i}", "outlet": gap["outlet"], "station": gap["station"],
+                    "staff_id": seg["staff_id"], "start": seg["start"], "end": seg["end"],
+                    "breaks": seg.get("breaks") or [], "status": "scheduled", "source": f"cover:{gap_id}",
+                    "synthetic": True})
+            for sid in absent:
+                txn.update(f"shifts/{sid}", {"status": "absent"})
             return {"result": "ok", "summary": summary}
 
         result: dict[str, Any] = self.store.transaction(run)

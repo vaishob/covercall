@@ -12,9 +12,9 @@ import yaml
 
 
 def main() -> None:  # pragma: no cover - needs Firestore
-    from services.common.store import FirestoreStore
+    from services.common.store import SIM_DATABASE, FirestoreStore
 
-    default, sim = FirestoreStore("(default)"), FirestoreStore("sim")
+    default, sim = FirestoreStore("(default)"), FirestoreStore(SIM_DATABASE)
     for path in sorted(Path("evals/datasets/golden").glob("*.yaml")):
         scen = yaml.safe_load(path.read_text(encoding="utf-8"))
         public = {k: scen[k] for k in ("id", "description", "now", "seed", "gap")}

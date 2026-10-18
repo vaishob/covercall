@@ -46,9 +46,9 @@ app = FastAPI(title="covercall-persona-sim", description="All data is synthetic.
 def sim() -> Any:  # pragma: no cover - needs the Firestore sim database
     global _SIM
     if _SIM is None:
-        from services.common.store import FirestoreStore
+        from services.common.store import SIM_DATABASE, FirestoreStore
 
-        _SIM = FirestoreStore("sim")
+        _SIM = FirestoreStore(SIM_DATABASE)
     return _SIM
 
 

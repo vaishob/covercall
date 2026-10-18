@@ -30,3 +30,9 @@ build/
 
 # AI Studio agent artifacts (screenshots, scratch). Never commit.
 .aistudio/
+
+# Local deploy state (written by infra/30_images.sh)
+infra/.last_tag
+
+# Firebase CLI deploy cache
+.firebase/

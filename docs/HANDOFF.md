@@ -98,11 +98,11 @@ From `docs/OPEN_ITEMS.md`:
 - 0014 commit re-check, cancel via callbacks, approvals, `cost_saved_sgd`
 
 ### The single next action for you
-Create the `GEMINI_API_KEY` Secret Manager entry (model IDs are pinned since 2026-10-18). Then run the deploy steps below in a dev project. The first `gcloud workflows deploy` is the only validation the workflow YAML has not yet had.
+**Deployed 2026-10-18 to `covercall-demo-2026`** (see "Deployment" at the end of this file): web https://covercall-demo-2026.web.app, api https://covercall-api-584069229211.asia-southeast1.run.app, workflow `coverage-cascade`. Next: decide how production should handle scenario time (it runs on the real clock; see Deployment, still open).
 
 ---
 
-## For the human: deploy steps (not run; run them in order and approve each)
+## For the human: deploy steps (run 2026-10-18 against covercall-demo-2026; approve each)
 
 Prerequisites: a Google Cloud project with billing; `gcloud` authenticated as an owner (`gcloud auth login`, `gcloud auth application-default login`); the Firebase CLI for security rules; Python 3.12 with the repo's venv (for seeding); Docker is not needed (Cloud Build builds the images).
 
@@ -116,17 +116,18 @@ Telegram and Routes API secrets are Slice 7: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEB
 ```bash
 export PROJECT_ID=<your-project-id>       # REGION defaults to asia-southeast1, TIME_SCALE to 10
 bash infra/00_apis.sh                     # enable Run, Workflows, Firestore, Artifact Registry, Build, Secret Manager, Vertex AI, Gemini API, Trace, Logging, Monitoring, BigQuery
-bash infra/10_firestore.sh                # Firestore Native (default) + sim in asia-southeast1; rules via firebase CLI
+bash infra/10_firestore.sh                # Firestore Native (default) + covercall-sim in asia-southeast1; rules via firebase CLI
 bash infra/20_iam.sh                      # cc-<service> accounts; workflows.invoker only for api + connectors; sim DB only for persona-sim
 bash infra/25_secrets.sh                  # checks GEMINI_API_KEY exists; secretAccessor for api only
 bash infra/30_images.sh                   # Artifact Registry repo + Cloud Build of 6 images (tag = git short SHA)
 bash infra/40_deploy_services.sh          # Cloud Run: api public (min 1), others private; invoker bindings
 bash infra/50_workflow.sh                 # deploy coverage-cascade under cc-workflow; run.invoker on api
-bash infra/60_seed.sh                     # datagen --to-firestore + scenarios + travel config
-# then open  <api-url>/test  and tap "Scenario: 6:02am sick call" (J2) and "Nobody replies" (J3)
+PYTHON=.venv/Scripts/python.exe bash infra/60_seed.sh   # datagen --to-firestore + scenarios (PYTHON: the repo venv)
+bash infra/70_hosting.sh                  # build web against the api URL; firebase deploy --only hosting
+# smoke test: cd web && E2E_BASE_URL=https://$PROJECT_ID.web.app npx playwright test -c playwright.prod.config.ts
 ```
 
-`bash infra/deploy_all.sh` runs all eight in order. Every script is meant to be idempotent, but none has run.
+`bash infra/deploy_all.sh` runs all nine in order. Each was run once, one at a time, on 2026-10-18; `30_images.sh` and `40_deploy_services.sh` were re-run after fixes (idempotent in practice).
 
 ## For the next agent
 - **Branch:** `claude/slices-1-2`. Tags: `slice-1`, `slice-2-local`. Do not commit to `main` from here. Merge via a PR when the human approves.
@@ -459,3 +460,51 @@ cd web && VITE_API_BASE_URL=http://127.0.0.1:8080 npm run dev      # then open h
 cd web && npx playwright test                                      # starts both servers itself
 python -m evals.runners.capture_fixtures                           # after an intended backend shape change
 ```
+
+---
+
+## Deployment (branch `chore/deploy-fixes`, 2026-10-18)
+
+Project `covercall-demo-2026` (number 584069229211), region `asia-southeast1`. Every step was run
+one at a time with the author's approval. `GEMINI_API_KEY` was created by the author in their own
+terminal; its value was never seen, printed or stored by the agent.
+
+### What is live
+| Thing | Where |
+|---|---|
+| Web app (Firebase Hosting) | https://covercall-demo-2026.web.app |
+| api (public) | https://covercall-api-584069229211.asia-southeast1.run.app (`/status`, `/test`) |
+| Private services | `covercall-{solver,guard,agent,persona-sim,connectors}-584069229211.asia-southeast1.run.app` (403 without an ID token) |
+| Workflow | `coverage-cascade` (revision `000001-3e7`, service account `cc-workflow`) |
+| Firestore | `(default)` and `covercall-sim`, Native, deny-all client rules |
+| Images | `asia-southeast1-docker.pkg.dev/covercall-demo-2026/covercall/*:a195d43` |
+| Secret | `GEMINI_API_KEY` v1, readable only by `cc-api` |
+
+`ALLOWED_ORIGINS` on api is `https://covercall-demo-2026.web.app,https://covercall-demo-2026.firebaseapp.com`
+(checked: CORS header present for the Hosting origin, absent for others). `/status` reports
+`environment: cloud`, the pinned models and `time_scale: 10`.
+
+### Production smoke test (tap only, Playwright against the Hosting URL)
+| Journey | Result | Evidence |
+|---|---|---|
+| S-017 to FILLED | **PASS** (2.2 min, after the fix below) | `gap-0004`: "Filled: Fiona 07:00-09:00 + Lucas 09:00-15:00", `cost_saved_cents` 15105 (same as the local run). Offers: decline, counter, timeout, accept. Execution `0e0807b3…` SUCCEEDED with argument `gap_id: gap-0004`. `verify_chain` OK, 9 events. axe: no serious or critical issues on `/`, `/trace/gap-0004`, `/evals`. No console errors. |
+| Nobody replies to ESCALATED, then RESOLVED | **PASS** (12.8 min) | `gap-0003`: 12 offer timeouts, `escalation.due`, `fallback.chosen` (borrow). Execution `c8a685e0…` SUCCEEDED with argument `gap_id: gap-0003`. `verify_chain` OK, 18 events. No console errors. |
+
+No ERROR log entries and no 5xx responses on any service after the final redeploy.
+
+### What failed on the way, and the fixes (all in this branch)
+1. **Firestore database ID `sim` rejected** (IDs need 4–63 characters) → renamed `covercall-sim` (decision 0022, `tests/test_infra.py`).
+2. **`60_seed.sh` used the system Python** → `PYTHON=` override.
+3. **`40_deploy_services.sh` could not have worked:** gcloud refuses `--set-env-vars` with `--update-env-vars`, and api crashes at start-up without `GUARD_URL`/`SOLVER_URL`/`PERSONA_SIM_URL` → each service deploys once, using deterministic Cloud Run URLs.
+4. **api image missing `services/persona_sim`** (ModuleNotFoundError at start-up) → added; `tests/test_images.py` checks every image against its service's imports.
+5. **S-017 failed in production:** `/internal/accept` returned 500, `ReadAfterWriteError` (Firestore needs every read in a transaction before the first write; `accept` and `commit` broke this). Fixed; `MemoryStore` now enforces the rule. The failed execution left `gap-0001` stranded in OUTREACH (see open items).
+6. A service-account creation quota (per minute) stopped `20_iam.sh` once; re-running after 60 s finished it.
+7. `/healthz` returns Google's 404 on Cloud Run (the path is reserved by the platform); use `/status`.
+
+### Still open
+- **Real clock in production:** scenario gaps are dated 3–4 Nov 2026, so deadlines are ~2 weeks away. Offers go one at a time (no fan-out), the countdown shows ~15 days, and "Nobody replies" takes ~13 minutes. Fan-out (a `parallel` loop with several branches) has not run in production yet. Needs a product decision (OPEN_ITEMS).
+- **A failed execution strands its gap** (no top-level error handler in the YAML; no alert on FAILED executions).
+- **Leftover gaps:** `gap-0001` (S-017, OUTREACH, execution FAILED, before the fix) and `gap-0002` (S-017, SOLVED, waiting for an approval; created from another browser session at 14:28Z, not by the smoke test; its execution times out after 12 h). Left as they are.
+- The roster in `(default)` now holds `gap-0004`'s cover shifts; a second S-017 run sees them. Reseed (`60_seed.sh`) for a clean demo.
+- Cost: api, guard, agent and persona-sim keep one warm instance each (persona-sim with CPU always on).
+- Voice (Slice 4), BigQuery evals (Slice 6), the guard model (Slice 5), and the IAM deny side of the database conditions remain as before.
