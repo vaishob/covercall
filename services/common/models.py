@@ -41,7 +41,8 @@ def pinned_role(role: str, models_path: str | Path = MODELS_PATH) -> dict[str, A
 
 
 def enterprise_client(role: str, env: dict[str, str] | None = None,
-                      models_path: str | Path = MODELS_PATH, credentials: Any = None) -> Any:
+                      models_path: str | Path = MODELS_PATH, credentials: Any = None,
+                      timeout_ms: int | None = None) -> Any:
     """A ``google-genai`` client for a Gemini Enterprise Agent Platform role (agent, persona_sim,
     eval_judge). Authenticates with the service account (Application Default Credentials)."""
     spec = pinned_role(role, models_path)
@@ -55,4 +56,4 @@ def enterprise_client(role: str, env: dict[str, str] | None = None,
     from google.genai import types
 
     return genai.Client(enterprise=True, project=project, location=spec["location"], credentials=credentials,
-                        http_options=types.HttpOptions(api_version=spec["api_version"]))
+                        http_options=types.HttpOptions(api_version=spec["api_version"], timeout=timeout_ms))

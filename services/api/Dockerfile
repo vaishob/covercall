@@ -8,6 +8,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 COPY services/api/__init__.py services/api/__init__.py
 COPY policy policy
 COPY config config
+COPY prompts prompts
 COPY baseline baseline
 COPY datagen datagen
 COPY services/__init__.py services/__init__.py

@@ -102,6 +102,16 @@ class Api:
             if "ledger" in ov and lid in ledgers:
                 ledgers[lid] = dict(ledgers[lid], **ov["ledger"])
         travel = r.get("config/travel") or {}
+        shifts = [v for _, v in r.list("shifts")]
+        if gap.get("scenario_id"):
+            # Scenario gaps (decision 0023): the seeded roster plus only this gap's own overlay. Cover
+            # shifts written by any other gap are ignored, so every run of a scenario starts the same.
+            shifts = [s for s in shifts if not str(s.get("source") or "").startswith("cover:")]
+            overlay = r.get(f"overlays/{gap['gap_id']}") if gap.get("gap_id") else None
+            if overlay:
+                gone = set(overlay["absent_shift_ids"])
+                shifts = [dict(s, status="absent") if s.get("shift_id") in gone else s for s in shifts]
+                shifts += overlay["cover_shifts"]
         windows = dict(gap.get("windows") or {})
         for sid, win in (gap.get("accepted") or {}).items():
             windows.setdefault(sid, win)
@@ -110,7 +120,7 @@ class Api:
             "seed": int(gap.get("seed", self.cfg["solver_seed"])),
             "gap": self._gap_spec(gap),
             "staff": {k: v for k, v in r.list("staff")},
-            "shifts": [v for _, v in r.list("shifts")],
+            "shifts": shifts,
             "ledgers": ledgers,
             "outlets": {k: v for k, v in r.list("outlets")},
             "travel": travel.get("staff_to_outlet_min", {}),
@@ -298,6 +308,8 @@ class Api:
         self.store.set(f"replies_raw/{message_id}", {"message_id": message_id, "offer_id": offer["offer_id"],
                                                      "text": str(body.get("text") or ""),
                                                      "channel": body.get("channel", "sim"),
+                                                     "text_impl": body.get("text_impl"),
+                                                     "text_prompt_sha256": body.get("text_prompt_sha256"),
                                                      "ts": self._now(), "synthetic": True})
         if offer["status"] != "open":
             gap = self._gap(offer["gap_id"])
@@ -537,9 +549,16 @@ class Api:
                                                    "guard_impl": GUARD_IMPL, "synthetic": True})
             return {"flagged": True, "guard_labels": labels, "guard_impl": GUARD_IMPL}
         parsed = self.agent.parse_reply(raw["text"], {"start": offer["start"], "end": offer["end"]})
+        # Which model (or stub) wrote and read this reply, recorded on the outcome event (§7.1).
+        self.store.set(f"parses/{offer_id}", {"parser_impl": parsed.get("parser_impl"),
+                                              "prompt_sha256": parsed.get("prompt_sha256"),
+                                              "text_impl": raw.get("text_impl"),
+                                              "text_prompt_sha256": raw.get("text_prompt_sha256"),
+                                              "synthetic": True})
         return {"flagged": False, "guard_labels": labels, "guard_impl": GUARD_IMPL, "parsed": parsed}
 
     def offer_outcome(self, offer_id: str, outcome: str, info: dict[str, Any] | None = None) -> dict[str, Any]:
+        info = self._with_parse_meta(offer_id, info)
         etype = {"timeout": "offer.timeout", "decline": "reply.decline", "flagged": "reply.flagged",
                  "unclear": "reply.decline"}[outcome]
 
@@ -562,7 +581,14 @@ class Api:
 
         return self.store.transaction(run)
 
+    def _with_parse_meta(self, offer_id: str, info: dict[str, Any] | None) -> dict[str, Any] | None:
+        meta = self.store.get(f"parses/{offer_id}")
+        if not meta:
+            return info
+        return dict({k: v for k, v in meta.items() if k != "synthetic" and v is not None}, **(info or {}))
+
     def accept(self, offer_id: str, info: dict[str, Any] | None = None) -> dict[str, Any]:
+        info = self._with_parse_meta(offer_id, info)
         withdrawn: list[dict[str, Any]] = []
 
         def run(txn: Txn) -> dict[str, Any]:
@@ -615,6 +641,7 @@ class Api:
         return result
 
     def counter(self, offer_id: str, window: dict[str, str], info: dict[str, Any] | None = None) -> dict[str, Any]:
+        info = self._with_parse_meta(offer_id, info)
         def run(txn: Txn) -> dict[str, Any]:
             offer = _req(txn, f"offers/{offer_id}")
             gap = _req(txn, gap_path(offer["gap_id"]))
@@ -714,14 +741,18 @@ class Api:
                                       "cost_saved_sgd": round(saved / 100, 2), "cost_saved_cents": saved,
                                       "summary": summary,
                                       "filled_at": self._now()})
-            for i, seg in enumerate(plan["segments"], start=1):
-                txn.create(f"shifts/cover-{gap_id}-{i}", {
-                    "shift_id": f"cover-{gap_id}-{i}", "outlet": gap["outlet"], "station": gap["station"],
-                    "staff_id": seg["staff_id"], "start": seg["start"], "end": seg["end"],
-                    "breaks": seg.get("breaks") or [], "status": "scheduled", "source": f"cover:{gap_id}",
-                    "synthetic": True})
-            for sid in absent:
-                txn.update(f"shifts/{sid}", {"status": "absent"})
+            cover = [{"shift_id": f"cover-{gap_id}-{i}", "outlet": gap["outlet"], "station": gap["station"],
+                      "staff_id": seg["staff_id"], "start": seg["start"], "end": seg["end"],
+                      "breaks": seg.get("breaks") or [], "status": "scheduled", "source": f"cover:{gap_id}",
+                      "synthetic": True} for i, seg in enumerate(plan["segments"], start=1)]
+            if gap.get("scenario_id"):  # decision 0023: never change the shared seeded roster
+                txn.set(f"overlays/{gap_id}", {"gap_id": gap_id, "cover_shifts": cover,
+                                               "absent_shift_ids": absent, "synthetic": True})
+            else:
+                for shift in cover:
+                    txn.create(f"shifts/{shift['shift_id']}", shift)
+                for sid in absent:
+                    txn.update(f"shifts/{sid}", {"status": "absent"})
             return {"result": "ok", "summary": summary}
 
         result: dict[str, Any] = self.store.transaction(run)

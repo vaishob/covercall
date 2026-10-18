@@ -51,3 +51,27 @@ def test_dev_server_nobody_replies_waits_for_fallback() -> None:
     assert client.post("/fallbacks", json={"gap_id": gap_id, "option": option}).status_code == 200
     view = _wait(client, gap_id, {"RESOLVED"})
     assert view["gap"]["outcome"] == option
+
+
+def test_s017_twice_in_a_row_gives_identical_plans() -> None:
+    """Decision 0023: a scenario gap's commit lives in its own overlay, never in the shared roster."""
+    run = build(pace_s=0.0, lead_timeout_s=30, origins=["http://localhost:3000"])
+    client = TestClient(run.app)
+    roster_before = run.store.list("shifts")
+    views = []
+    for _ in range(2):
+        gap_id = client.post("/gaps", json={"scenario_id": "S-017"}).json()["gap_id"]
+        _wait(client, gap_id, {"SOLVED"}, pending=True)
+        pending = client.get(f"/gaps/{gap_id}/approval").json()
+        client.post("/approvals", json={"gap_id": gap_id, "nonce": pending["nonce"], "decision": "approve",
+                                        "channel": "tap"})
+        views.append(_wait(client, gap_id, {"FILLED"}))
+        overlay = run.store.get(f"overlays/{gap_id}")
+        assert overlay is not None and overlay["cover_shifts"]
+    first, second = views
+    strip = ("plan_id",)
+    assert [{k: v for k, v in o.items() if k not in strip} for o in first["plan"]["options"]] == \
+           [{k: v for k, v in o.items() if k not in strip} for o in second["plan"]["options"]]
+    assert first["gap"]["summary"] == second["gap"]["summary"]
+    assert first["gap"]["cost_saved_cents"] == second["gap"]["cost_saved_cents"]
+    assert run.store.list("shifts") == roster_before  # the seeded roster is untouched

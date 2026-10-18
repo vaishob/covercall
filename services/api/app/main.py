@@ -199,8 +199,13 @@ def _cloud_app() -> FastAPI:  # pragma: no cover - Cloud Run wiring, not run in 
 
     cfg = load_company_config()
     scale = float(os.environ.get("TIME_SCALE", "1"))
+    agent: Any = LocalAgent(cfg)
+    if os.environ.get("PARSER_IMPL") == "gemini":  # refuses to start if the agent model is TODO-VERIFY
+        from services.agent.app.gemini import from_registry
+
+        agent = from_registry(cfg)
     api = Api(FirestoreStore("(default)"), cfg, load_rules(), clock=_RealClock(), guard=HttpGuard(os.environ["GUARD_URL"]),
-              agent=LocalAgent(cfg), messenger=HttpMessenger(os.environ["PERSONA_SIM_URL"]),
+              agent=agent, messenger=HttpMessenger(os.environ["PERSONA_SIM_URL"]),
               callbacks=HttpCallbacks(),
               launcher=WorkflowsLauncher(), solver=HttpSolver(os.environ["SOLVER_URL"]), time_scale=scale)
     return create_app(api, time_scale_label=f"x{scale:g}" if scale != 1 else "", environment="cloud")

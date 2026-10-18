@@ -52,6 +52,30 @@ def sim() -> Any:  # pragma: no cover - needs the Firestore sim database
     return _SIM
 
 
+_WRITER: Any = None
+
+
+def writer() -> Any:  # pragma: no cover - Cloud Run path; PERSONA_TEXT_IMPL=gemini turns it on
+    """(write, model_id, prompt_sha) for Gemini surface text at temperature 0.8, or None (templates)."""
+    global _WRITER
+    if _WRITER is None and os.environ.get("PERSONA_TEXT_IMPL") == "gemini":
+        from pathlib import Path
+
+        from services.common.gemini import generate_json, prompt_sha256
+        from services.common.models import enterprise_client, pinned_role
+
+        spec = pinned_role("persona_sim")
+        client = enterprise_client("persona_sim", timeout_ms=8000)
+        system = Path("prompts/persona_text.md").read_text(encoding="utf-8")
+        schema = {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]}
+
+        def write(user: str, seed: int) -> dict[str, Any]:
+            return generate_json(client, spec["model_id"], system, user, schema, float(spec["temperature"]), seed)
+
+        _WRITER = (write, spec["model_id"], prompt_sha256("prompts/persona_text.md"))
+    return _WRITER
+
+
 def _now() -> datetime:
     return datetime.now(timezone(timedelta(hours=8)))
 
@@ -64,7 +88,7 @@ def healthz() -> dict[str, str]:
 @app.post("/offers")
 def offers(body: dict[str, Any]) -> dict[str, Any]:  # pragma: no cover - Cloud Run path
     scenario = sim().get(f"scenarios/{body.get('scenario_id')}") or {}
-    item = logic.schedule(sim(), body, scenario, _now(), float(os.environ.get("TIME_SCALE", "1")))
+    item = logic.schedule(sim(), body, scenario, _now(), float(os.environ.get("TIME_SCALE", "1")), writer())
     return {"scheduled": item is not None}
 
 
@@ -76,7 +100,8 @@ def deliver() -> dict[str, int]:  # pragma: no cover - Cloud Run path
     for item in logic.due(sim(), _now()):
         httpx.post(f"{os.environ['API_URL']}/replies", timeout=10, json={
             "message_id": item["message_id"], "offer_id": item["offer_id"], "text": item["text"],
-            "channel": "sim"}).raise_for_status()
+            "channel": "sim", "text_impl": item.get("text_impl"),
+            "text_prompt_sha256": item.get("text_prompt_sha256")}).raise_for_status()
         logic.mark_delivered(sim(), item["message_id"])
         sent += 1
     return {"delivered": sent}

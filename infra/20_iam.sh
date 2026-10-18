@@ -26,6 +26,7 @@ bind api roles/workflows.invoker
 bind connectors roles/workflows.invoker
 bind persona-sim roles/datastore.user "$SIM_DB"
 bind agent roles/aiplatform.user
+bind api roles/aiplatform.user   # parse_reply runs in api (Gemini Flash, once enabled)
 bind persona-sim roles/aiplatform.user   # Gemini Flash persona text, once enabled
 for name in api solver agent guard persona-sim connectors workflow; do
   bind "$name" roles/logging.logWriter
