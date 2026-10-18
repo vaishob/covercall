@@ -51,8 +51,10 @@ def _contains_todo_verify(obj: Any) -> bool:
 def lint_rules_dir(
     rules_dir: Path = Path("policy/rules"),
     fixtures_dir: Path = Path("policy/fixtures"),
+    company_path: Path = Path("policy/company.yaml"),
 ) -> list[str]:
     errors: list[str] = []
+    company = yaml.safe_load(company_path.read_text(encoding="utf-8")) or {}
     if not rules_dir.exists():
         return [f"Rules directory not found: {rules_dir}"]
 
@@ -92,6 +94,14 @@ def lint_rules_dir(
                 val = source.get(sfield)
                 if val is None or str(val).strip() == "":
                     errors.append(f"{path}: missing required source subfield 'source.{sfield}'")
+
+        for pkey, pval in (spec.get("params") or {}).items():
+            if isinstance(pval, str) and pval.startswith("company:"):
+                node: Any = company
+                for part in pval.removeprefix("company:").split("."):
+                    node = node.get(part) if isinstance(node, dict) else None
+                if node is None:
+                    errors.append(f"{path}: params.{pkey} -> {pval} not found in {company_path}")
 
         tests = spec.get("tests")
         if not isinstance(tests, list) or len(tests) < 2:

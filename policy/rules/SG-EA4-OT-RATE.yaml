@@ -1,5 +1,5 @@
 id: SG-EA4-OT-RATE
-title: Statutory overtime pay rate (1.5x basic hourly rate)
+title: Overtime pay at 1.5 times the hourly basic rate
 kind: cost
 jurisdiction: SG
 source:
@@ -9,15 +9,14 @@ source:
   section: Overtime pay
   source_last_updated: 2025-07-24
   retrieved: 2026-10-18
-applies_when: employee.part4_covered == true and employee.contract_type == "full_time"
+applies_when: employee.part4_covered == true and employee.monthly_rated == true
 params:
   ot_multiplier: 1.5
-  months_per_year: 12
-  weeks_per_year: 52
-  weekly_hours_divisor: 44
-  non_workman_salary_cap_sgd: 2600
-  non_workman_hourly_cap_sgd: 13.60
-message: "{name}: {ot_hours} overtime hours at 1.5x basic rate (${hourly_rate}/h) adds ${ot_cost_sgd} overtime cost."
+  hourly_rate_numerator_months: 12
+  hourly_rate_denominator_weeks: 52
+  hourly_rate_denominator_hours: 44
+  non_workman_hourly_rate_cap_sgd: 13.60
+message: "{name}: {ot_hours} overtime hours at 1.5 x S${hourly_rate}/h = S${ot_cost_sgd}."
 tests:
   - fixture: ot_rate_ft_covered
     expect: ok

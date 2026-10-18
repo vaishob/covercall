@@ -1,26 +1,29 @@
 id: H-026
-description: Held-out synthetic absence scenario H-026 at bugis (barista)
-now: '2026-11-03T06:02:00+08:00'
-seed: 1068
+description: 'Kelvin absent: jurong_east barista 13:00-21:00 on 2026-11-05'
+now: '2026-11-05T11:18:00+08:00'
+seed: 5226
 gap:
-  outlet: bugis
+  outlet: jurong_east
   station: barista
-  start: 07:00
-  end: '15:00'
-  absent: stf_015
-overrides:
-- staff: stf_004
-  ledger:
-    ot_hours_used: 65
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 11
-    hours_since_prev_shift_end: 14.0
-personas: {}
+  start: '13:00'
+  end: '21:00'
+  absent: stf_009
+overrides: []
+personas:
+  stf_030:
+    will: decline
+  stf_002:
+    will: decline
+  stf_004:
+    will: decline
 synthetic: true
 expect:
   outcome: filled
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_016
+  assignment:
+  - staff_id: stf_019
+    start: '2026-11-05T13:00:00+08:00'
+    end: '2026-11-05T21:00:00+08:00'
+  overtime_cost_cents: 0
+  total_cost_cents: 0
+  computed_by: evals.cascade_sim (solver + validator, time limit 10 s); never hand-typed

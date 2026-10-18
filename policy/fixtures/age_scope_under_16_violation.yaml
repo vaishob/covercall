@@ -1,37 +1,4 @@
 synthetic: true
+description: Age 15 record (must be rejected)
 employee:
-  staff_id: stf_010
-  display_name: Wei
   age: 15
-  contract_type: full_time
-  employee_class: non_workman
-  monthly_basic_sgd: 2400
-  weekly_contract_hours: 44
-  normal_daily_hours: 8
-  skills:
-  - barista
-  - kitchen
-  - cashier
-  fsc_l1_passed_on: '2024-06-01'
-  keyholder: true
-ledger:
-  ot_hours_used: 12
-  rest_days:
-  - '2026-11-01'
-  cover_requests_14d: 1
-shift:
-  outlet: bugis
-  station: barista
-  start: '2026-11-03T07:00:00+08:00'
-  end: '2026-11-03T15:00:00+08:00'
-  hours_worked_today_before_shift: 0
-  work_hours: 8
-  breaks_min: 45
-  is_rest_day: false
-  is_public_holiday: false
-  is_opening_shift: true
-  other_keyholder_present: true
-  hours_since_prev_shift_end: 14
-  hours_until_next_shift_start: 14
-  days_since_last_rest_day: 2
-description: Staff record aged 15 (< 16 minimum scope -> violation)

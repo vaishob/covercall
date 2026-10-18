@@ -1,390 +1,715 @@
 {
-  "stf_001_202611": {
-    "ledger_id": "stf_001_202611",
-    "staff_id": "stf_001",
-    "month": "2026-11",
-    "ot_hours_used": 19,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 0,
-    "synthetic": true
-  },
-  "stf_002_202611": {
-    "ledger_id": "stf_002_202611",
-    "staff_id": "stf_002",
-    "month": "2026-11",
-    "ot_hours_used": 5,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 2,
-    "synthetic": true
-  },
-  "stf_003_202611": {
-    "ledger_id": "stf_003_202611",
-    "staff_id": "stf_003",
-    "month": "2026-11",
-    "ot_hours_used": 25,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 1,
-    "synthetic": true
-  },
-  "stf_004_202611": {
-    "ledger_id": "stf_004_202611",
-    "staff_id": "stf_004",
-    "month": "2026-11",
-    "ot_hours_used": 70,
-    "rest_days": [
-      "2026-10-31"
-    ],
-    "days_since_last_rest_day": 3,
-    "cover_requests_14d": 3,
-    "synthetic": true
-  },
-  "stf_005_202611": {
-    "ledger_id": "stf_005_202611",
-    "staff_id": "stf_005",
-    "month": "2026-11",
-    "ot_hours_used": 8,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 0,
-    "synthetic": true
-  },
-  "stf_006_202611": {
-    "ledger_id": "stf_006_202611",
-    "staff_id": "stf_006",
-    "month": "2026-11",
-    "ot_hours_used": 36,
-    "rest_days": [
-      "2026-10-23"
-    ],
-    "days_since_last_rest_day": 11,
-    "cover_requests_14d": 2,
-    "synthetic": true
-  },
-  "stf_007_202611": {
-    "ledger_id": "stf_007_202611",
-    "staff_id": "stf_007",
-    "month": "2026-11",
-    "ot_hours_used": 8,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 2,
-    "synthetic": true
-  },
-  "stf_008_202611": {
-    "ledger_id": "stf_008_202611",
-    "staff_id": "stf_008",
-    "month": "2026-11",
-    "ot_hours_used": 7,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 0,
-    "synthetic": true
-  },
-  "stf_009_202611": {
-    "ledger_id": "stf_009_202611",
-    "staff_id": "stf_009",
-    "month": "2026-11",
-    "ot_hours_used": 29,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 2,
-    "synthetic": true
-  },
-  "stf_010_202611": {
-    "ledger_id": "stf_010_202611",
-    "staff_id": "stf_010",
-    "month": "2026-11",
-    "ot_hours_used": 6,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 1,
-    "synthetic": true
-  },
-  "stf_011_202611": {
-    "ledger_id": "stf_011_202611",
-    "staff_id": "stf_011",
-    "month": "2026-11",
-    "ot_hours_used": 28,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 1,
-    "synthetic": true
-  },
-  "stf_012_202611": {
-    "ledger_id": "stf_012_202611",
-    "staff_id": "stf_012",
-    "month": "2026-11",
-    "ot_hours_used": 31,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 0,
-    "synthetic": true
-  },
-  "stf_013_202611": {
-    "ledger_id": "stf_013_202611",
-    "staff_id": "stf_013",
-    "month": "2026-11",
-    "ot_hours_used": 14,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 2,
-    "synthetic": true
-  },
-  "stf_014_202611": {
-    "ledger_id": "stf_014_202611",
-    "staff_id": "stf_014",
-    "month": "2026-11",
-    "ot_hours_used": 27,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 1,
-    "synthetic": true
-  },
-  "stf_015_202611": {
-    "ledger_id": "stf_015_202611",
-    "staff_id": "stf_015",
-    "month": "2026-11",
-    "ot_hours_used": 38,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 0,
-    "synthetic": true
-  },
-  "stf_016_202611": {
-    "ledger_id": "stf_016_202611",
-    "staff_id": "stf_016",
-    "month": "2026-11",
-    "ot_hours_used": 27,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 1,
-    "synthetic": true
-  },
-  "stf_017_202611": {
-    "ledger_id": "stf_017_202611",
-    "staff_id": "stf_017",
-    "month": "2026-11",
-    "ot_hours_used": 18,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 2,
-    "synthetic": true
-  },
-  "stf_018_202611": {
-    "ledger_id": "stf_018_202611",
-    "staff_id": "stf_018",
-    "month": "2026-11",
-    "ot_hours_used": 8,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 2,
-    "synthetic": true
-  },
-  "stf_019_202611": {
-    "ledger_id": "stf_019_202611",
-    "staff_id": "stf_019",
-    "month": "2026-11",
-    "ot_hours_used": 12,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 1,
-    "synthetic": true
-  },
-  "stf_020_202611": {
-    "ledger_id": "stf_020_202611",
-    "staff_id": "stf_020",
-    "month": "2026-11",
-    "ot_hours_used": 10,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 0,
-    "synthetic": true
-  },
-  "stf_021_202611": {
-    "ledger_id": "stf_021_202611",
-    "staff_id": "stf_021",
-    "month": "2026-11",
-    "ot_hours_used": 4,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 1,
-    "synthetic": true
-  },
-  "stf_022_202611": {
-    "ledger_id": "stf_022_202611",
-    "staff_id": "stf_022",
-    "month": "2026-11",
-    "ot_hours_used": 3,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 0,
-    "synthetic": true
-  },
-  "stf_023_202611": {
-    "ledger_id": "stf_023_202611",
-    "staff_id": "stf_023",
-    "month": "2026-11",
-    "ot_hours_used": 4,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 1,
-    "synthetic": true
-  },
-  "stf_024_202611": {
-    "ledger_id": "stf_024_202611",
-    "staff_id": "stf_024",
-    "month": "2026-11",
-    "ot_hours_used": 5,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 0,
-    "synthetic": true
-  },
-  "stf_025_202611": {
-    "ledger_id": "stf_025_202611",
-    "staff_id": "stf_025",
-    "month": "2026-11",
-    "ot_hours_used": 3,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 1,
-    "synthetic": true
-  },
-  "stf_026_202611": {
-    "ledger_id": "stf_026_202611",
-    "staff_id": "stf_026",
-    "month": "2026-11",
-    "ot_hours_used": 11,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 1,
-    "synthetic": true
-  },
-  "stf_027_202611": {
-    "ledger_id": "stf_027_202611",
-    "staff_id": "stf_027",
-    "month": "2026-11",
-    "ot_hours_used": 1,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 0,
-    "synthetic": true
-  },
-  "stf_028_202611": {
-    "ledger_id": "stf_028_202611",
-    "staff_id": "stf_028",
-    "month": "2026-11",
-    "ot_hours_used": 2,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 1,
-    "synthetic": true
-  },
-  "stf_029_202611": {
-    "ledger_id": "stf_029_202611",
-    "staff_id": "stf_029",
-    "month": "2026-11",
-    "ot_hours_used": 2,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 1,
-    "synthetic": true
-  },
-  "stf_030_202611": {
-    "ledger_id": "stf_030_202611",
-    "staff_id": "stf_030",
-    "month": "2026-11",
-    "ot_hours_used": 4,
-    "rest_days": [
-      "2026-10-26",
-      "2026-11-01"
-    ],
-    "days_since_last_rest_day": 2,
-    "cover_requests_14d": 2,
-    "synthetic": true
-  }
+ "stf_001_202610": {
+  "ledger_id": "stf_001_202610",
+  "staff_id": "stf_001",
+  "month": "2026-10",
+  "ot_hours_used": 32,
+  "rest_days": [
+   "2026-10-25"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_001_202611": {
+  "ledger_id": "stf_001_202611",
+  "staff_id": "stf_001",
+  "month": "2026-11",
+  "ot_hours_used": 7,
+  "rest_days": [
+   "2026-11-01",
+   "2026-11-08",
+   "2026-11-15"
+  ],
+  "cover_requests_14d": 1,
+  "synthetic": true
+ },
+ "stf_002_202610": {
+  "ledger_id": "stf_002_202610",
+  "staff_id": "stf_002",
+  "month": "2026-10",
+  "ot_hours_used": 3,
+  "rest_days": [
+   "2026-10-22",
+   "2026-10-29"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_002_202611": {
+  "ledger_id": "stf_002_202611",
+  "staff_id": "stf_002",
+  "month": "2026-11",
+  "ot_hours_used": 1,
+  "rest_days": [
+   "2026-11-05",
+   "2026-11-12"
+  ],
+  "cover_requests_14d": 3,
+  "synthetic": true
+ },
+ "stf_003_202610": {
+  "ledger_id": "stf_003_202610",
+  "staff_id": "stf_003",
+  "month": "2026-10",
+  "ot_hours_used": 27,
+  "rest_days": [
+   "2026-10-23",
+   "2026-10-30"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_003_202611": {
+  "ledger_id": "stf_003_202611",
+  "staff_id": "stf_003",
+  "month": "2026-11",
+  "ot_hours_used": 4,
+  "rest_days": [
+   "2026-11-06",
+   "2026-11-13"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_004_202610": {
+  "ledger_id": "stf_004_202610",
+  "staff_id": "stf_004",
+  "month": "2026-10",
+  "ot_hours_used": 0,
+  "rest_days": [
+   "2026-10-25"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_004_202611": {
+  "ledger_id": "stf_004_202611",
+  "staff_id": "stf_004",
+  "month": "2026-11",
+  "ot_hours_used": 70,
+  "rest_days": [
+   "2026-11-01",
+   "2026-11-08",
+   "2026-11-15"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_005_202610": {
+  "ledger_id": "stf_005_202610",
+  "staff_id": "stf_005",
+  "month": "2026-10",
+  "ot_hours_used": 16,
+  "rest_days": [
+   "2026-10-25"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_005_202611": {
+  "ledger_id": "stf_005_202611",
+  "staff_id": "stf_005",
+  "month": "2026-11",
+  "ot_hours_used": 2,
+  "rest_days": [
+   "2026-11-01",
+   "2026-11-08",
+   "2026-11-15"
+  ],
+  "cover_requests_14d": 3,
+  "synthetic": true
+ },
+ "stf_006_202610": {
+  "ledger_id": "stf_006_202610",
+  "staff_id": "stf_006",
+  "month": "2026-10",
+  "ot_hours_used": 36,
+  "rest_days": [
+   "2026-10-23"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_006_202611": {
+  "ledger_id": "stf_006_202611",
+  "staff_id": "stf_006",
+  "month": "2026-11",
+  "ot_hours_used": 8,
+  "rest_days": [
+   "2026-11-06",
+   "2026-11-15"
+  ],
+  "cover_requests_14d": 3,
+  "synthetic": true
+ },
+ "stf_007_202610": {
+  "ledger_id": "stf_007_202610",
+  "staff_id": "stf_007",
+  "month": "2026-10",
+  "ot_hours_used": 27,
+  "rest_days": [
+   "2026-10-21",
+   "2026-10-28"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_007_202611": {
+  "ledger_id": "stf_007_202611",
+  "staff_id": "stf_007",
+  "month": "2026-11",
+  "ot_hours_used": 8,
+  "rest_days": [
+   "2026-11-04",
+   "2026-11-11"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_008_202610": {
+  "ledger_id": "stf_008_202610",
+  "staff_id": "stf_008",
+  "month": "2026-10",
+  "ot_hours_used": 7,
+  "rest_days": [
+   "2026-10-25"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_008_202611": {
+  "ledger_id": "stf_008_202611",
+  "staff_id": "stf_008",
+  "month": "2026-11",
+  "ot_hours_used": 1,
+  "rest_days": [
+   "2026-11-01",
+   "2026-11-08",
+   "2026-11-15"
+  ],
+  "cover_requests_14d": 3,
+  "synthetic": true
+ },
+ "stf_009_202610": {
+  "ledger_id": "stf_009_202610",
+  "staff_id": "stf_009",
+  "month": "2026-10",
+  "ot_hours_used": 9,
+  "rest_days": [
+   "2026-10-21",
+   "2026-10-28"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_009_202611": {
+  "ledger_id": "stf_009_202611",
+  "staff_id": "stf_009",
+  "month": "2026-11",
+  "ot_hours_used": 8,
+  "rest_days": [
+   "2026-11-04",
+   "2026-11-11"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_010_202610": {
+  "ledger_id": "stf_010_202610",
+  "staff_id": "stf_010",
+  "month": "2026-10",
+  "ot_hours_used": 23,
+  "rest_days": [
+   "2026-10-19",
+   "2026-10-26"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_010_202611": {
+  "ledger_id": "stf_010_202611",
+  "staff_id": "stf_010",
+  "month": "2026-11",
+  "ot_hours_used": 9,
+  "rest_days": [
+   "2026-11-02",
+   "2026-11-09"
+  ],
+  "cover_requests_14d": 2,
+  "synthetic": true
+ },
+ "stf_011_202610": {
+  "ledger_id": "stf_011_202610",
+  "staff_id": "stf_011",
+  "month": "2026-10",
+  "ot_hours_used": 9,
+  "rest_days": [
+   "2026-10-25"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_011_202611": {
+  "ledger_id": "stf_011_202611",
+  "staff_id": "stf_011",
+  "month": "2026-11",
+  "ot_hours_used": 6,
+  "rest_days": [
+   "2026-11-01",
+   "2026-11-08",
+   "2026-11-15"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_012_202610": {
+  "ledger_id": "stf_012_202610",
+  "staff_id": "stf_012",
+  "month": "2026-10",
+  "ot_hours_used": 2,
+  "rest_days": [
+   "2026-10-23",
+   "2026-10-30"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_012_202611": {
+  "ledger_id": "stf_012_202611",
+  "staff_id": "stf_012",
+  "month": "2026-11",
+  "ot_hours_used": 4,
+  "rest_days": [
+   "2026-11-06",
+   "2026-11-13"
+  ],
+  "cover_requests_14d": 1,
+  "synthetic": true
+ },
+ "stf_013_202610": {
+  "ledger_id": "stf_013_202610",
+  "staff_id": "stf_013",
+  "month": "2026-10",
+  "ot_hours_used": 2,
+  "rest_days": [
+   "2026-10-23",
+   "2026-10-30"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_013_202611": {
+  "ledger_id": "stf_013_202611",
+  "staff_id": "stf_013",
+  "month": "2026-11",
+  "ot_hours_used": 5,
+  "rest_days": [
+   "2026-11-06",
+   "2026-11-13"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_014_202610": {
+  "ledger_id": "stf_014_202610",
+  "staff_id": "stf_014",
+  "month": "2026-10",
+  "ot_hours_used": 15,
+  "rest_days": [
+   "2026-10-25"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_014_202611": {
+  "ledger_id": "stf_014_202611",
+  "staff_id": "stf_014",
+  "month": "2026-11",
+  "ot_hours_used": 10,
+  "rest_days": [
+   "2026-11-01",
+   "2026-11-08",
+   "2026-11-15"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_015_202610": {
+  "ledger_id": "stf_015_202610",
+  "staff_id": "stf_015",
+  "month": "2026-10",
+  "ot_hours_used": 22,
+  "rest_days": [
+   "2026-10-19",
+   "2026-10-26"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_015_202611": {
+  "ledger_id": "stf_015_202611",
+  "staff_id": "stf_015",
+  "month": "2026-11",
+  "ot_hours_used": 8,
+  "rest_days": [
+   "2026-11-02",
+   "2026-11-09"
+  ],
+  "cover_requests_14d": 1,
+  "synthetic": true
+ },
+ "stf_016_202610": {
+  "ledger_id": "stf_016_202610",
+  "staff_id": "stf_016",
+  "month": "2026-10",
+  "ot_hours_used": 9,
+  "rest_days": [
+   "2026-10-25"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_016_202611": {
+  "ledger_id": "stf_016_202611",
+  "staff_id": "stf_016",
+  "month": "2026-11",
+  "ot_hours_used": 3,
+  "rest_days": [
+   "2026-11-01",
+   "2026-11-08",
+   "2026-11-15"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_017_202610": {
+  "ledger_id": "stf_017_202610",
+  "staff_id": "stf_017",
+  "month": "2026-10",
+  "ot_hours_used": 11,
+  "rest_days": [
+   "2026-10-21",
+   "2026-10-28"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_017_202611": {
+  "ledger_id": "stf_017_202611",
+  "staff_id": "stf_017",
+  "month": "2026-11",
+  "ot_hours_used": 6,
+  "rest_days": [
+   "2026-11-04",
+   "2026-11-11"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_018_202610": {
+  "ledger_id": "stf_018_202610",
+  "staff_id": "stf_018",
+  "month": "2026-10",
+  "ot_hours_used": 11,
+  "rest_days": [
+   "2026-10-24",
+   "2026-10-31"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_018_202611": {
+  "ledger_id": "stf_018_202611",
+  "staff_id": "stf_018",
+  "month": "2026-11",
+  "ot_hours_used": 5,
+  "rest_days": [
+   "2026-11-07",
+   "2026-11-14"
+  ],
+  "cover_requests_14d": 1,
+  "synthetic": true
+ },
+ "stf_019_202610": {
+  "ledger_id": "stf_019_202610",
+  "staff_id": "stf_019",
+  "month": "2026-10",
+  "ot_hours_used": 15,
+  "rest_days": [
+   "2026-10-25"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_019_202611": {
+  "ledger_id": "stf_019_202611",
+  "staff_id": "stf_019",
+  "month": "2026-11",
+  "ot_hours_used": 4,
+  "rest_days": [
+   "2026-11-01",
+   "2026-11-08",
+   "2026-11-15"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_020_202610": {
+  "ledger_id": "stf_020_202610",
+  "staff_id": "stf_020",
+  "month": "2026-10",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_020_202611": {
+  "ledger_id": "stf_020_202611",
+  "staff_id": "stf_020",
+  "month": "2026-11",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 3,
+  "synthetic": true
+ },
+ "stf_021_202610": {
+  "ledger_id": "stf_021_202610",
+  "staff_id": "stf_021",
+  "month": "2026-10",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_021_202611": {
+  "ledger_id": "stf_021_202611",
+  "staff_id": "stf_021",
+  "month": "2026-11",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_022_202610": {
+  "ledger_id": "stf_022_202610",
+  "staff_id": "stf_022",
+  "month": "2026-10",
+  "ot_hours_used": 24,
+  "rest_days": [
+   "2026-10-19",
+   "2026-10-26"
+  ],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_022_202611": {
+  "ledger_id": "stf_022_202611",
+  "staff_id": "stf_022",
+  "month": "2026-11",
+  "ot_hours_used": 0,
+  "rest_days": [
+   "2026-11-02",
+   "2026-11-09"
+  ],
+  "cover_requests_14d": 1,
+  "synthetic": true
+ },
+ "stf_023_202610": {
+  "ledger_id": "stf_023_202610",
+  "staff_id": "stf_023",
+  "month": "2026-10",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_023_202611": {
+  "ledger_id": "stf_023_202611",
+  "staff_id": "stf_023",
+  "month": "2026-11",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_024_202610": {
+  "ledger_id": "stf_024_202610",
+  "staff_id": "stf_024",
+  "month": "2026-10",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_024_202611": {
+  "ledger_id": "stf_024_202611",
+  "staff_id": "stf_024",
+  "month": "2026-11",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_025_202610": {
+  "ledger_id": "stf_025_202610",
+  "staff_id": "stf_025",
+  "month": "2026-10",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_025_202611": {
+  "ledger_id": "stf_025_202611",
+  "staff_id": "stf_025",
+  "month": "2026-11",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 1,
+  "synthetic": true
+ },
+ "stf_026_202610": {
+  "ledger_id": "stf_026_202610",
+  "staff_id": "stf_026",
+  "month": "2026-10",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_026_202611": {
+  "ledger_id": "stf_026_202611",
+  "staff_id": "stf_026",
+  "month": "2026-11",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 1,
+  "synthetic": true
+ },
+ "stf_027_202610": {
+  "ledger_id": "stf_027_202610",
+  "staff_id": "stf_027",
+  "month": "2026-10",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_027_202611": {
+  "ledger_id": "stf_027_202611",
+  "staff_id": "stf_027",
+  "month": "2026-11",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 1,
+  "synthetic": true
+ },
+ "stf_028_202610": {
+  "ledger_id": "stf_028_202610",
+  "staff_id": "stf_028",
+  "month": "2026-10",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_028_202611": {
+  "ledger_id": "stf_028_202611",
+  "staff_id": "stf_028",
+  "month": "2026-11",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_029_202610": {
+  "ledger_id": "stf_029_202610",
+  "staff_id": "stf_029",
+  "month": "2026-10",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_029_202611": {
+  "ledger_id": "stf_029_202611",
+  "staff_id": "stf_029",
+  "month": "2026-11",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_030_202610": {
+  "ledger_id": "stf_030_202610",
+  "staff_id": "stf_030",
+  "month": "2026-10",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_030_202611": {
+  "ledger_id": "stf_030_202611",
+  "staff_id": "stf_030",
+  "month": "2026-11",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_031_202610": {
+  "ledger_id": "stf_031_202610",
+  "staff_id": "stf_031",
+  "month": "2026-10",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_031_202611": {
+  "ledger_id": "stf_031_202611",
+  "staff_id": "stf_031",
+  "month": "2026-11",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 3,
+  "synthetic": true
+ },
+ "stf_032_202610": {
+  "ledger_id": "stf_032_202610",
+  "staff_id": "stf_032",
+  "month": "2026-10",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_032_202611": {
+  "ledger_id": "stf_032_202611",
+  "staff_id": "stf_032",
+  "month": "2026-11",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_033_202610": {
+  "ledger_id": "stf_033_202610",
+  "staff_id": "stf_033",
+  "month": "2026-10",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 0,
+  "synthetic": true
+ },
+ "stf_033_202611": {
+  "ledger_id": "stf_033_202611",
+  "staff_id": "stf_033",
+  "month": "2026-11",
+  "ot_hours_used": 0,
+  "rest_days": [],
+  "cover_requests_14d": 1,
+  "synthetic": true
+ }
 }

@@ -1,20 +1,23 @@
 id: CO-REST-BETWEEN-SHIFTS
-title: Minimum 11 hours rest between consecutive shifts
+title: At least 11 hours between the end of one shift and the start of the next
 kind: hard
 jurisdiction: SG
 source:
   publisher: Synthetic company policy
-  title: CoverCall synthetic company policy and design defaults
+  title: CoverCall synthetic company policy (design defaults)
   url: policy/company.yaml
   section: rest_between_shifts_h
   source_last_updated: 2026-10-18
   retrieved: 2026-10-18
 applies_when: "true"
 params:
-  min_rest_hours_between_shifts: 11
-message: "{name}: only {rest_hours}h turnaround between shifts (company policy requires at least {min_rest_hours}h)."
+  min_rest_hours: "company:rest_between_shifts_h"
+  contiguous_shifts_count_as_one: true
+message: "{name}: {rest_hours} hours between shifts. Company policy needs at least {min_rest_hours} hours."
 tests:
   - fixture: rest_turnaround_8h_violation
     expect: violation
   - fixture: rest_turnaround_12h_ok
     expect: ok
+  - fixture: rest_overlap_violation
+    expect: violation

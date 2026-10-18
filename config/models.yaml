@@ -1,56 +1,57 @@
-# CoverCall Model Registry (§1.3, §7.1)
-# All data is synthetic. Every model call logs model_id and prompt_hash.
-# A service MUST refuse to start if a model role it uses has model_id: TODO-VERIFY.
+# CoverCall model registry (§1.3, §7.1). All data is synthetic.
+# A service MUST refuse to start if a model role it uses has model_id TODO-VERIFY, and name the role.
+# Every model call logs model_id and the SHA-256 of its prompt file (prompts/*.md).
+#
+# Status 2026-10-18 (see docs/OPEN_ITEMS.md, "Exact Gemini model IDs"):
+# Google's Gemini API model page (https://ai.google.dev/gemini-api/docs/models, last updated
+# 2026-10-13) lists gemini-3.1-flash-live-preview as a legacy preview (it recommends gemini-3.8-live),
+# and lists the gemini-2.5 family as limited to users who used it before. Nothing here was pinned
+# against the Vertex AI model list for asia-southeast1. So every model_id stays TODO-VERIFY until
+# the author confirms it in the project's console. No model is called in Slices 1-2 (stubs only).
 
 roles:
   voice:
-    provider: google_genai_live
-    api_version: v1alpha
-    model_id: gemini-3.1-flash-live-preview
-    pinned_at: "2026-10-18"
+    provider: gemini_live_api
+    api_version: v1alpha                 # PDF §7.2: ephemeral tokens only work on v1alpha
+    model_id: TODO-VERIFY                # PDF names gemini-3.1-flash-live-preview; docs now mark it legacy
+    pinned_at: null
     called_from: browser_ephemeral_token
-    ephemeral_token_start_ttl_s: 60     # design default (chosen, see §1.3 & §7.2)
-    ephemeral_token_session_ttl_s: 1800 # design default (chosen, see §1.3 & §7.2)
-    health_check_interval_h: 3          # design default (chosen, see §7.1)
-    fallback_order:
-      - hands_free
-      - push_to_talk
-      - text
+    ephemeral_token_start_ttl_s: 60      # design default (PDF §7.2: 1 minute to start)
+    ephemeral_token_session_ttl_s: 1800  # design default (PDF §7.2: 30 minutes of messages)
+    health_check_interval_h: 3           # design default (PDF §7.1)
+    fallback_order: [hands_free, push_to_talk, text]
 
   agent:
     provider: vertex_ai_adk
     api_version: v1
-    model_id: gemini-2.5-flash
-    pinned_at: "2026-10-18"
+    model_id: TODO-VERIFY                # Gemini Flash tier on Vertex AI (PDF §7.1)
+    pinned_at: null
     called_from: workflow_step
-    temperature: 0.0                    # design default (chosen, see §7.6)
-    parse_confidence_min: 0.7           # design default (chosen, see §7.3)
-    draft_max_chars: 300                # design default (chosen, see §7.3)
-    max_retries: 1                      # design default (chosen, see §7.3)
+    temperature: 0.0                     # design default (PDF §7.6)
+    prompt_files: [prompts/parse_reply.md, prompts/explain_plan.md, prompts/draft_offer.md]
 
   persona_sim:
     provider: vertex_ai
     api_version: v1
-    model_id: gemini-2.5-flash
-    pinned_at: "2026-10-18"
+    model_id: TODO-VERIFY                # Gemini Flash tier (PDF §7.1)
+    pinned_at: null
     called_from: persona_sim_service
-    temperature: 0.8                    # design default (chosen, see §1.3 & §7.6)
+    temperature: 0.8                     # design default (PDF §7.6), seeded
     database_scope: sim
 
   guard:
     provider: cloud_run_cpu
     api_version: v1
-    model_id: TODO-VERIFY               # Slice 5 fine-tuned Gemma 3 270M weight checkpoint; Slices 1-2 use deterministic stub-v0
-    guard_impl: stub-v0
-    pinned_at: "2026-10-18"
+    model_id: TODO-VERIFY                # fine-tuned Gemma 3 270M, Slice 5. Slices 1-2 run guard_impl stub-v0 (no model).
+    pinned_at: null
     called_from: workflow_step
     fail_closed: true
 
   eval_judge:
     provider: vertex_ai
     api_version: v1
-    model_id: gemini-2.5-pro
-    pinned_at: "2026-10-18"
+    model_id: TODO-VERIFY                # Gemini Pro tier, Cloud Build only (PDF §7.5)
+    pinned_at: null
     called_from: cloud_build_only
-    temperature: 0.0                    # design default (chosen, see §7.6)
-    calibration_set_size: 30            # design default (chosen, see §7.5)
+    temperature: 0.0                     # design default (PDF §7.6)
+    calibration_set_size: 30             # design default (PDF §7.5)

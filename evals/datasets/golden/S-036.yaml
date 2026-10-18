@@ -1,26 +1,30 @@
 id: S-036
-description: Synthetic absence scenario S-036 at bugis (barista)
-now: '2026-11-03T06:02:00+08:00'
-seed: 78
+description: 'Rachel absent: tampines cashier 07:00-15:00 on 2026-11-03'
+now: '2026-11-03T06:17:00+08:00'
+seed: 4236
 gap:
-  outlet: bugis
-  station: barista
+  outlet: tampines
+  station: cashier
   start: 07:00
   end: '15:00'
-  absent: stf_007
-overrides:
-- staff: stf_004
-  ledger:
-    ot_hours_used: 70
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 13
-    hours_since_prev_shift_end: 9.0
-personas: {}
+  absent: stf_002
+overrides: []
+personas:
+  stf_025:
+    will: silent
+  stf_013:
+    will: counter
+    window:
+    - 09:00
+    - '15:00'
 synthetic: true
 expect:
   outcome: filled
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_016
+  assignment:
+  - staff_id: stf_022
+    start: '2026-11-03T07:00:00+08:00'
+    end: '2026-11-03T15:00:00+08:00'
+  overtime_cost_cents: 0
+  total_cost_cents: 0
+  computed_by: evals.cascade_sim (solver + validator, time limit 10 s); never hand-typed

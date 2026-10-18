@@ -1,0 +1,61 @@
+synthetic: true
+description: 'Manager on a 14 h day: Part 4 limit does not apply'
+employee:
+  employee_class: manager_executive
+  monthly_basic_sgd: 4200
+shifts:
+- staff_id: stf_t
+  outlet: bugis
+  station: barista
+  start: '2026-11-03T07:00:00+08:00'
+  end: '2026-11-03T15:00:00+08:00'
+  status: scheduled
+  breaks:
+  - start: '2026-11-03T11:00:00+08:00'
+    duration_min: 45
+  synthetic: true
+- staff_id: stf_t
+  outlet: bugis
+  station: barista
+  start: '2026-11-04T07:00:00+08:00'
+  end: '2026-11-04T15:00:00+08:00'
+  status: scheduled
+  breaks:
+  - start: '2026-11-04T11:00:00+08:00'
+    duration_min: 45
+  synthetic: true
+- staff_id: stf_t
+  outlet: bugis
+  station: barista
+  start: '2026-11-05T07:00:00+08:00'
+  end: '2026-11-05T15:00:00+08:00'
+  status: scheduled
+  breaks:
+  - start: '2026-11-05T11:00:00+08:00'
+    duration_min: 45
+  synthetic: true
+- staff_id: stf_t
+  outlet: bugis
+  station: barista
+  start: '2026-11-06T07:00:00+08:00'
+  end: '2026-11-06T15:00:00+08:00'
+  status: scheduled
+  breaks:
+  - start: '2026-11-06T11:00:00+08:00'
+    duration_min: 45
+  synthetic: true
+- staff_id: stf_t
+  outlet: bugis
+  station: barista
+  start: '2026-11-07T07:00:00+08:00'
+  end: '2026-11-07T15:00:00+08:00'
+  status: scheduled
+  breaks:
+  - start: '2026-11-07T11:00:00+08:00'
+    duration_min: 45
+  synthetic: true
+assignment:
+  staff_id: stf_t
+  start: '2026-11-07T15:00:00+08:00'
+  end: '2026-11-07T21:00:00+08:00'
+  breaks: []

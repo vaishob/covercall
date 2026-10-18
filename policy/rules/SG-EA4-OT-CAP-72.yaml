@@ -21,3 +21,5 @@ tests:
     expect: not_applicable
   - fixture: ot_cap_69_plus_3
     expect: ok
+  - fixture: ot_cap_rest_day_hours_not_counted
+    expect: ok

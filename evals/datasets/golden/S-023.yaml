@@ -1,26 +1,27 @@
 id: S-023
-description: Synthetic absence scenario S-023 at jurong_east (cashier)
-now: '2026-11-03T06:02:00+08:00'
-seed: 65
+description: 'Ali absent: bugis cashier 07:00-15:00 on 2026-11-06'
+now: '2026-11-06T06:09:00+08:00'
+seed: 4223
 gap:
-  outlet: jurong_east
+  outlet: bugis
   station: cashier
-  start: '12:00'
-  end: '20:00'
-  absent: stf_009
-overrides:
-- staff: stf_004
-  ledger:
-    ot_hours_used: 66
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 11
-    hours_since_prev_shift_end: 14.0
-personas: {}
+  start: 07:00
+  end: '15:00'
+  absent: stf_011
+overrides: []
+personas:
+  stf_026:
+    will: decline
+  stf_021:
+    will: decline
 synthetic: true
 expect:
   outcome: filled
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_015
+  assignment:
+  - staff_id: stf_019
+    start: '2026-11-06T07:00:00+08:00'
+    end: '2026-11-06T15:00:00+08:00'
+  overtime_cost_cents: 0
+  total_cost_cents: 0
+  computed_by: evals.cascade_sim (solver + validator, time limit 10 s); never hand-typed

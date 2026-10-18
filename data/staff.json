@@ -1,862 +1,798 @@
 [
-  {
-    "staff_id": "stf_001",
-    "display_name": "Marcus",
-    "age": 34,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Bugis",
-    "home_outlet": "bugis",
-    "contract_type": "full_time",
-    "employee_class": "manager_executive",
-    "monthly_basic_sgd": 4200,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2022-01-15",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.82,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_002",
-    "display_name": "Rachel",
-    "age": 22,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Kallang",
-    "home_outlet": "tampines",
-    "contract_type": "full_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": 2200,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "kitchen",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2023-04-15",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.73,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_003",
-    "display_name": "Darren",
-    "age": 40,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Lavender",
-    "home_outlet": "jurong_east",
-    "contract_type": "full_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": 2400,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2022-03-15",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.8,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_004",
-    "display_name": "Priya",
-    "age": 34,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Bugis",
-    "home_outlet": "bugis",
-    "contract_type": "full_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": 2400,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2024-03-15",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.98,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_005",
-    "display_name": "Amir",
-    "age": 34,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Bedok",
-    "home_outlet": "tampines",
-    "contract_type": "full_time",
-    "employee_class": "workman",
-    "monthly_basic_sgd": 2800,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2024-06-15",
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.76,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_006",
-    "display_name": "Gloria",
-    "age": 25,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Pasir Ris",
-    "home_outlet": "jurong_east",
-    "contract_type": "full_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": 2350,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "kitchen",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2024-05-20",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.95,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_007",
-    "display_name": "Hafiz",
-    "age": 28,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Jurong East",
-    "home_outlet": "bugis",
-    "contract_type": "full_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": 2400,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "cashier"
-    ],
-    "fsc_l1_passed_on": null,
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.8,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_008",
-    "display_name": "Nadia",
-    "age": 34,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Tampines",
-    "home_outlet": "tampines",
-    "contract_type": "full_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": 2300,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2024-08-10",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.85,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_009",
-    "display_name": "Kelvin",
-    "age": 24,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Bukit Batok",
-    "home_outlet": "jurong_east",
-    "contract_type": "full_time",
-    "employee_class": "workman",
-    "monthly_basic_sgd": 2800,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2024-04-15",
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.79,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_010",
-    "display_name": "Wei",
-    "age": 20,
-    "is_student": true,
-    "institution": "ITE",
-    "student_timetable": {
-      "blocked_days": [
-        "wednesday",
-        "friday"
-      ],
-      "exam_weeks": [
-        "2026-W47"
-      ]
-    },
-    "home_area": "Tampines",
-    "home_outlet": "tampines",
-    "contract_type": "part_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": null,
-    "hourly_basic_sgd": 12.0,
-    "weekly_contract_hours": 20,
-    "normal_daily_hours": 4,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2024-07-01",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.87,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_011",
-    "display_name": "Ali",
-    "age": 25,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Bugis",
-    "home_outlet": "bugis",
-    "contract_type": "full_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": 2400,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2024-02-10",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.76,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_012",
-    "display_name": "Siti",
-    "age": 43,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Kallang",
-    "home_outlet": "jurong_east",
-    "contract_type": "full_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": 2600,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "kitchen",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2024-06-15",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.59,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_013",
-    "display_name": "Rohan",
-    "age": 42,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Lavender",
-    "home_outlet": "bugis",
-    "contract_type": "full_time",
-    "employee_class": "workman",
-    "monthly_basic_sgd": 3200,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2023-03-15",
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.68,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_014",
-    "display_name": "Mei",
-    "age": 22,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Tampines",
-    "home_outlet": "tampines",
-    "contract_type": "full_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": 2200,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2019-04-15",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.93,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_015",
-    "display_name": "Farhan",
-    "age": 45,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Bedok",
-    "home_outlet": "jurong_east",
-    "contract_type": "full_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": 2850,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2025-02-15",
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.9,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_016",
-    "display_name": "Chloe",
-    "age": 28,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Pasir Ris",
-    "home_outlet": "bugis",
-    "contract_type": "full_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": 2850,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "kitchen",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2023-05-15",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.69,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_017",
-    "display_name": "Arjun",
-    "age": 24,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Jurong East",
-    "home_outlet": "tampines",
-    "contract_type": "full_time",
-    "employee_class": "workman",
-    "monthly_basic_sgd": 4700,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2024-01-15",
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.76,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_018",
-    "display_name": "Zhi",
-    "age": 24,
-    "is_student": false,
-    "institution": null,
-    "student_timetable": null,
-    "home_area": "Clementi",
-    "home_outlet": "jurong_east",
-    "contract_type": "full_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": 2200,
-    "hourly_basic_sgd": null,
-    "weekly_contract_hours": 44,
-    "normal_daily_hours": 8,
-    "skills": [
-      "cashier"
-    ],
-    "fsc_l1_passed_on": null,
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.86,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_019",
-    "display_name": "Aisha",
-    "age": 19,
-    "is_student": true,
-    "institution": "ITE",
-    "student_timetable": {
-      "blocked_days": [
-        "wednesday",
-        "friday"
-      ],
-      "exam_weeks": [
-        "2026-W47"
-      ]
-    },
-    "home_area": "Bugis",
-    "home_outlet": "bugis",
-    "contract_type": "part_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": null,
-    "hourly_basic_sgd": 11.5,
-    "weekly_contract_hours": 20,
-    "normal_daily_hours": 4,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2025-01-12",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.83,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_020",
-    "display_name": "Ryan",
-    "age": 20,
-    "is_student": true,
-    "institution": "university",
-    "student_timetable": {
-      "blocked_days": [
-        "wednesday",
-        "friday"
-      ],
-      "exam_weeks": [
-        "2026-W47"
-      ]
-    },
-    "home_area": "Toa Payoh",
-    "home_outlet": "tampines",
-    "contract_type": "part_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": null,
-    "hourly_basic_sgd": 13.0,
-    "weekly_contract_hours": 20,
-    "normal_daily_hours": 4,
-    "skills": [
-      "barista",
-      "kitchen",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2025-01-15",
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.79,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_021",
-    "display_name": "Kavitha",
-    "age": 18,
-    "is_student": true,
-    "institution": "polytechnic",
-    "student_timetable": {
-      "blocked_days": [
-        "wednesday",
-        "friday"
-      ],
-      "exam_weeks": [
-        "2026-W47"
-      ]
-    },
-    "home_area": "Bugis",
-    "home_outlet": "jurong_east",
-    "contract_type": "part_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": null,
-    "hourly_basic_sgd": 12.0,
-    "weekly_contract_hours": 20,
-    "normal_daily_hours": 4,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2025-03-15",
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.7,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_022",
-    "display_name": "Lucas",
-    "age": 20,
-    "is_student": true,
-    "institution": "ITE",
-    "student_timetable": {
-      "blocked_days": [
-        "wednesday",
-        "friday"
-      ],
-      "exam_weeks": [
-        "2026-W47"
-      ]
-    },
-    "home_area": "Kallang",
-    "home_outlet": "bugis",
-    "contract_type": "part_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": null,
-    "hourly_basic_sgd": 12.0,
-    "weekly_contract_hours": 20,
-    "normal_daily_hours": 4,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2025-02-18",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.88,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_023",
-    "display_name": "Nurul",
-    "age": 17,
-    "is_student": true,
-    "institution": "university",
-    "student_timetable": {
-      "blocked_days": [
-        "wednesday",
-        "friday"
-      ],
-      "exam_weeks": [
-        "2026-W47"
-      ]
-    },
-    "home_area": "Lavender",
-    "home_outlet": "tampines",
-    "contract_type": "part_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": null,
-    "hourly_basic_sgd": 12.0,
-    "weekly_contract_hours": 20,
-    "normal_daily_hours": 4,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2025-01-15",
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.9,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_024",
-    "display_name": "Ethan",
-    "age": 19,
-    "is_student": true,
-    "institution": "polytechnic",
-    "student_timetable": {
-      "blocked_days": [
-        "wednesday",
-        "friday"
-      ],
-      "exam_weeks": [
-        "2026-W47"
-      ]
-    },
-    "home_area": "Tampines",
-    "home_outlet": "jurong_east",
-    "contract_type": "part_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": null,
-    "hourly_basic_sgd": 12.0,
-    "weekly_contract_hours": 20,
-    "normal_daily_hours": 4,
-    "skills": [
-      "barista",
-      "kitchen",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2022-09-15",
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.57,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_025",
-    "display_name": "Shreya",
-    "age": 23,
-    "is_student": true,
-    "institution": "ITE",
-    "student_timetable": {
-      "blocked_days": [
-        "wednesday",
-        "friday"
-      ],
-      "exam_weeks": [
-        "2026-W47"
-      ]
-    },
-    "home_area": "Bedok",
-    "home_outlet": "bugis",
-    "contract_type": "part_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": null,
-    "hourly_basic_sgd": 12.0,
-    "weekly_contract_hours": 20,
-    "normal_daily_hours": 4,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2022-02-15",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.79,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_026",
-    "display_name": "Daniel",
-    "age": 22,
-    "is_student": true,
-    "institution": "university",
-    "student_timetable": {
-      "blocked_days": [
-        "wednesday",
-        "friday"
-      ],
-      "exam_weeks": [
-        "2026-W47"
-      ]
-    },
-    "home_area": "Pasir Ris",
-    "home_outlet": "tampines",
-    "contract_type": "part_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": null,
-    "hourly_basic_sgd": 13.5,
-    "weekly_contract_hours": 20,
-    "normal_daily_hours": 4,
-    "skills": [
-      "barista",
-      "kitchen",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2024-05-15",
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.62,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_027",
-    "display_name": "Harith",
-    "age": 20,
-    "is_student": true,
-    "institution": "polytechnic",
-    "student_timetable": {
-      "blocked_days": [
-        "wednesday",
-        "friday"
-      ],
-      "exam_weeks": [
-        "2026-W47"
-      ]
-    },
-    "home_area": "Jurong East",
-    "home_outlet": "jurong_east",
-    "contract_type": "part_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": null,
-    "hourly_basic_sgd": 12.5,
-    "weekly_contract_hours": 20,
-    "normal_daily_hours": 4,
-    "skills": [
-      "barista",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2019-04-15",
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.88,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_028",
-    "display_name": "Fiona",
-    "age": 18,
-    "is_student": true,
-    "institution": "ITE",
-    "student_timetable": {
-      "blocked_days": [
-        "wednesday",
-        "friday"
-      ],
-      "exam_weeks": [
-        "2026-W47"
-      ]
-    },
-    "home_area": "Clementi",
-    "home_outlet": "bugis",
-    "contract_type": "part_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": null,
-    "hourly_basic_sgd": 12.5,
-    "weekly_contract_hours": 20,
-    "normal_daily_hours": 4,
-    "skills": [
-      "barista",
-      "kitchen",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2022-04-15",
-    "keyholder": true,
-    "channel": "sim",
-    "past_acceptance_rate": 0.68,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_029",
-    "display_name": "Vikram",
-    "age": 22,
-    "is_student": true,
-    "institution": "university",
-    "student_timetable": {
-      "blocked_days": [
-        "wednesday",
-        "friday"
-      ],
-      "exam_weeks": [
-        "2026-W47"
-      ]
-    },
-    "home_area": "Bukit Batok",
-    "home_outlet": "tampines",
-    "contract_type": "part_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": null,
-    "hourly_basic_sgd": 11.5,
-    "weekly_contract_hours": 20,
-    "normal_daily_hours": 4,
-    "skills": [
-      "cashier"
-    ],
-    "fsc_l1_passed_on": null,
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.89,
-    "synthetic": true
-  },
-  {
-    "staff_id": "stf_030",
-    "display_name": "Hannah",
-    "age": 21,
-    "is_student": true,
-    "institution": "polytechnic",
-    "student_timetable": {
-      "blocked_days": [
-        "wednesday",
-        "friday"
-      ],
-      "exam_weeks": [
-        "2026-W47"
-      ]
-    },
-    "home_area": "Toa Payoh",
-    "home_outlet": "jurong_east",
-    "contract_type": "part_time",
-    "employee_class": "non_workman",
-    "monthly_basic_sgd": null,
-    "hourly_basic_sgd": 12.0,
-    "weekly_contract_hours": 20,
-    "normal_daily_hours": 4,
-    "skills": [
-      "barista",
-      "kitchen",
-      "cashier"
-    ],
-    "fsc_l1_passed_on": "2024-04-15",
-    "keyholder": false,
-    "channel": "sim",
-    "past_acceptance_rate": 0.8,
-    "synthetic": true
-  }
+ {
+  "staff_id": "stf_001",
+  "display_name": "Marcus",
+  "age": 30,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Bugis",
+  "home_outlet": "bugis",
+  "contract_type": "full_time",
+  "employee_class": "manager_executive",
+  "monthly_basic_sgd": 4200,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2022-01-24",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.63,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_002",
+  "display_name": "Rachel",
+  "age": 50,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Tampines",
+  "home_outlet": "tampines",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 2600,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2022-11-24",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.58,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_003",
+  "display_name": "Darren",
+  "age": 28,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Jurong East",
+  "home_outlet": "jurong_east",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 2300,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2022-01-03",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.74,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_004",
+  "display_name": "Priya",
+  "age": 44,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Bugis",
+  "home_outlet": "bugis",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 2400,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2022-09-07",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.98,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_005",
+  "display_name": "Amir",
+  "age": 30,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Tampines",
+  "home_outlet": "tampines",
+  "contract_type": "full_time",
+  "employee_class": "workman",
+  "monthly_basic_sgd": 2600,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2023-08-19",
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.84,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_006",
+  "display_name": "Gloria",
+  "age": 26,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Jurong East",
+  "home_outlet": "jurong_east",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 2350,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2025-06-09",
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.91,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_007",
+  "display_name": "Hafiz",
+  "age": 32,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Bugis",
+  "home_outlet": "bugis",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 2200,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "cashier"
+  ],
+  "fsc_l1_passed_on": null,
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.59,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_008",
+  "display_name": "Nadia",
+  "age": 33,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Tampines",
+  "home_outlet": "tampines",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 2300,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2022-06-28",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.65,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_009",
+  "display_name": "Kelvin",
+  "age": 51,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Jurong East",
+  "home_outlet": "jurong_east",
+  "contract_type": "full_time",
+  "employee_class": "workman",
+  "monthly_basic_sgd": 3800,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2025-09-04",
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.58,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_010",
+  "display_name": "Wei",
+  "age": 44,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Bugis",
+  "home_outlet": "bugis",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 2200,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2024-10-07",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.57,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_011",
+  "display_name": "Ali",
+  "age": 49,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Bugis",
+  "home_outlet": "bugis",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 2400,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2023-05-03",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.88,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_012",
+  "display_name": "Siti",
+  "age": 48,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Jurong East",
+  "home_outlet": "jurong_east",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 2400,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2024-08-21",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.61,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_013",
+  "display_name": "Rohan",
+  "age": 44,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Bugis",
+  "home_outlet": "bugis",
+  "contract_type": "full_time",
+  "employee_class": "workman",
+  "monthly_basic_sgd": 2600,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2023-11-09",
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.78,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_014",
+  "display_name": "Mei",
+  "age": 36,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Tampines",
+  "home_outlet": "tampines",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 2500,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2019-03-15",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.65,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_015",
+  "display_name": "Farhan",
+  "age": 48,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Jurong East",
+  "home_outlet": "jurong_east",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 2750,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2023-11-11",
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.64,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_016",
+  "display_name": "Chloe",
+  "age": 30,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Bugis",
+  "home_outlet": "bugis",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 3100,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "cashier",
+   "kitchen"
+  ],
+  "fsc_l1_passed_on": "2022-06-13",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.63,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_017",
+  "display_name": "Arjun",
+  "age": 37,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Tampines",
+  "home_outlet": "tampines",
+  "contract_type": "full_time",
+  "employee_class": "workman",
+  "monthly_basic_sgd": 4700,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "kitchen"
+  ],
+  "fsc_l1_passed_on": "2024-04-21",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.89,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_018",
+  "display_name": "Zhi",
+  "age": 42,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Jurong East",
+  "home_outlet": "jurong_east",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 2500,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "cashier"
+  ],
+  "fsc_l1_passed_on": null,
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.6,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_019",
+  "display_name": "Aisha",
+  "age": 39,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Bugis",
+  "home_outlet": "bugis",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 2450,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2023-04-24",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.65,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_020",
+  "display_name": "Ryan",
+  "age": 33,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Tampines",
+  "home_outlet": "tampines",
+  "contract_type": "part_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": null,
+  "hourly_basic_sgd": 12.0,
+  "weekly_contract_hours": 16,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2025-10-13",
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.74,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_021",
+  "display_name": "Kavitha",
+  "age": 22,
+  "is_student": true,
+  "institution": "polytechnic",
+  "home_area": "Jurong East",
+  "home_outlet": "jurong_east",
+  "contract_type": "part_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": null,
+  "hourly_basic_sgd": 12.0,
+  "weekly_contract_hours": 24,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2022-02-05",
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.78,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_022",
+  "display_name": "Lucas",
+  "age": 36,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Bugis",
+  "home_outlet": "bugis",
+  "contract_type": "full_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": 2500,
+  "hourly_basic_sgd": null,
+  "weekly_contract_hours": 40,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2025-07-20",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.65,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_023",
+  "display_name": "Nurul",
+  "age": 17,
+  "is_student": true,
+  "institution": "university",
+  "home_area": "Tampines",
+  "home_outlet": "tampines",
+  "contract_type": "part_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": null,
+  "hourly_basic_sgd": 14.0,
+  "weekly_contract_hours": 24,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2022-11-24",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.84,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_024",
+  "display_name": "Ethan",
+  "age": 18,
+  "is_student": true,
+  "institution": "polytechnic",
+  "home_area": "Jurong East",
+  "home_outlet": "jurong_east",
+  "contract_type": "part_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": null,
+  "hourly_basic_sgd": 13.0,
+  "weekly_contract_hours": 16,
+  "normal_daily_hours": 8,
+  "skills": [
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2022-05-14",
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.91,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_025",
+  "display_name": "Shreya",
+  "age": 27,
+  "is_student": false,
+  "institution": null,
+  "home_area": "Bugis",
+  "home_outlet": "bugis",
+  "contract_type": "part_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": null,
+  "hourly_basic_sgd": 13.5,
+  "weekly_contract_hours": 16,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2024-09-25",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.88,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_026",
+  "display_name": "Daniel",
+  "age": 23,
+  "is_student": true,
+  "institution": "university",
+  "home_area": "Tampines",
+  "home_outlet": "tampines",
+  "contract_type": "part_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": null,
+  "hourly_basic_sgd": 12.0,
+  "weekly_contract_hours": 16,
+  "normal_daily_hours": 8,
+  "skills": [
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2023-03-12",
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.78,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_027",
+  "display_name": "Harith",
+  "age": 19,
+  "is_student": true,
+  "institution": "polytechnic",
+  "home_area": "Jurong East",
+  "home_outlet": "jurong_east",
+  "contract_type": "part_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": null,
+  "hourly_basic_sgd": 12.5,
+  "weekly_contract_hours": 16,
+  "normal_daily_hours": 8,
+  "skills": [
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2019-02-15",
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.57,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_028",
+  "display_name": "Fiona",
+  "age": 20,
+  "is_student": true,
+  "institution": "ITE",
+  "home_area": "Bugis",
+  "home_outlet": "bugis",
+  "contract_type": "part_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": null,
+  "hourly_basic_sgd": 11.5,
+  "weekly_contract_hours": 16,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2022-02-24",
+  "keyholder": true,
+  "channel": "sim",
+  "past_acceptance_rate": 0.6,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_029",
+  "display_name": "Vikram",
+  "age": 20,
+  "is_student": true,
+  "institution": "university",
+  "home_area": "Tampines",
+  "home_outlet": "tampines",
+  "contract_type": "part_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": null,
+  "hourly_basic_sgd": 13.5,
+  "weekly_contract_hours": 16,
+  "normal_daily_hours": 8,
+  "skills": [
+   "cashier"
+  ],
+  "fsc_l1_passed_on": null,
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.65,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_030",
+  "display_name": "Hannah",
+  "age": 23,
+  "is_student": true,
+  "institution": "polytechnic",
+  "home_area": "Jurong East",
+  "home_outlet": "jurong_east",
+  "contract_type": "part_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": null,
+  "hourly_basic_sgd": 14.0,
+  "weekly_contract_hours": 16,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2025-04-18",
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.82,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_031",
+  "display_name": "Joel",
+  "age": 20,
+  "is_student": true,
+  "institution": "ITE",
+  "home_area": "Bugis",
+  "home_outlet": "bugis",
+  "contract_type": "part_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": null,
+  "hourly_basic_sgd": 11.5,
+  "weekly_contract_hours": 16,
+  "normal_daily_hours": 8,
+  "skills": [
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2024-08-17",
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.64,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_032",
+  "display_name": "Farah",
+  "age": 18,
+  "is_student": true,
+  "institution": "university",
+  "home_area": "Tampines",
+  "home_outlet": "tampines",
+  "contract_type": "part_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": null,
+  "hourly_basic_sgd": 13.5,
+  "weekly_contract_hours": 16,
+  "normal_daily_hours": 8,
+  "skills": [
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2022-10-18",
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.55,
+  "synthetic": true
+ },
+ {
+  "staff_id": "stf_033",
+  "display_name": "Sean",
+  "age": 17,
+  "is_student": true,
+  "institution": "polytechnic",
+  "home_area": "Jurong East",
+  "home_outlet": "jurong_east",
+  "contract_type": "part_time",
+  "employee_class": "non_workman",
+  "monthly_basic_sgd": null,
+  "hourly_basic_sgd": 12.5,
+  "weekly_contract_hours": 16,
+  "normal_daily_hours": 8,
+  "skills": [
+   "barista",
+   "kitchen",
+   "cashier"
+  ],
+  "fsc_l1_passed_on": "2022-04-03",
+  "keyholder": false,
+  "channel": "sim",
+  "past_acceptance_rate": 0.75,
+  "synthetic": true
+ }
 ]

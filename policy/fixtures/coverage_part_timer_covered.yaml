@@ -1,0 +1,8 @@
+synthetic: true
+description: 'Part-timer at S$12/h x 24 h/week = S$1,248 a month: covered'
+employee:
+  contract_type: part_time
+  monthly_basic_sgd: null
+  hourly_basic_sgd: 12.0
+  weekly_contract_hours: 24
+  normal_daily_hours: 8

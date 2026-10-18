@@ -1,26 +1,23 @@
 id: S-044
-description: Synthetic absence scenario S-044 at jurong_east (cashier)
-now: '2026-11-03T06:02:00+08:00'
-seed: 86
+description: 'Mei absent: tampines cashier 07:00-15:00 on 2026-11-06'
+now: '2026-11-06T05:40:00+08:00'
+seed: 4244
 gap:
-  outlet: jurong_east
+  outlet: tampines
   station: cashier
-  start: '12:00'
-  end: '20:00'
-  absent: stf_015
-overrides:
-- staff: stf_004
-  ledger:
-    ot_hours_used: 70
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 11
-    hours_since_prev_shift_end: 9.0
+  start: 07:00
+  end: '15:00'
+  absent: stf_014
+overrides: []
 personas: {}
 synthetic: true
 expect:
   outcome: filled
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_016
+  assignment:
+  - staff_id: stf_019
+    start: '2026-11-06T07:00:00+08:00'
+    end: '2026-11-06T15:00:00+08:00'
+  overtime_cost_cents: 0
+  total_cost_cents: 0
+  computed_by: evals.cascade_sim (solver + validator, time limit 10 s); never hand-typed

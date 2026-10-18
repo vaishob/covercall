@@ -1,5 +1,5 @@
 id: SG-EA4-REST-DAY-PAY
-title: Employer-requested rest-day work pay calculation
+title: Pay for work on a rest day at the employer's request
 kind: cost
 jurisdiction: SG
 source:
@@ -9,12 +9,13 @@ source:
   section: Calculate your pay for work on a rest day
   source_last_updated: 2025-07-24
   retrieved: 2026-10-18
-applies_when: employee.part4_covered == true and shift.is_rest_day == true
+applies_when: employee.part4_covered == true and employee.monthly_rated == true and shift.is_rest_day == true
 params:
-  up_to_half_normal_day_days_pay: 1
-  more_than_half_to_normal_day_days_pay: 2
-  beyond_normal_day_ot_multiplier: 1.5
-message: "{name}: rest-day shift at employer's request ({work_hours}h) incurs {days_pay} day(s) basic salary (${rest_day_cost_sgd})."
+  days_pay_up_to_half_normal_day: 1
+  days_pay_more_than_half_normal_day: 2
+  beyond_normal_day_adds_overtime: true
+  daily_rate_source: "MOM, Monthly and daily salary: definitions and calculation, https://www.mom.gov.sg/employment-practices/salary/monthly-and-daily-salary (last updated 2025-12-08): basic rate of pay for one day = (12 x monthly basic) / (52 x average days worked per week)"
+message: "{name}: {day_hours} hours on a rest day at the employer's request = {days_pay} day(s) of basic pay (S${rest_day_cost_sgd})."
 tests:
   - fixture: rest_day_pay_full_shift
     expect: ok

@@ -102,6 +102,49 @@ Baseline on the **unmodified AI Studio code**:
 | `pytest` | **`1 failed, 38 passed`**. `test_datagen_builds_all_synthetic_records_and_scenarios`: `assert 17 == 18` (the full-timer count is off by one, because the `stf_010` pin overrides the 60/40 split). |
 | `python -m evals.compare --set golden` | Exit 0. CoverCall S$0.00 median / S$0.00 total overtime, 0 violations; baseline S$151.05 / S$9,063.00, 80 violations. **Not credible:** CoverCall's S$0 comes from picking staff outside Part 4 at zero modelled cost, and time to fill uses invented constants (1.10 vs 3.50 min). |
 
+## Step 3: Slice 1 (engine and evidence) — DONE, tag `slice-1`
+
+Every AI Studio engine file was rewritten (see the audit table for why). What exists now:
+
+- `policy/rules/*.yaml`: 15 specs. Sources re-verified live. `applies_when` is a real expression both engines evaluate. Company values are referenced as `company:<key>`, not copied.
+- `docs/decisions/0005-rule-semantics.md`: the one prose definition of every fact and rule. Both engines implement it separately.
+- `policy/validate.py`: stdlib + `yaml` only (AST test). Derives every fact from roster dicts. Missing data fails closed. Breach templates are shown only for breaches.
+- `policy/compile_cpsat.py`: real CP-SAT model. Booleans per (person, option); full gap or a two-person split on a 30-minute grid; each hard rule is a named linear constraint; integer-cent objective; top-k cuts over sets of people; `num_search_workers = 1`, fixed seed. `solve` cross-checks legality **and cost** with the validator and raises `PlanDisagreement`.
+- `policy/fixtures/`: 41 roster-level fixtures over a shared `_base.yaml`. Every rule has ≥ 2.
+- `datagen/`: 33 staff, 497 shifts (19 Oct to 15 Nov), 66 ledgers, 33 `sim` personas (hidden timetables and exam weeks), placeholder travel, and 60 golden + 40 held-out scenarios with `expect` computed by the solver.
+- `baseline/most_reliable_first.py`, `evals/cascade_sim.py`, `evals/compare.py`.
+
+Exit check, run on 2026-10-18:
+
+```
+$ ruff check .                      -> All checks passed!
+$ mypy                              -> Success: no issues found in 38 source files
+$ python policy/lint_rules.py       -> policy/lint_rules.py: OK (15 rules verified with complete sources and >=2 tests)
+$ pytest                            -> 71 passed in 14.90s
+$ python -m evals.compare --set golden   (exit 0)
+CoverCall vs most-reliable-first baseline: golden set, n=60 (all data is synthetic; costs in synthetic SGD)
+Metric                         |      CoverCall |       Baseline
+------------------------------------------------------------------
+Gaps filled                    |          57/60 |          59/60
+Median overtime cost per gap   |         S$0.00 |         S$0.00
+Total overtime cost            |        S$77.10 |     S$3,434.68
+Total incremental labour cost  |     S$1,907.10 |     S$6,322.68
+Rule violations (hard rules)   |              0 |             19
+Scenarios with a violation     |              0 |             18
+Solver/validator disagreements |              0 |            n/a
+------------------------------------------------------------------
+CoverCall escalated: 3, held: 0; baseline unfilled: 1
+Results differing from scenario expect blocks: 0
+```
+
+Held-out (`python -m evals.compare --set heldout`, exit 0): CoverCall 40/40 filled, total overtime S$37.76, total incremental S$1,291.76, 0 violations, 0 disagreements, 0 expect mismatches. Baseline: 40/40 filled, S$2,422.67 overtime, S$4,142.67 total, 15 violations in 14 scenarios.
+
+How to read these numbers honestly:
+- CoverCall escalates 3 golden gaps. S-002 is "nobody replies" by design. In **S-013 and S-038** the baseline "fills", but the person it picks cannot arrive with the 10-minute buffer (S-013), or the pick breaks the 11-hour rest rule (S-038). The baseline ignores travel and reply time.
+- Medians are S$0.00 for both arms because most gaps can be covered by someone with spare contract hours. The difference is in the totals and violations.
+- Staff outside Part 4 cost S$0 (no statutory overtime). Their contractual pay is not modelled (decision 0008).
+- Travel times are placeholders, not Routes API data.
+
 ### Remaining work, ordered and mapped to exit checks
 
 | # | Work | Exit check served |

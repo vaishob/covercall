@@ -1,5 +1,5 @@
 id: SG-SFA-FSC-L1
-title: WSQ Food Safety Course Level 1 required for food and beverage handlers
+title: WSQ Food Safety Course Level 1 for food and beverage handlers
 kind: hard
 jurisdiction: SG
 source:
@@ -9,15 +9,16 @@ source:
   section: "Who must attain WSQ FSC Level 1 certification?"
   source_last_updated: 2026-08-24
   retrieved: 2026-10-18
-applies_when: shift.station in ["kitchen", "barista"]
+applies_when: shift.food_handling == true and (shift.station != "barista" or company.enforce_fsc_on_barista == true)
 params:
-  fsc_l1_refresher_years: 5
-  stations_requiring_fsc:
-    - kitchen
-    - barista
-message: "{name}: WSQ Food Safety Course Level 1 is {cert_status} (required for {station} station; refresher due within 5 years)."
+  first_refresher_within_years: 5
+message: "{name}: WSQ Food Safety Course Level 1 is {cert_status}. Required at the {station} station (first refresher within 5 years of passing)."
 tests:
   - fixture: fsc_lapsed_barista_violation
     expect: violation
   - fixture: fsc_cashier_station_na
     expect: not_applicable
+  - fixture: fsc_valid_kitchen_ok
+    expect: ok
+  - fixture: fsc_missing_kitchen_violation
+    expect: violation

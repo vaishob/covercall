@@ -26,3 +26,12 @@
 
 ## Alternatives Considered
 - Leaving `SG-EA4-COVERAGE`, `SG-PT-OT-RATE`, or `SG-SFA-FSC-L1` with `TODO-VERIFY` URLs: rejected because retrieving the live MOM and SFA URLs directly allowed all 15 rules in §6.2 to be verified and active in Slice 1.
+
+## Superseded in part (2026-10-18, claude/slices-1-2)
+- **Model IDs:** not verified for this project. Google's Gemini API model page (updated 2026-10-13)
+  lists `gemini-3.1-flash-live-preview` as a legacy preview and the `gemini-2.5` family as limited to
+  earlier users. Every `model_id` in `config/models.yaml` is now `TODO-VERIFY` (see `docs/OPEN_ITEMS.md`).
+- **Part-time source:** the rule now cites the exact page, "Overtime for part-time employees"
+  (`/employment-practices/part-time-employment/overtime`, section "Calculating overtime pay",
+  updated 25 July 2025), not the part-time hub page.
+- **Objective weights:** the rationale now lives in `0006-solver-formulation.md`.

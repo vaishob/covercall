@@ -1,5 +1,5 @@
 id: SG-EA4-BREAKS
-title: Mandatory meal breaks for continuous work
+title: Breaks during continuous work
 kind: hard
 jurisdiction: SG
 source:
@@ -12,9 +12,8 @@ source:
 applies_when: employee.part4_covered == true
 params:
   max_consecutive_hours_without_break: 6
-  min_meal_break_min_for_8h_continuous: 45
-  continuous_work_threshold_hours: 8
-message: "{name}: {work_hours}h shift has only {breaks_min} min break (EA Part 4 requires at least {min_break_min} min meal break for shifts >= 8h, and no more than 6h without break)."
+  min_total_break_min: 45
+message: "{name}: {longest_stretch_h} hours without a break and {break_min} minutes of breaks in a {block_h}-hour stretch of work. EA Part 4 allows at most {max_consecutive_h} hours without a break and needs at least {min_break_min} minutes of breaks."
 tests:
   - fixture: breaks_8h_no_break_violation
     expect: violation

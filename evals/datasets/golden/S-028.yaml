@@ -1,31 +1,26 @@
 id: S-028
-description: Synthetic absence scenario S-028 at tampines (kitchen)
-now: '2026-11-03T06:02:00+08:00'
-seed: 70
+description: 'Harith absent: jurong_east cashier 07:00-15:00 on 2026-11-04'
+now: '2026-11-04T06:06:00+08:00'
+seed: 4228
 gap:
-  outlet: tampines
-  station: kitchen
-  start: 08:00
-  end: '16:00'
-  absent: stf_014
+  outlet: jurong_east
+  station: cashier
+  start: 07:00
+  end: '15:00'
+  absent: stf_027
 overrides:
-- staff: stf_004
+- staff: stf_009
   ledger:
-    ot_hours_used: 70
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 11
-    hours_since_prev_shift_end: 9.0
-personas:
-  stf_022:
-    will: counter
-    window:
-    - 09:00
-    - '15:00'
+    ot_hours_used: 71
+personas: {}
 synthetic: true
 expect:
   outcome: filled
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_016
+  assignment:
+  - staff_id: stf_025
+    start: '2026-11-04T07:00:00+08:00'
+    end: '2026-11-04T15:00:00+08:00'
+  overtime_cost_cents: 0
+  total_cost_cents: 10800
+  computed_by: evals.cascade_sim (solver + validator, time limit 10 s); never hand-typed

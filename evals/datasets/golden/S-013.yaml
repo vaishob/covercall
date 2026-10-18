@@ -1,26 +1,24 @@
 id: S-013
-description: Synthetic absence scenario S-013 at tampines (kitchen)
-now: '2026-11-03T06:02:00+08:00'
-seed: 55
+description: 'Priya absent: bugis barista 07:00-15:00 on 2026-11-06'
+now: '2026-11-06T06:24:00+08:00'
+seed: 4213
 gap:
-  outlet: tampines
-  station: kitchen
-  start: 08:00
-  end: '16:00'
-  absent: stf_014
-overrides:
-- staff: stf_004
-  ledger:
-    ot_hours_used: 66
-- staff: stf_006
-  shift_context:
-    days_since_last_rest_day: 11
-    hours_since_prev_shift_end: 14.0
-personas: {}
+  outlet: bugis
+  station: barista
+  start: 07:00
+  end: '15:00'
+  absent: stf_004
+overrides: []
+personas:
+  stf_009:
+    will: silent
+  stf_025:
+    will: decline
 synthetic: true
 expect:
-  outcome: filled
+  outcome: escalated
   violations: 0
-  overtime_cost_sgd: 0.0
-  total_cost_sgd: 0.0
-  assigned_staff_id: stf_016
+  assignment: []
+  overtime_cost_cents: 0
+  total_cost_cents: 0
+  computed_by: evals.cascade_sim (solver + validator, time limit 10 s); never hand-typed

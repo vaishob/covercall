@@ -1,5 +1,5 @@
 id: SG-EA4-DAILY-MAX-12H
-title: Maximum daily hours of work (12 hours)
+title: Maximum 12 hours of work a day
 kind: hard
 jurisdiction: SG
 source:
@@ -12,10 +12,12 @@ source:
 applies_when: employee.part4_covered == true
 params:
   max_daily_hours: 12
-  allow_statutory_exceptions: false
-message: "{name}: {daily_hours} hours of work on this day exceeds the {max_daily_hours}-hour EA Part 4 daily maximum."
+  use_statutory_exceptions: false
+message: "{name}: {day_hours} hours of work on {date} with this shift. Breaches the EA Part 4 limit of {max_daily_hours} hours a day."
 tests:
   - fixture: daily_max_14h_double
     expect: violation
   - fixture: daily_max_12h_exact
     expect: ok
+  - fixture: daily_max_manager_not_covered
+    expect: not_applicable
