@@ -222,7 +222,8 @@ def _cloud_app() -> FastAPI:  # pragma: no cover - Cloud Run wiring, not run in 
     api = Api(FirestoreStore("(default)"), cfg, load_rules(), clock=_RealClock(), guard=HttpGuard(os.environ["GUARD_URL"]),
               agent=agent, messenger=HttpMessenger(os.environ["PERSONA_SIM_URL"]),
               callbacks=HttpCallbacks(),
-              launcher=WorkflowsLauncher(), solver=HttpSolver(os.environ["SOLVER_URL"]), time_scale=scale)
+              launcher=WorkflowsLauncher(), solver=HttpSolver(os.environ["SOLVER_URL"]), time_scale=scale,
+              demo_isolation=os.environ.get("DEMO_ISOLATION") == "1")
     live_client = None
     if os.environ.get("VOICE_ENABLED") == "1" and os.environ.get("GEMINI_API_KEY"):
         voice = pinned_role("voice")  # refuses to start if the voice model is TODO-VERIFY

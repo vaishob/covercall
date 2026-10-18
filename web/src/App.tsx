@@ -232,6 +232,11 @@ export const App: React.FC = () => {
             <>
               <ScenarioLauncher scenarios={scenarios} activeScenarioId={activeScenarioId} busy={busy} onStart={(id) => void startScenario(id)} />
               {gapHandle && !view && !error && <Typography role="status">Loading the gap…</Typography>}
+              {!isReplay && voiceMode !== 'text' && (
+                <Typography variant="body2" data-testid="voice-hint" sx={{ color: 'text.secondary' }}>
+                  Try: &ldquo;Ali is sick for the 7am barista shift at Bugis on Tuesday, 3 November.&rdquo;
+                </Typography>
+              )}
               {voiceMode === 'push-to-talk' && !isReplay && (
                 <Button
                   variant={talking ? 'contained' : 'outlined'}

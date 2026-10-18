@@ -68,12 +68,18 @@ class Api:
     def __init__(self, store: Store, cfg: dict[str, Any], rules: list[dict[str, Any]], clock: Clock,
                  guard: GuardClient, agent: AgentClient, messenger: Messenger,
                  callbacks: CallbackSender, launcher: Launcher, solver: SolveFn = solve,
-                 time_scale: float = 1.0, id_prefix: str = "gap"):
+                 time_scale: float = 1.0, id_prefix: str = "gap", demo_isolation: bool = False):
         self.store, self.cfg, self.rules, self.clock = store, cfg, rules, clock
         self.guard, self.agent, self.messenger = guard, agent, messenger
         self.callbacks, self.launcher, self.solver = callbacks, launcher, solver
         self.time_scale = time_scale
         self.id_prefix = id_prefix
+        # DEMO_ISOLATION=1: lead-reported gaps commit to their own overlay too (decision 0024), so
+        # every demo run of the same absence starts from the same seeded roster.
+        self.demo_isolation = demo_isolation
+
+    def _isolated(self, gap: dict[str, Any]) -> bool:
+        return bool(gap.get("scenario_id")) or self.demo_isolation
 
     # ------------------------------------------------------------------ helpers
 
@@ -103,8 +109,8 @@ class Api:
                 ledgers[lid] = dict(ledgers[lid], **ov["ledger"])
         travel = r.get("config/travel") or {}
         shifts = [v for _, v in r.list("shifts")]
-        if gap.get("scenario_id"):
-            # Scenario gaps (decision 0023): the seeded roster plus only this gap's own overlay. Cover
+        if self._isolated(gap):
+            # Scenario gaps (decision 0023), and every gap under DEMO_ISOLATION (decision 0024): the seeded roster plus only this gap's own overlay. Cover
             # shifts written by any other gap are ignored, so every run of a scenario starts the same.
             shifts = [s for s in shifts if not str(s.get("source") or "").startswith("cover:")]
             overlay = r.get(f"overlays/{gap['gap_id']}") if gap.get("gap_id") else None
@@ -224,7 +230,8 @@ class Api:
         staff = {k: v for k, v in self.store.list("staff")}
         slot = [s for _, s in self.store.list("shifts")
                 if s["outlet"] == outlet and s["station"] == station and s["start"] == start_iso
-                and s.get("status", "scheduled") == "scheduled"]
+                and s.get("status", "scheduled") == "scheduled"
+                and not (self.demo_isolation and str(s.get("source") or "").startswith("cover:"))]
         when = start.strftime("%a %d %b %H:%M")
         if body.get("absent_staff_id"):
             sid = str(body["absent_staff_id"])
@@ -745,7 +752,7 @@ class Api:
                       "staff_id": seg["staff_id"], "start": seg["start"], "end": seg["end"],
                       "breaks": seg.get("breaks") or [], "status": "scheduled", "source": f"cover:{gap_id}",
                       "synthetic": True} for i, seg in enumerate(plan["segments"], start=1)]
-            if gap.get("scenario_id"):  # decision 0023: never change the shared seeded roster
+            if self._isolated(gap):  # decisions 0023/0024: never change the shared seeded roster
                 txn.set(f"overlays/{gap_id}", {"gap_id": gap_id, "cover_shifts": cover,
                                                "absent_shift_ids": absent, "synthetic": True})
             else:
