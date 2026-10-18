@@ -8,8 +8,11 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 COPY services/persona_sim/__init__.py services/persona_sim/__init__.py
 COPY datagen datagen
 COPY policy policy
+COPY config config
+COPY prompts prompts
 COPY services/__init__.py services/__init__.py
 COPY services/common services/common
+COPY services/agent services/agent
 COPY services/persona_sim services/persona_sim
 RUN useradd --create-home app
 USER app

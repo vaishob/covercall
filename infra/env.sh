@@ -7,7 +7,7 @@ set -euo pipefail
 export REGION="${REGION:-asia-southeast1}"          # §13.3: Cloud Run, Firestore, Workflows, BigQuery
 export AR_REPO="${AR_REPO:-covercall}"
 export SIM_DB_ID="covercall-sim"                   # the "sim" database (IDs need 4-63 chars); = SIM_DATABASE in services/common/store.py
-export TIME_SCALE="${TIME_SCALE:-10}"               # demo time compression, shown on /test
+export TIME_SCALE="${TIME_SCALE:-60}"               # demo time compression, shown on /test
 export SERVICES=(api solver agent guard persona-sim connectors)
 export IMAGE_BASE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${AR_REPO}"
 

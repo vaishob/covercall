@@ -7,6 +7,7 @@ URL, raw staff or lead text, or unredacted PII. Money is in integer cents. All d
 
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -44,8 +45,9 @@ def status_view(api: Api, environment: str) -> dict[str, Any]:
         "status": "ok",
         "environment": environment,
         "guard_impl": GUARD_IMPL,
-        "parser_impl": PARSER_IMPL,
-        "persona_text_impl": TEXT_IMPL,
+        "parser_impl": getattr(api.agent, "model_id", PARSER_IMPL),
+        "persona_text_impl": (roles["persona_sim"]["model_id"] if os.environ.get("PERSONA_TEXT_IMPL") == "gemini"
+                              else TEXT_IMPL),
         "models": {name: {"model_id": r["model_id"], "api_version": r["api_version"],
                           "provider": r["provider"]} for name, r in roles.items()},
         "time_scale": api.time_scale,

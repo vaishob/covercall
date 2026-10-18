@@ -41,8 +41,26 @@ def surface_text(intent: str, window: list[str] | None, rng: random.Random) -> s
     return template
 
 
+def gemini_text(write: Any, intent: str, window: list[str] | None, offer: dict[str, Any], seed: int) -> str | None:
+    """Gemini writes only the words for the seeded intent. The text must parse back (stub parser) to
+    the same intent and window, else None and the caller uses the template."""
+    from services.agent.app.logic import parse_reply
+
+    hm = [datetime.fromisoformat(w).strftime("%H:%M") for w in window] if window else None
+    user = (f"Intent: {intent}. Offered shift {offer['start'][11:16]} to {offer['end'][11:16]}."
+            + (f" Counter window: {hm[0]} to {hm[1]}." if hm else ""))
+    try:
+        text = str(write(user, seed)["text"]).strip()
+    except Exception:
+        return None
+    back = parse_reply(text, {"start": offer["start"], "end": offer["end"]}, {"parse_confidence_min": 0.7})
+    if not text or back["intent"] != intent or (hm and back["counter_window"] != {"start": hm[0], "end": hm[1]}):
+        return None
+    return text
+
+
 def schedule(sim: Store, offer: dict[str, Any], scenario: dict[str, Any], sent_at: datetime,
-             time_scale: float = 1.0) -> dict[str, Any] | None:
+             time_scale: float = 1.0, writer: Any = None) -> dict[str, Any] | None:
     """Decide the reply to one offer and put it in the outbox. Returns the outbox item, or None (silence)."""
     persona = sim.get(f"personas/{offer['staff_id']}")
     if persona is None:
@@ -52,6 +70,11 @@ def schedule(sim: Store, offer: dict[str, Any], scenario: dict[str, Any], sent_a
     text = surface_text(reply["intent"], reply["window"], rng)
     if text is None:
         return None
+    text_impl, text_sha = TEXT_IMPL, None
+    if writer is not None:  # writer = (write(user, seed) -> {"text"}, model_id, prompt_sha)
+        written = gemini_text(writer[0], reply["intent"], reply["window"], offer, int(rng.random() * 2**31))
+        if written is not None:
+            text, text_impl, text_sha = written, writer[1], writer[2]
     item = {
         "message_id": f"{offer['offer_id']}:r1",
         "offer_id": offer["offer_id"],
@@ -61,7 +84,8 @@ def schedule(sim: Store, offer: dict[str, Any], scenario: dict[str, Any], sent_a
         "deliver_at": (sent_at + timedelta(seconds=reply["delay_s"] / time_scale)).isoformat(),
         "delay_s": reply["delay_s"],
         "delivered": False,
-        "text_impl": TEXT_IMPL,
+        "text_impl": text_impl,
+        "text_prompt_sha256": text_sha,
         "synthetic": True,
     }
     sim.set(f"outbox/{item['message_id']}", item)
