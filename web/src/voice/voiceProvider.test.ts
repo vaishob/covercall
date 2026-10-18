@@ -62,38 +62,38 @@ test('hands-free falls back to push-to-talk when POST /live/token answers 501', 
   assert.equal(calls[0].url, 'http://api.test/live/token');
   assert.equal(calls[0].method, 'POST');
   assert.equal(fallback, 'push-to-talk');
-  assert.match(reason, /Voice is Slice 4/);
+  assert.match(reason, /Hands-free unavailable/);
 });
 
 test('hands-free accepts only a v1beta ephemeral token (decision 0019)', async () => {
-  const token = { ephemeral_token: 'tok', expires_at: '2026-11-03T06:30:00+08:00', model_id: 'gemini-3.8-live' };
-  let state = '';
-  let fallback = '';
+  const token = { token: 'auth_tokens/tok', expires_at: '2026-11-03T06:30:00+08:00', model_id: 'gemini-3.8-live' };
+  // v1beta passes the token check and reaches the mic (none in node, so it falls back for that reason).
+  let reason = '';
   await new LiveVoiceProvider(recordingClient(200, { ...token, api_version: 'v1beta' }).client, {
     ...quiet,
-    onStateChange: (s) => (state = s),
+    onModeFallback: (_m, r) => (reason = r),
   }).connect();
-  assert.equal(state, 'Listening');
+  assert.doesNotMatch(reason, /requires Live API v1beta/);
+  let fallback = '';
   await new LiveVoiceProvider(recordingClient(200, { ...token, api_version: 'v1alpha' }).client, {
     ...quiet,
-    onModeFallback: (m) => (fallback = m),
+    onModeFallback: (m, r) => ((fallback = m), (reason = r)),
   }).connect();
   assert.equal(fallback, 'push-to-talk');
+  assert.match(reason, /requires Live API v1beta/);
 });
 
-test('approve tool sends nonce and approve/reject, and downgrades an unclear transcript', async () => {
-  const { client, calls } = recordingClient(200, { approval_id: 'a1', decision: 'reject' });
-  await assert.rejects(
-    () => forwardVoiceToolCallToApi(client, 'approve', { plan_id: 'p', decision: 'approve', approval_nonce: '' }, { gapId: 'g1' }),
-    /approval_nonce/
-  );
-  await forwardVoiceToolCallToApi(client, 'approve', { plan_id: 'p', decision: 'approve', approval_nonce: 'n1' }, { gapId: 'g1' }, 'hmm maybe');
+test('approve tool fetches the server nonce, sends the transcript, and downgrades an unclear yes', async () => {
+  const { client, calls } = recordingClient(200, { pending: true, nonce: 'n1', readback_text: 'r', approval_id: 'a1', decision: 'reject' });
+  await assert.rejects(() => forwardVoiceToolCallToApi(client, 'approve', { decision: 'approve' }, { gapId: null }), /active gap/);
+  await forwardVoiceToolCallToApi(client, 'approve', { decision: 'approve' }, { gapId: 'g1' }, 'hmm maybe');
+  assert.equal(calls.at(-2)?.url, 'http://api.test/gaps/g1/approval');
   assert.deepEqual(calls.at(-1), {
     url: 'http://api.test/approvals',
     method: 'POST',
     body: { gap_id: 'g1', nonce: 'n1', decision: 'reject', transcript: 'hmm maybe', channel: 'voice' },
   });
-  await forwardVoiceToolCallToApi(client, 'approve', { plan_id: 'p', decision: 'approve', approval_nonce: 'n1' }, { gapId: 'g1' }, 'yes, approve');
+  await forwardVoiceToolCallToApi(client, 'approve', { decision: 'approve' }, { gapId: 'g1' }, 'yes, approve');
   assert.equal((calls.at(-1)?.body as { decision: string }).decision, 'approve');
 });
 
@@ -104,4 +104,15 @@ test('report_absence and choose_fallback hit the real routes', async () => {
   assert.deepEqual(calls[0].body, { outlet: 'bugis', station: 'barista', shift_start: '07:00', staff_name: 'Ali' });
   await forwardVoiceToolCallToApi(client, 'choose_fallback', { gap_id: 'g1', option: 'borrow' }, { gapId: 'g1' });
   assert.deepEqual(calls[1], { url: 'http://api.test/fallbacks', method: 'POST', body: { gap_id: 'g1', option: 'borrow' } });
+});
+
+test('report_absence returns the server read-back once the gap is created, and follows the gap', async () => {
+  const { client } = recordingClient(200, { status: 'created', gap_id: 'gap-0042', workflow_execution_id: 'e' });
+  let followed = '';
+  const context = { gapId: null as string | null, onGap: (id: string) => (followed = id) };
+  const out = await forwardVoiceToolCallToApi(client, 'report_absence', { outlet: 'bugis', shift_start: '07:00', station: 'barista' },
+    context, 'Ali is sick', async () => ({ readback_text: 'Approve Fiona 07:00-09:00 ...' }));
+  assert.deepEqual(out, { gap_id: 'gap-0042', readback_text: 'Approve Fiona 07:00-09:00 ...' });
+  assert.equal(context.gapId, 'gap-0042');
+  assert.equal(followed, 'gap-0042');
 });

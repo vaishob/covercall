@@ -11,9 +11,10 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from services.api.app import views
+from services.api.app import live, views
 from services.api.app.core import Api, ApiError
 from services.api.app.page import TEST_PAGE
+from services.common.models import pinned_role
 
 DEFAULT_ALLOWED_ORIGINS = ("http://localhost:3000",)
 
@@ -47,7 +48,8 @@ def require_workflow_caller(authorization: str = Header(default="")) -> None:
 
 def create_app(api: Api, internal_auth: Callable[..., None] = require_workflow_caller,
                time_scale_label: str = "", allowed_origins: list[str] | None = None,
-               environment: str = "local") -> FastAPI:
+               environment: str = "local", live_client: Callable[[], Any] | None = None,
+               live_limiter: Any = None) -> FastAPI:
     app = FastAPI(title="covercall-api", description="All data is synthetic.")
     app.state.api = api
     origins = allowed_origins if allowed_origins is not None else allowed_origins_from_env()
@@ -73,7 +75,7 @@ def create_app(api: Api, internal_auth: Callable[..., None] = require_workflow_c
     # Read routes: client-safe projections only (services/api/app/views.py).
     @app.get("/status")
     def status() -> dict[str, Any]:
-        return views.status_view(api, environment)
+        return views.status_view(api, environment, "live" if live_client else "off")
 
     @app.get("/scenarios")
     def scenarios() -> list[dict[str, Any]]:
@@ -115,14 +117,27 @@ def create_app(api: Api, internal_auth: Callable[..., None] = require_workflow_c
     def cancel(gap_id: str) -> dict[str, Any]:
         return api.cancel(gap_id)
 
+    limiter = live_limiter or live.RateLimiter()
+
     @app.post("/live/token")
-    def live_token() -> JSONResponse:
-        # Slice 4: single-use ephemeral Live API token. Not built; never returns a key.
-        return JSONResponse(status_code=501, content={
-            "error": "not_implemented",
-            "message": "Voice is not available yet: Gemini Live ephemeral tokens are Slice 4, and the "
-                       "voice model ID in config/models.yaml is TODO-VERIFY. Use the Scenario buttons "
-                       "or text."})
+    def live_token(request: Request) -> JSONResponse:
+        # Single-use ephemeral Live API token (decision 0019). The key never leaves this process.
+        if live_client is None:
+            return JSONResponse(status_code=501, content={
+                "error": "not_implemented",
+                "message": "Voice is not enabled on this deployment. Use the Scenario buttons or text."})
+        forwarded = request.headers.get("x-forwarded-for", "")
+        ip = forwarded.split(",")[0].strip() or (request.client.host if request.client else "unknown")
+        try:
+            limiter.check(ip)
+        except live.RateLimited as exc:
+            return JSONResponse(status_code=429, content={"error": "rate_limited", "message": str(exc)})
+        try:
+            spec = pinned_role("voice")
+            return JSONResponse(content=live.mint(live_client(), spec))
+        except Exception as exc:  # never echo SDK errors (they could carry request details)
+            return JSONResponse(status_code=502, content={
+                "error": "token_unavailable", "message": f"Could not mint a voice token ({type(exc).__name__})."})
 
     @app.get("/test", response_class=HTMLResponse)
     def test_page() -> str:
@@ -208,7 +223,14 @@ def _cloud_app() -> FastAPI:  # pragma: no cover - Cloud Run wiring, not run in 
               agent=agent, messenger=HttpMessenger(os.environ["PERSONA_SIM_URL"]),
               callbacks=HttpCallbacks(),
               launcher=WorkflowsLauncher(), solver=HttpSolver(os.environ["SOLVER_URL"]), time_scale=scale)
-    return create_app(api, time_scale_label=f"x{scale:g}" if scale != 1 else "", environment="cloud")
+    live_client = None
+    if os.environ.get("VOICE_ENABLED") == "1" and os.environ.get("GEMINI_API_KEY"):
+        voice = pinned_role("voice")  # refuses to start if the voice model is TODO-VERIFY
+
+        def live_client() -> Any:
+            return live.developer_client(os.environ["GEMINI_API_KEY"], voice["api_version"])
+    return create_app(api, time_scale_label=f"x{scale:g}" if scale != 1 else "", environment="cloud",
+                      live_client=live_client)
 
 
 class _RealClock:  # pragma: no cover

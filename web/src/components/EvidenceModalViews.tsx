@@ -177,6 +177,11 @@ export const EvidenceViews: React.FC<EvidenceViewsProps> = ({ activeRoute, gapHa
               <li>guard: {status.guard_impl} (deterministic stub, not a model)</li>
               <li>reply parser: {status.parser_impl} ({implNote(status.parser_impl)})</li>
               <li>persona reply text: {status.persona_text_impl} ({implNote(status.persona_text_impl)})</li>
+              <li>
+                voice: {status.voice === 'live'
+                  ? 'live (Gemini Live, v1beta single-use ephemeral tokens minted by api; tools run on the server)'
+                  : 'off on this deployment (scenario buttons and text only)'}
+              </li>
               {Object.entries(status.models).map(([role, m]) => (
                 <li key={role}>
                   {role}: {m.model_id} ({m.api_version})

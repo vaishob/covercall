@@ -220,6 +220,8 @@ export interface StatusDto {
   guard_impl: string;
   parser_impl: string;
   persona_text_impl: string;
+  /** "live": POST /live/token mints Gemini Live tokens; "off": voice is not enabled on this deployment. */
+  voice?: 'live' | 'off';
   models: Record<string, { model_id: string; api_version: string; provider: string }>;
   time_scale: number;
   synthetic: true;
