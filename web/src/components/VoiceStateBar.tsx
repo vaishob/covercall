@@ -18,14 +18,14 @@ import KeyboardIcon from '@mui/icons-material/Keyboard';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
 import SendIcon from '@mui/icons-material/Send';
-import { VoiceMode, VoiceState } from '../mocks/state';
+import type { VoiceMode, VoiceState } from '../voice/types';
 import { DARK_TOKENS, LIGHT_TOKENS } from '../theme';
 
 interface VoiceStateBarProps {
   voiceState: VoiceState;
   voiceMode: VoiceMode;
   voiceReason?: string;
-  isMockMode?: boolean;
+  isReplay?: boolean;
   themeMode: 'light' | 'dark';
   onChangeVoiceState: (state: VoiceState) => void;
   onChangeVoiceMode: (mode: VoiceMode) => void;
@@ -39,7 +39,7 @@ export const VoiceStateBar: React.FC<VoiceStateBarProps> = ({
   voiceState,
   voiceMode,
   voiceReason,
-  isMockMode = true,
+  isReplay = false,
   themeMode,
   onChangeVoiceState,
   onChangeVoiceMode,
@@ -90,8 +90,8 @@ export const VoiceStateBar: React.FC<VoiceStateBarProps> = ({
           bg: tokens.ruleWarnBg,
           color: tokens.ruleWarnText,
           border: tokens.ruleWarnBorder,
-          sublabel: isMockMode
-            ? 'Voice unavailable in mock mode — text fallback'
+          sublabel: isReplay
+            ? 'Voice unavailable in recorded replay — text fallback'
             : 'Offline — text fallback',
         };
     }

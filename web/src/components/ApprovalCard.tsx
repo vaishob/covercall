@@ -1,179 +1,83 @@
 import React from 'react';
 import { Box, Button, Paper, Typography, useTheme } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
-import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
+import CloseIcon from '@mui/icons-material/Close';
 import VolumeUpOutlinedIcon from '@mui/icons-material/VolumeUpOutlined';
-import { ApprovalRecord, EscalationFallbackOption } from '../mocks/state';
-import { formatCurrencySGD } from '../utils/formatters';
+import type { LeadView } from '../data/viewModel';
 import { DARK_TOKENS, LIGHT_TOKENS } from '../theme';
 
 interface ApprovalCardProps {
-  approval: ApprovalRecord;
-  escalationOptions?: EscalationFallbackOption[];
-  selectedEscalationId?: EscalationFallbackOption['id'];
-  onApprove: () => void;
-  onRejectOrEdit: () => void;
-  onSelectEscalationOption: (option: EscalationFallbackOption) => void;
+  view: LeadView;
+  canAct: boolean;
+  busy: boolean;
+  onDecide: (decision: 'approve' | 'reject') => void;
+  onChooseFallback: (option: string) => void;
 }
 
 /**
- * §11.3 item 7 & §5.3 Approval Card:
- * Sticky at the bottom, two large buttons, and the exact read-back sentence shown.
- * Compact height to respect mobile sticky surface governance.
+ * §11.3 item 7 and §5.3: sticky approval card with the exact read-back sentence from the server
+ * (GET /gaps/{id}/approval). In ESCALATED it shows the ranked fallbacks instead.
  */
-export const ApprovalCard: React.FC<ApprovalCardProps> = ({
-  approval,
-  escalationOptions,
-  selectedEscalationId,
-  onApprove,
-  onRejectOrEdit,
-  onSelectEscalationOption,
-}) => {
+export const ApprovalCard: React.FC<ApprovalCardProps> = ({ view, canAct, busy, onDecide, onChooseFallback }) => {
   const theme = useTheme();
   const tokens = theme.palette.mode === 'light' ? LIGHT_TOKENS : DARK_TOKENS;
-
-  const isApproved = approval.status === 'approved';
-  const isRejected = approval.status === 'rejected';
+  const escalated = view.gap.state === 'ESCALATED';
+  if (!view.approval && !escalated) return null;
 
   return (
     <Paper
       component="section"
-      aria-label="Tier T2 Read-Back Approval Card"
-      sx={{
-        position: 'sticky',
-        bottom: 0,
-        zIndex: 25,
-        p: 1.5,
-        borderRadius: '12px 12px 0 0',
-        backgroundColor: tokens.surfaceElevated,
-        borderTop: `2px solid ${isApproved ? tokens.legalPassBorder : tokens.brandPrimary}`,
-        boxShadow:
-          theme.palette.mode === 'light'
-            ? '0 -4px 16px rgba(17, 22, 18, 0.08)'
-            : '0 -4px 20px rgba(0, 0, 0, 0.45)',
-      }}
+      aria-labelledby="approval-heading"
+      sx={{ position: 'sticky', bottom: 0, zIndex: 25, p: 1.5, borderRadius: '12px 12px 0 0', backgroundColor: tokens.surfaceElevated, borderTop: `2px solid ${tokens.brandPrimary}` }}
     >
-      {/* Escalation Fallback Picker (Visible in J3 Escalation scenario) */}
-      {escalationOptions && escalationOptions.length > 0 && (
-        <Box sx={{ mb: 1 }}>
-          <Typography
-            variant="caption"
-            sx={{ fontWeight: 700, color: tokens.ruleWarnText, display: 'block', mb: 0.5 }}
-          >
-            J3 Escalation Fallbacks (Select by voice or tap):
+      {escalated ? (
+        <>
+          <Typography id="approval-heading" sx={{ fontWeight: 700, mb: 0.75, color: tokens.ruleWarnText }}>
+            Nobody accepted in time. Choose a fallback:
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 0.75 }}>
-            {escalationOptions.map((opt) => {
-              const selected = selectedEscalationId === opt.id;
-              return (
-                <Button
-                  key={opt.id}
-                  variant={selected ? 'contained' : 'outlined'}
-                  onClick={() => onSelectEscalationOption(opt)}
-                  aria-pressed={selected}
-                  sx={{
-                    minHeight: 48,
-                    py: 0.5,
-                    px: 1,
-                    textAlign: 'left',
-                    justifyContent: 'flex-start',
-                    whiteSpace: 'normal',
-                    fontSize: '0.75rem',
-                  }}
-                >
-                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 700 }}>
-                    {opt.title} ({formatCurrencySGD(opt.cost_delta_sgd)})
-                  </Typography>
-                </Button>
-              );
-            })}
+            {view.gap.fallbacks.map((f, i) => (
+              <Button key={f.id} variant={i === 0 ? 'contained' : 'outlined'} disabled={!canAct || busy} onClick={() => onChooseFallback(f.id)} sx={{ minHeight: 48 }}>
+                {i + 1}. {f.label}
+              </Button>
+            ))}
           </Box>
-        </Box>
+        </>
+      ) : (
+        view.approval && (
+          <>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <VolumeUpOutlinedIcon sx={{ fontSize: 16, color: tokens.brandPrimary }} aria-hidden="true" />
+                <Typography id="approval-heading" sx={{ fontSize: '0.8rem', fontWeight: 700 }}>
+                  Tier T2 approval: CoverCall will message staff only after you say yes
+                </Typography>
+              </Box>
+              <Typography variant="caption" className="mono-tabular" sx={{ color: tokens.textMuted }}>
+                nonce {view.approval.nonce}
+              </Typography>
+            </Box>
+            <Typography data-testid="readback" sx={{ fontSize: '0.86rem', fontWeight: 600, lineHeight: 1.4, mb: 1 }}>
+              &ldquo;{view.approval.readback}&rdquo;
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: 1 }}>
+              <Button variant="contained" disabled={!canAct || busy} onClick={() => onDecide('approve')} sx={{ minHeight: 48, fontWeight: 700 }}>
+                <CheckIcon sx={{ mr: 0.5, fontSize: 18 }} aria-hidden="true" />
+                Approve plan
+              </Button>
+              <Button variant="outlined" disabled={!canAct || busy} onClick={() => onDecide('reject')} sx={{ minHeight: 48 }}>
+                <CloseIcon sx={{ mr: 0.5, fontSize: 18 }} aria-hidden="true" />
+                Reject
+              </Button>
+            </Box>
+          </>
+        )
       )}
-
-      {/* Read-back header + exact read-back sentence */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 1,
-          mb: 0.5,
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <VolumeUpOutlinedIcon
-            sx={{ fontSize: 16, color: tokens.brandPrimary }}
-            aria-hidden="true"
-          />
-          <Typography sx={{ fontSize: '0.76rem', fontWeight: 700 }}>
-            {approval.tier === 'T3' ? 'Tier T3 Refusal + Legal Alt' : 'Tier T2 Read-Back'}
-          </Typography>
-        </Box>
-        <Typography
-          variant="caption"
-          className="mono-tabular"
-          sx={{ color: tokens.textMuted, fontSize: '0.72rem' }}
-        >
-          nonce: {approval.approval_nonce}
+      {!canAct && (
+        <Typography variant="caption" sx={{ display: 'block', mt: 0.75, color: tokens.amberAlertText }}>
+          Recorded replay: these buttons are disabled.
         </Typography>
-      </Box>
-
-      <Typography
-        sx={{
-          fontSize: '0.82rem',
-          fontWeight: 600,
-          lineHeight: 1.35,
-          color: isApproved ? tokens.legalPassText : tokens.textPrimary,
-          mb: 1,
-        }}
-      >
-        &ldquo;{approval.readback_text}&rdquo;
-      </Typography>
-
-      {/* Two Large Action Buttons side-by-side (Minimum 48x48px touch targets, §11.3 & §11.7) */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: '1.25fr 1fr',
-          gap: 1,
-        }}
-      >
-        <Button
-          variant="contained"
-          onClick={onApprove}
-          aria-label="Approve plan and start outreach cascade"
-          sx={{
-            minHeight: 48,
-            px: 1.5,
-            fontSize: '0.84rem',
-            fontWeight: 700,
-            backgroundColor: tokens.brandPrimary,
-            color: tokens.brandContrastText,
-            '&:hover': {
-              backgroundColor: tokens.brandPrimaryHover,
-            },
-          }}
-        >
-          <CheckIcon sx={{ mr: 0.5, fontSize: 18 }} aria-hidden="true" />
-          {isApproved ? 'Approved (Running)' : 'Approve Plan (Yes)'}
-        </Button>
-
-        <Button
-          variant="outlined"
-          onClick={onRejectOrEdit}
-          aria-label="Reject plan or edit constraints"
-          sx={{
-            minHeight: 48,
-            px: 1.25,
-            fontSize: '0.82rem',
-            fontWeight: 600,
-          }}
-        >
-          <EditNoteOutlinedIcon sx={{ mr: 0.5, fontSize: 18 }} aria-hidden="true" />
-          {isRejected ? 'Re-solved' : 'No / Edit'}
-        </Button>
-      </Box>
+      )}
     </Paper>
   );
 };

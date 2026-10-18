@@ -37,14 +37,14 @@ test('formatRuleWarningText produces canonical S-017 Priya warning from server-s
 test('getThrottledAriaCountdown buckets screen reader updates to avoid flooding (§11.7)', () => {
   assert.equal(
     getThrottledAriaCountdown(19 * 60),
-    'Approximately 20 minutes remaining until must-fill-by deadline.'
+    'Approximately 20 minutes remaining until CoverCall escalates to you.'
   );
   assert.equal(
     getThrottledAriaCountdown(16 * 60),
-    'Approximately 20 minutes remaining until must-fill-by deadline.'
+    'Approximately 20 minutes remaining until CoverCall escalates to you.'
   );
   assert.equal(
     getThrottledAriaCountdown(4 * 60),
-    '4 minutes remaining until must-fill-by deadline.'
+    '4 minutes remaining until CoverCall escalates to you.'
   );
 });

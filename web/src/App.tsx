@@ -1,27 +1,8 @@
-import React, { useMemo, useState } from 'react';
-import {
-  Box,
-  Button,
-  CssBaseline,
-  Link,
-  ThemeProvider,
-  Typography,
-} from '@mui/material';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Box, Button, CssBaseline, Paper, ThemeProvider, Typography } from '@mui/material';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
 import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import {
-  ApprovalRecord,
-  CaptionExchange,
-  EscalationFallbackOption,
-  FeasibleCandidate,
-  GapRecord,
-  MOM_HOURS_OVERTIME_REST_URL,
-  SCENARIO_MAP,
-  ScenarioKey,
-  VoiceMode,
-  VoiceState,
-} from './mocks/state';
 import { createCoverCallTheme, DARK_TOKENS, LIGHT_TOKENS } from './theme';
 import { VoiceStateBar } from './components/VoiceStateBar';
 import { CaptionsPanel } from './components/CaptionsPanel';
@@ -31,25 +12,23 @@ import { CandidateList } from './components/CandidateList';
 import { RosterMiniGrid } from './components/RosterMiniGrid';
 import { CascadeTimeline } from './components/CascadeTimeline';
 import { ApprovalCard } from './components/ApprovalCard';
-import { EvidenceViews } from './components/EvidenceModalViews';
-import { MockModeBanner } from './components/MockModeBanner';
-import { createDataSourceFromEnv } from './data/dataSource';
-import { createApiClientFromEnv } from './data/apiClient';
-import {
-  isClearAffirmativeTranscript,
-  LiveVoiceProvider,
-  PushToTalkProvider,
-  TextProvider,
-} from './voice/voiceProvider';
-import { formatCurrencySGD, formatTime12h } from './utils/formatters';
+import { EvidenceViews, type Route } from './components/EvidenceModalViews';
+import { ReplayBanner } from './components/ReplayBanner';
+import { ApiClient, apiBaseUrlFromEnv } from './data/apiClient';
+import type { ScenarioDto } from './data/backendTypes';
+import { createSource } from './data/source';
+import type { LeadView } from './data/viewModel';
+import type { CaptionExchange, VoiceMode, VoiceState } from './voice/types';
+import { isClearAffirmativeTranscript, LiveVoiceProvider, PushToTalkProvider, TextProvider } from './voice/voiceProvider';
 
-function parseInitialRouteFromLocation(): '/' | '/evals' | '/trace' | '/about' {
-  if (typeof window === 'undefined') return '/';
+function routeFromLocation(): { route: Route; gap: string | null } {
+  if (typeof window === 'undefined') return { route: '/', gap: null };
   const path = window.location.pathname;
-  if (path.startsWith('/evals')) return '/evals';
-  if (path.startsWith('/trace')) return '/trace';
-  if (path.startsWith('/about')) return '/about';
-  return '/';
+  const trace = path.match(/^\/trace\/(.+)$/);
+  if (trace) return { route: '/trace', gap: decodeURIComponent(trace[1]) };
+  if (path.startsWith('/evals')) return { route: '/evals', gap: null };
+  if (path.startsWith('/about')) return { route: '/about', gap: null };
+  return { route: '/', gap: null };
 }
 
 export const App: React.FC = () => {
@@ -57,501 +36,220 @@ export const App: React.FC = () => {
   const theme = useMemo(() => createCoverCallTheme(themeMode), [themeMode]);
   const tokens = themeMode === 'light' ? LIGHT_TOKENS : DARK_TOKENS;
 
-  const dataSource = useMemo(() => createDataSourceFromEnv(), []);
-  const apiClient = useMemo(() => createApiClientFromEnv(), []);
-  const isMockMode = dataSource.isMock || apiClient.isMockMode;
+  const baseUrl = useMemo(() => apiBaseUrlFromEnv(), []);
+  const source = useMemo(() => createSource(baseUrl), [baseUrl]);
+  const apiClient = useMemo(() => (baseUrl ? new ApiClient(baseUrl) : null), [baseUrl]);
+  const isReplay = source.kind === 'replay';
 
-  const [activeRoute, setActiveRoute] = useState<'/' | '/evals' | '/trace' | '/about'>(
-    parseInitialRouteFromLocation
-  );
-  const [scenarioKey, setScenarioKey] = useState<ScenarioKey>('s017');
-  const activeBundle =
-    scenarioKey === 'empty' ? SCENARIO_MAP.s017 : SCENARIO_MAP[scenarioKey];
+  const initial = useMemo(routeFromLocation, []);
+  const [route, setRoute] = useState<Route>(initial.route);
+  const [gapHandle, setGapHandle] = useState<string | null>(initial.gap);
+  const [scenarios, setScenarios] = useState<ScenarioDto[]>([]);
+  const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
+  const [view, setView] = useState<LeadView | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [captions, setCaptions] = useState<CaptionExchange[]>([]);
+  const [voiceState, setVoiceState] = useState<VoiceState>(isReplay ? 'Offline' : 'Muted');
+  const [voiceMode, setVoiceMode] = useState<VoiceMode>('text');
+  const [voiceReason, setVoiceReason] = useState<string>(isReplay ? 'Recorded replay: text input is display-only.' : 'Text mode active.');
+  const [announcement, setAnnouncement] = useState('');
+  const spoken = useRef(new Set<string>());
 
-  const navigateToRoute = (
-    route: '/' | '/evals' | '/trace' | '/about',
-    targetGapId?: string
-  ) => {
-    setActiveRoute(route);
+  const say = useCallback((speaker: CaptionExchange['speaker'], text: string, at: string) => {
+    setCaptions((prev) => [...prev.slice(-3), { id: `${speaker}-${Date.now()}-${prev.length}`, speaker, timestampIso: at, text, highlight: speaker === 'CoverCall' }]);
+  }, []);
+
+  useEffect(() => {
+    source.listScenarios().then(setScenarios, (e: Error) => setError(e.message));
+  }, [source]);
+
+  useEffect(() => {
+    if (!gapHandle) return undefined;
+    return source.watch(
+      gapHandle,
+      (v) => {
+        setView(v);
+        setError(null);
+      },
+      (e) => setError(e.message)
+    );
+  }, [gapHandle, source]);
+
+  // Server-written sentences (read-back, summary) become CoverCall captions, once each.
+  useEffect(() => {
+    if (!view) return;
+    const lines: string[] = [];
+    if (view.approval) lines.push(view.approval.readback);
+    if (view.gap.state === 'ESCALATED') lines.push('Nobody accepted in time. Choose a fallback.');
+    if (view.gap.summary) lines.push(view.gap.summary);
+    if (view.gap.state === 'RESOLVED' && view.gap.outcomeLabel) lines.push(`Resolved: ${view.gap.outcomeLabel}.`);
+    for (const line of lines) {
+      if (!spoken.current.has(line)) {
+        spoken.current.add(line);
+        say('CoverCall', line, view.now);
+      }
+    }
+    setAnnouncement(`Gap ${view.gap.gapId} is ${view.gap.state}.`);
+  }, [view, say]);
+
+  const navigate = (next: Route) => {
+    setRoute(next);
     if (typeof window !== 'undefined' && window.history?.pushState) {
-      const urlPath =
-        route === '/trace' ? `/trace/${targetGapId ?? gap.id}` : route;
-      window.history.pushState({}, '', urlPath);
+      window.history.pushState({}, '', next === '/trace' && gapHandle ? `/trace/${encodeURIComponent(gapHandle)}` : next);
     }
   };
 
-  const [voiceState, setVoiceState] = useState<VoiceState>(
-    activeBundle.defaultVoiceState
-  );
-  const [voiceMode, setVoiceMode] = useState<VoiceMode>(
-    activeBundle.defaultVoiceMode
-  );
-  const [voiceReason, setVoiceReason] = useState<string>(
-    isMockMode
-      ? 'Voice unavailable in mock mode (no API URL). Text mode active.'
-      : 'Voice ready'
-  );
-  const [captions, setCaptions] = useState<CaptionExchange[]>(activeBundle.captions);
-  const [gap, setGap] = useState<GapRecord>(activeBundle.gap);
-  const [candidates, setCandidates] = useState<FeasibleCandidate[]>(
-    activeBundle.candidates
-  );
-  const [selectedRank, setSelectedRank] = useState<number>(1);
-  const [approval, setApproval] = useState<ApprovalRecord>(activeBundle.approval);
-  const [cascadeStepCount, setCascadeStepCount] = useState<number>(
-    activeBundle.cascadeOffers.length
-  );
-  const [isReSolving, setIsReSolving] = useState<boolean>(false);
-  const [selectedEscalationId, setSelectedEscalationId] =
-    useState<EscalationFallbackOption['id']>('borrow_cross_outlet');
-  const [statusAnnouncement, setStatusAnnouncement] = useState<string>(
-    'Loaded Scenario S-017 mock state: Bugis opener sick call at 6:02am.'
-  );
+  const run = async (action: () => Promise<void>) => {
+    setBusy(true);
+    try {
+      await action();
+      setError(null);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
-  const handleVoiceModeRequest = async (requestedMode: VoiceMode) => {
+  const startScenario = (scenarioId: string) =>
+    run(async () => {
+      const handle = await source.start(scenarioId);
+      spoken.current = new Set();
+      setCaptions([]);
+      setView(null);
+      setActiveScenarioId(scenarioId);
+      setGapHandle(handle);
+      setRoute('/');
+    });
+
+  const decide = (decision: 'approve' | 'reject') =>
+    run(async () => {
+      if (!gapHandle || !view?.approval) throw new Error('No approval is pending.');
+      await source.approve(gapHandle, view.approval.nonce, decision);
+    });
+
+  const chooseFallback = (option: string) =>
+    run(async () => {
+      if (!gapHandle) throw new Error('No active gap.');
+      await source.chooseFallback(gapHandle, option);
+    });
+
+  const cancel = () =>
+    run(async () => {
+      if (!gapHandle) throw new Error('No active gap.');
+      await source.cancel(gapHandle);
+      say('CoverCall', 'Cancel requested. The workflow will withdraw open offers.', view?.now ?? new Date().toISOString());
+    });
+
+  const submitText = (text: string) => {
+    const at = view?.now ?? new Date().toISOString();
+    say('Lead', text, at);
+    if (isReplay) {
+      say('CoverCall', 'Recorded replay: typed input is not sent anywhere.', at);
+      return;
+    }
+    if (view?.approval && gapHandle) {
+      // The server decides: only a clear affirmative in the transcript counts as approval (§5.3).
+      void run(() => source.approve(gapHandle, view.approval!.nonce, isClearAffirmativeTranscript(text) ? 'approve' : 'reject', text));
+      return;
+    }
+    say('CoverCall', 'Typed absence reports need the voice tools (Slice 4). Use a scenario button for now.', at);
+  };
+
+  const requestVoiceMode = async (mode: VoiceMode) => {
     const callbacks = {
       onStateChange: (st: VoiceState, reason?: string) => {
         setVoiceState(st);
         if (reason) setVoiceReason(reason);
       },
-      onModeFallback: (fallbackMode: VoiceMode, reason: string) => {
-        setVoiceMode(fallbackMode);
+      onModeFallback: (fallback: VoiceMode, reason: string) => {
+        setVoiceMode(fallback);
         setVoiceReason(reason);
-        setStatusAnnouncement(reason);
+        setAnnouncement(reason);
       },
-      onCaption: (speaker: 'Lead' | 'CoverCall', text: string) => {
-        setCaptions((prev) => [
-          ...prev.slice(-2),
-          {
-            id: `cap-${Date.now()}`,
-            speaker,
-            timestampIso: '2026-11-03T06:02:30+08:00',
-            text,
-          },
-        ]);
-      },
+      onCaption: (speaker: 'Lead' | 'CoverCall', text: string) => say(speaker, text, view?.now ?? new Date().toISOString()),
     };
-
-    const envModelId =
-      (typeof import.meta !== 'undefined' &&
-        (import.meta as unknown as { env?: Record<string, string | undefined> }).env
-          ?.VITE_GEMINI_LIVE_MODEL_ID) ||
-      null;
-
-    if (requestedMode === 'hands-free') {
-      const provider = new LiveVoiceProvider(apiClient, callbacks, envModelId);
-      setVoiceMode('hands-free');
-      await provider.connect();
-      return;
-    }
-
-    if (requestedMode === 'push-to-talk') {
-      const provider = new PushToTalkProvider(apiClient, callbacks, envModelId);
-      setVoiceMode('push-to-talk');
-      await provider.connect();
-      return;
-    }
-
-    const textProvider = new TextProvider(apiClient, callbacks);
-    setVoiceMode('text');
-    await textProvider.connect();
+    setVoiceMode(mode);
+    const provider =
+      mode === 'hands-free'
+        ? new LiveVoiceProvider(apiClient, callbacks, null)
+        : mode === 'push-to-talk'
+          ? new PushToTalkProvider(apiClient, callbacks, null)
+          : new TextProvider(apiClient, callbacks);
+    await provider.connect();
   };
-
-  const handleSelectScenario = (nextKey: ScenarioKey) => {
-    setScenarioKey(nextKey);
-    setActiveRoute('/');
-    if (nextKey === 'empty') {
-      setVoiceState('Offline');
-      setStatusAnnouncement(
-        'Empty state loaded. Choose 6:02am sick call, Nobody replies, or Adversarial.'
-      );
-      return;
-    }
-    const nextBundle = SCENARIO_MAP[nextKey];
-    setVoiceState(nextBundle.defaultVoiceState);
-    setVoiceMode(nextBundle.defaultVoiceMode);
-    setCaptions(nextBundle.captions);
-    setGap(nextBundle.gap);
-    setCandidates(nextBundle.candidates);
-    setSelectedRank(1);
-    setApproval(nextBundle.approval);
-    setCascadeStepCount(nextBundle.cascadeOffers.length);
-    setStatusAnnouncement(`Loaded Scenario ${nextBundle.scenarioCode}: ${nextBundle.title}`);
-  };
-
-  const handleSelectCandidate = (rank: number) => {
-    setSelectedRank(rank);
-    const chosen = candidates.find((c) => c.rank === rank);
-    if (!chosen) return;
-    setIsReSolving(true);
-    window.setTimeout(() => setIsReSolving(false), 160);
-
-    const newReadback = `Approve Plan #${chosen.rank} for Bugis Barista (7:00am–3:00pm): offer ${chosen.display_name} (${chosen.home_outlet}, arrives ${formatTime12h(
-      chosen.arrival_iso
-    )}, ${formatCurrencySGD(chosen.incremental_cost_sgd)}, saves ${formatCurrencySGD(
-      chosen.saves_vs_overtime_sgd
-    )} vs overtime), then cascade to remaining legal candidates.`;
-
-    setApproval((prev) => ({
-      ...prev,
-      status: 'pending',
-      readback_text: newReadback,
-    }));
-    setStatusAnnouncement(`Selected Plan #${chosen.rank} with ${chosen.display_name}.`);
-  };
-
-  const handleToggleChannel = (staffId: string) => {
-    setCandidates((prev) =>
-      prev.map((c) =>
-        c.staff_id === staffId
-          ? { ...c, channel: c.channel === 'telegram' ? 'sim' : 'telegram' }
-          : c
-      )
-    );
-    setStatusAnnouncement(`Switched connector channel for ${staffId}.`);
-  };
-
-  const handleApprovePlan = () => {
-    if (scenarioKey === 'empty') {
-      handleSelectScenario('s017');
-      return;
-    }
-    const chosen = candidates.find((c) => c.rank === selectedRank) ?? candidates[0];
-    setApproval((prev) => ({
-      ...prev,
-      status: 'approved',
-      approved_via: voiceMode === 'hands-free' ? 'voice' : 'tap',
-      approved_at_iso: '2026-11-03T06:02:14+08:00',
-    }));
-    setGap((prev) => ({
-      ...prev,
-      state: 'FILLED',
-      version: prev.version + 1,
-    }));
-
-    const confirmExchange: CaptionExchange = {
-      id: `cap-appr-${Date.now()}`,
-      speaker: 'CoverCall',
-      timestampIso: '2026-11-03T06:04:18+08:00',
-      text: `Approved in mock mode (nonce ${approval.approval_nonce}): ${chosen.display_name} selected for Bugis 7:00am–3:00pm at ${formatCurrencySGD(
-        chosen.incremental_cost_sgd
-      )} (mock data — not computed).`,
-      highlight: true,
-    };
-    setCaptions((prev) => [...prev.slice(-2), confirmExchange]);
-    setStatusAnnouncement(
-      `Plan approved in mock mode for ${chosen.display_name}.`
-    );
-  };
-
-  const handleRejectOrEdit = () => {
-    const nextRank = selectedRank === 1 ? 2 : 1;
-    handleSelectCandidate(nextRank);
-    setApproval((prev) => ({
-      ...prev,
-      status: 'rejected',
-    }));
-
-    const nextCand = candidates.find((c) => c.rank === nextRank) ?? candidates[0];
-    setCaptions((prev) => [
-      ...prev.slice(-2),
-      {
-        id: `cap-edit-${Date.now()}`,
-        speaker: 'CoverCall',
-        timestampIso: '2026-11-03T06:02:20+08:00',
-        text: `Switched mock recommendation to Plan #${nextCand.rank} (${nextCand.display_name}, arrives ${formatTime12h(
-          nextCand.arrival_iso
-        )}, saves ${formatCurrencySGD(nextCand.saves_vs_overtime_sgd)} mock).`,
-        highlight: true,
-      },
-    ]);
-    setStatusAnnouncement(
-      `Switched mock recommendation to ${nextCand.display_name}.`
-    );
-  };
-
-  const handleTriggerReSolve = () => {
-    setIsReSolving(true);
-    window.setTimeout(() => {
-      setIsReSolving(false);
-      setStatusAnnouncement('Roster mini-grid preview updated.');
-    }, 170);
-  };
-
-  const handleAdvanceCascadeStep = () => {
-    const total = activeBundle.cascadeOffers.length;
-    setCascadeStepCount((prev) => (prev < total ? prev + 1 : 1));
-  };
-
-  const handleSelectEscalationOption = (opt: EscalationFallbackOption) => {
-    setSelectedEscalationId(opt.id);
-    setApproval((prev) => ({
-      ...prev,
-      status: 'pending',
-      readback_text: `Escalation at t_esc (6:07am): Confirm ${opt.title} (${formatCurrencySGD(
-        opt.cost_delta_sgd
-      )} mock). ${opt.legal_note}`,
-    }));
-    setStatusAnnouncement(`Selected escalation fallback: ${opt.title}`);
-  };
-
-  const handleSubmitUtterance = (text: string) => {
-    if (scenarioKey === 'empty') {
-      setScenarioKey('s017');
-    }
-    const lower = text.toLowerCase();
-    const leadMsg: CaptionExchange = {
-      id: `cap-usr-${Date.now()}`,
-      speaker: 'Lead',
-      timestampIso: '2026-11-03T06:02:30+08:00',
-      text,
-    };
-
-    if (isClearAffirmativeTranscript(text)) {
-      setCaptions((prev) => [...prev.slice(-2), leadMsg]);
-      handleApprovePlan();
-      return;
-    }
-
-    if (lower.includes('double') || lower.includes('priya') || lower.includes('14')) {
-      handleSelectScenario('adversarial');
-      return;
-    }
-
-    const replyMsg: CaptionExchange = {
-      id: `cap-sys-${Date.now() + 1}`,
-      speaker: 'CoverCall',
-      timestampIso: '2026-11-03T06:02:32+08:00',
-      text: 'Received text input in mock mode: Bugis Barista 7:00am–3:00pm gap. Only a clear affirmative ("Yes, approve") approves the read-back; anything else counts as a no.',
-      highlight: true,
-    };
-    setCaptions((prev) => [...prev.slice(-1), leadMsg, replyMsg]);
-    setStatusAnnouncement('Processed lead text input in mock mode.');
-  };
-
-  const selectedCandidate =
-    candidates.find((c) => c.rank === selectedRank) ?? candidates[0];
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: tokens.canvas,
-          color: tokens.textPrimary,
-        }}
-      >
-        {/* 1. Voice State Bar (Always visible at the top, §11.3 item 1) */}
+      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: tokens.canvas, color: tokens.textPrimary }}>
         <VoiceStateBar
           voiceState={voiceState}
           voiceMode={voiceMode}
           voiceReason={voiceReason}
-          isMockMode={isMockMode}
+          isReplay={isReplay}
           themeMode={themeMode}
-          onChangeVoiceState={(next) => {
-            setVoiceState(next);
-            setStatusAnnouncement(`Voice state changed to ${next}.`);
-          }}
-          onChangeVoiceMode={(mode) => {
-            void handleVoiceModeRequest(mode);
-          }}
-          onToggleTheme={() =>
-            setThemeMode((prev) => (prev === 'light' ? 'dark' : 'light'))
-          }
-          onSubmitUtterance={handleSubmitUtterance}
+          onChangeVoiceState={setVoiceState}
+          onChangeVoiceMode={(m) => void requestVoiceMode(m)}
+          onToggleTheme={() => setThemeMode((p) => (p === 'light' ? 'dark' : 'light'))}
+          onSubmitUtterance={submitText}
         />
+        <ReplayBanner show={isReplay} />
 
-        {/* Persistent Mock Mode Banner (§Step 2) */}
-        <MockModeBanner
-          isMockMode={isMockMode}
-          sourceName={dataSource.sourceName}
-          apiBaseUrl={apiClient.baseUrl}
-        />
+        <Box component="main" id="main-content" sx={{ flex: 1, width: '100%', maxWidth: 1080, mx: 'auto', px: { xs: 1.5, sm: 2.5 }, pt: 1.5, pb: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {error && (
+            <Paper role="alert" data-testid="error-banner" sx={{ p: 1.5, backgroundColor: tokens.ruleWarnBg, color: tokens.ruleWarnText, border: `1.5px solid ${tokens.ruleWarnBorder}` }}>
+              <Typography sx={{ fontWeight: 700 }}>Something went wrong</Typography>
+              <Typography variant="body2">{error}</Typography>
+            </Paper>
+          )}
 
-        {/* Main Content Container */}
-        <Box
-          component="main"
-          id="main-content"
-          sx={{
-            flex: 1,
-            width: '100%',
-            maxWidth: 1080,
-            mx: 'auto',
-            px: { xs: 1.5, sm: 2.5 },
-            pt: 1.5,
-            pb: 2,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1.5,
-          }}
-        >
-          {activeRoute !== '/' ? (
-            <EvidenceViews
-              activeRoute={activeRoute}
-              gapId={gap.id}
-              workflowExecutionId={gap.workflow_execution_id}
-              dataSource={dataSource}
-              isMockMode={isMockMode}
-              onBackToLeadView={() => navigateToRoute('/')}
-              onNavigateRoute={navigateToRoute}
-            />
+          {route !== '/' ? (
+            <EvidenceViews activeRoute={route} gapHandle={gapHandle} source={source} scenarios={scenarios} onNavigate={navigate} />
           ) : (
             <>
-              <ScenarioLauncher
-                activeScenario={scenarioKey}
-                onSelectScenario={handleSelectScenario}
-              />
-
-              {scenarioKey !== 'empty' && (
+              <ScenarioLauncher scenarios={scenarios} activeScenarioId={activeScenarioId} busy={busy} onStart={(id) => void startScenario(id)} />
+              {gapHandle && !view && !error && <Typography role="status">Loading the gap…</Typography>}
+              {view && (
                 <>
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', lg: '1.15fr 0.85fr' },
-                      gap: 2,
-                      alignItems: 'start',
-                    }}
-                  >
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.15fr 0.85fr' }, gap: 2, alignItems: 'start' }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                      <CaptionsPanel
-                        captions={captions}
-                        voiceState={voiceState}
-                        statusAnnouncement={statusAnnouncement}
-                        isMockMode={isMockMode}
-                      />
-
-                      <GapCard
-                        gap={gap}
-                        isMockMode={isMockMode}
-                        onInspectTrace={() => navigateToRoute('/trace', gap.id)}
-                      />
-
-                      <CandidateList
-                        candidates={candidates}
-                        rejectedCandidates={activeBundle.rejectedCandidates}
-                        selectedRank={selectedRank}
-                        isMockMode={isMockMode}
-                        onSelectCandidate={handleSelectCandidate}
-                        onToggleChannel={handleToggleChannel}
-                      />
+                      <CaptionsPanel captions={captions} voiceState={voiceState} statusAnnouncement={announcement} isReplay={isReplay} />
+                      <GapCard gap={view.gap} naiveName={view.naive?.name ?? null} isReplay={isReplay} canAct={source.canAct} onInspectTrace={() => navigate('/trace')} onCancel={() => void cancel()} />
+                      <CandidateList view={view} />
                     </Box>
-
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                      <RosterMiniGrid
-                        rows={activeBundle.rosterGrid}
-                        selectedAssigneeName={selectedCandidate.display_name}
-                        isReSolving={isReSolving}
-                        isMockMode={isMockMode}
-                        onTriggerReSolve={handleTriggerReSolve}
-                      />
-
-                      <CascadeTimeline
-                        offers={activeBundle.cascadeOffers}
-                        guardImpl={activeBundle.guardImpl}
-                        isMockMode={isMockMode}
-                        quarantinedMessage={activeBundle.quarantinedMessage}
-                        activeStepCount={cascadeStepCount}
-                        onAdvanceCascadeStep={handleAdvanceCascadeStep}
-                      />
+                      <RosterMiniGrid view={view} />
+                      <CascadeTimeline view={view} />
                     </Box>
                   </Box>
-
-                  <ApprovalCard
-                    approval={approval}
-                    escalationOptions={activeBundle.escalationOptions}
-                    selectedEscalationId={selectedEscalationId}
-                    onApprove={handleApprovePlan}
-                    onRejectOrEdit={handleRejectOrEdit}
-                    onSelectEscalationOption={handleSelectEscalationOption}
-                  />
+                  <ApprovalCard view={view} canAct={source.canAct} busy={busy} onDecide={(d) => void decide(d)} onChooseFallback={(o) => void chooseFallback(o)} />
                 </>
               )}
             </>
           )}
         </Box>
 
-        {/* 8. Footer: "All data is synthetic" + "How we know it's safe" link to /evals (§0 & §11.3 item 8) */}
-        <Box
-          component="footer"
-          role="contentinfo"
-          sx={{
-            mt: 'auto',
-            borderTop: `1px solid ${tokens.borderSubtle}`,
-            backgroundColor: tokens.surface,
-            px: 2,
-            py: 2,
-          }}
-        >
-          <Box
-            sx={{
-              maxWidth: 1080,
-              mx: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 1,
-            }}
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 1,
-              }}
-            >
-              <Typography variant="body2" sx={{ fontWeight: 700, color: tokens.textPrimary }}>
-                All data is synthetic (`synthetic: true`) · No real employee PII
-              </Typography>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => navigateToRoute('/evals')}
-                  sx={{ minHeight: 48, fontSize: '0.8rem', fontWeight: 700 }}
-                >
-                  <VerifiedUserOutlinedIcon sx={{ fontSize: 16, mr: 0.75 }} aria-hidden="true" />
-                  How we know it&apos;s safe (/evals)
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => navigateToRoute('/trace', gap.id)}
-                  sx={{ minHeight: 48, fontSize: '0.8rem' }}
-                >
-                  <AccountTreeOutlinedIcon sx={{ fontSize: 16, mr: 0.75 }} aria-hidden="true" />
-                  Trace Replay
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => navigateToRoute('/about')}
-                  sx={{ minHeight: 48, fontSize: '0.8rem' }}
-                >
-                  <InfoOutlinedIcon sx={{ fontSize: 16, mr: 0.75 }} aria-hidden="true" />
-                  About
-                </Button>
-              </Box>
-            </Box>
-
-            <Typography variant="caption" sx={{ color: tokens.textMuted }}>
-              Statutory rules cite{' '}
-              <Link
-                href={MOM_HOURS_OVERTIME_REST_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Ministry of Manpower (MOM): Hours of work, overtime and rest day
-              </Link>
-              . Wages and company rules are synthetic.
+        <Box component="footer" sx={{ mt: 'auto', borderTop: `1px solid ${tokens.borderSubtle}`, backgroundColor: tokens.surface, px: 2, py: 2 }}>
+          <Box sx={{ maxWidth: 1080, mx: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+              All data is synthetic
             </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Button variant="outlined" size="small" onClick={() => navigate('/evals')} sx={{ minHeight: 48 }}>
+                <VerifiedUserOutlinedIcon sx={{ fontSize: 16, mr: 0.75 }} aria-hidden="true" />
+                How we know it&apos;s safe
+              </Button>
+              <Button variant="outlined" size="small" disabled={!gapHandle} onClick={() => navigate('/trace')} sx={{ minHeight: 48 }}>
+                <AccountTreeOutlinedIcon sx={{ fontSize: 16, mr: 0.75 }} aria-hidden="true" />
+                Trace replay
+              </Button>
+              <Button variant="outlined" size="small" onClick={() => navigate('/about')} sx={{ minHeight: 48 }}>
+                <InfoOutlinedIcon sx={{ fontSize: 16, mr: 0.75 }} aria-hidden="true" />
+                About
+              </Button>
+            </Box>
           </Box>
         </Box>
       </Box>
