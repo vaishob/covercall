@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import time
+from datetime import datetime
+from typing import Any
 
 from fastapi.testclient import TestClient
 
@@ -75,3 +77,36 @@ def test_s017_twice_in_a_row_gives_identical_plans() -> None:
     assert first["gap"]["summary"] == second["gap"]["summary"]
     assert first["gap"]["cost_saved_cents"] == second["gap"]["cost_saved_cents"]
     assert run.store.list("shifts") == roster_before  # the seeded roster is untouched
+
+
+def _lead_report_to_terminal(run: Any, client: TestClient) -> dict:
+    # A lead report does not move the simulated clock (only scenarios do): set it to the report time.
+    run.clock.reset_to(datetime.fromisoformat("2026-11-03T06:02:00+08:00"))
+    body = {"outlet": "bugis", "station": "barista", "shift_start": "2026-11-03T07:00:00+08:00",
+            "staff_name": "Ali", "text": "Ali is sick for the 7am barista shift at Bugis on Tuesday, 3 November"}
+    created = client.post("/gaps", json=body).json()
+    assert created["status"] == "created", created
+    gap_id = created["gap_id"]
+    solved = _wait(client, gap_id, {"SOLVED"}, pending=True)
+    pending = client.get(f"/gaps/{gap_id}/approval").json()
+    client.post("/approvals", json={"gap_id": gap_id, "nonce": pending["nonce"], "decision": "approve",
+                                    "channel": "voice", "transcript": "yes, approve"})
+    final = _wait(client, gap_id, {"FILLED"})
+    return {"solved": solved, "final": final}
+
+
+def test_demo_isolation_same_lead_report_twice_gives_identical_plans() -> None:
+    """DEMO_ISOLATION=1: lead-reported gaps commit to their own overlay, so every judge who reports
+    the same absence sees the same plan, and the seeded roster never changes."""
+    run = build(pace_s=0.0, lead_timeout_s=30, origins=["http://localhost:3000"])
+    run.api.demo_isolation = True
+    client = TestClient(run.app)
+    roster_before = run.store.list("shifts")
+    first, second = _lead_report_to_terminal(run, client), _lead_report_to_terminal(run, client)
+
+    def options(view: dict) -> list:
+        return [{k: v for k, v in o.items() if k != "plan_id"} for o in view["plan"]["options"]]
+
+    assert options(first["solved"]) == options(second["solved"])
+    assert first["final"]["gap"]["summary"] == second["final"]["gap"]["summary"]
+    assert run.store.list("shifts") == roster_before

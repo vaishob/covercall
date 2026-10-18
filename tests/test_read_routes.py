@@ -193,7 +193,7 @@ def test_report_absence_resolves_names_or_asks(data: dict[str, Any]) -> None:
 
 def test_live_token_is_an_honest_501(data: dict[str, Any]) -> None:
     resp = LocalRun(load_scenario("S-017"), data, CFG, RULES).client.post("/live/token")
-    assert resp.status_code == 501 and "Slice 4" in resp.json()["message"]
+    assert resp.status_code == 501 and "not enabled" in resp.json()["message"]
 
 
 @pytest.mark.parametrize("name", sorted(SCENARIOS))

@@ -154,10 +154,30 @@ export const App: React.FC = () => {
       void run(() => source.approve(gapHandle, view.approval!.nonce, isClearAffirmativeTranscript(text) ? 'approve' : 'reject', text));
       return;
     }
-    say('CoverCall', 'Typed absence reports need the voice tools (Slice 4). Use a scenario button for now.', at);
+    say('CoverCall', 'Typed absence reports are not parsed in the browser. Use voice (hands-free or push-to-talk) or a scenario button.', at);
+  };
+
+  const voiceRef = useRef<{ disconnect(): void; setTalking?(open: boolean): void } | null>(null);
+  const [talking, setTalking] = useState(false);
+  const talk = (open: boolean) => {
+    if (talking === open) return;
+    setTalking(open);
+    voiceRef.current?.setTalking?.(open);
   };
 
   const requestVoiceMode = async (mode: VoiceMode) => {
+    voiceRef.current?.disconnect();
+    voiceRef.current = null;
+    // The voice tools act on the gap they create; the lead view follows it (nothing runs locally).
+    const context = {
+      gapId: gapHandle,
+      onGap: (id: string) => {
+        setView(null);
+        setActiveScenarioId(null);
+        setGapHandle(id);
+        setRoute('/');
+      },
+    };
     const callbacks = {
       onStateChange: (st: VoiceState, reason?: string) => {
         setVoiceState(st);
@@ -173,10 +193,11 @@ export const App: React.FC = () => {
     setVoiceMode(mode);
     const provider =
       mode === 'hands-free'
-        ? new LiveVoiceProvider(apiClient, callbacks, null)
+        ? new LiveVoiceProvider(apiClient, callbacks, null, context)
         : mode === 'push-to-talk'
-          ? new PushToTalkProvider(apiClient, callbacks, null)
+          ? new PushToTalkProvider(apiClient, callbacks, null, context)
           : new TextProvider(apiClient, callbacks);
+    voiceRef.current = provider;
     await provider.connect();
   };
 
@@ -211,6 +232,33 @@ export const App: React.FC = () => {
             <>
               <ScenarioLauncher scenarios={scenarios} activeScenarioId={activeScenarioId} busy={busy} onStart={(id) => void startScenario(id)} />
               {gapHandle && !view && !error && <Typography role="status">Loading the gap…</Typography>}
+              {!isReplay && voiceMode !== 'text' && (
+                <Typography variant="body2" data-testid="voice-hint" sx={{ color: 'text.secondary' }}>
+                  Try: &ldquo;Ali is sick for the 7am barista shift at Bugis on Tuesday, 3 November.&rdquo;
+                </Typography>
+              )}
+              {voiceMode === 'push-to-talk' && !isReplay && (
+                <Button
+                  variant={talking ? 'contained' : 'outlined'}
+                  aria-pressed={talking}
+                  onPointerDown={() => talk(true)}
+                  onPointerUp={() => talk(false)}
+                  onPointerLeave={() => talk(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault();
+                      talk(true);
+                    }
+                  }}
+                  onKeyUp={() => talk(false)}
+                  sx={{ alignSelf: 'flex-start', minHeight: 48 }}
+                >
+                  {talking ? 'Listening… release to stop' : 'Hold to talk'}
+                </Button>
+              )}
+              {!view && (captions.length > 0 || voiceMode !== 'text') && (
+                <CaptionsPanel captions={captions} voiceState={voiceState} statusAnnouncement={announcement} isReplay={isReplay} />
+              )}
               {view && (
                 <>
                   <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.15fr 0.85fr' }, gap: 2, alignItems: 'start' }}>

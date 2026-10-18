@@ -39,7 +39,7 @@ def _rule_meta(api: Api) -> dict[str, dict[str, Any]]:
             for r in api.rules}
 
 
-def status_view(api: Api, environment: str) -> dict[str, Any]:
+def status_view(api: Api, environment: str, voice: str = "off") -> dict[str, Any]:
     roles = yaml.safe_load(Path("config/models.yaml").read_text(encoding="utf-8"))["roles"]
     return {
         "status": "ok",
@@ -51,6 +51,7 @@ def status_view(api: Api, environment: str) -> dict[str, Any]:
         "models": {name: {"model_id": r["model_id"], "api_version": r["api_version"],
                           "provider": r["provider"]} for name, r in roles.items()},
         "time_scale": api.time_scale,
+        "voice": voice,  # "live": POST /live/token mints Gemini Live tokens; "off": 501
         "synthetic": True,
     }
 
