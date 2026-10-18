@@ -3,8 +3,8 @@
 - ``FirestoreStore``: Google Cloud Firestore (Native). Used on Cloud Run. **Not exercised locally**:
   the Firestore emulator needs the ``firebase``/``gcloud`` CLI, which this build may not run.
 - ``MemoryStore``: an in-memory fake with the same transaction semantics that the code relies on
-  (read your own snapshot; ``create`` fails if the document exists; a transaction either applies
-  all writes or none). Used by tests and ``evals/runners/local_cascade.py``.
+  (every read before the first write, as Firestore requires; ``create`` fails if the document
+  exists; a transaction either applies all writes or none). Used by tests and ``evals/runners/local_cascade.py``.
 
 Paths are slash-separated document paths such as ``gaps/g1/events/000001``.
 """
@@ -21,6 +21,11 @@ T = TypeVar("T")
 
 class AlreadyExists(Exception):
     """``create`` on a document that already exists."""
+
+
+class ReadAfterWrite(RuntimeError):
+    """A transaction read after it wrote. Firestore forbids this (``ReadAfterWriteError``): every
+    read in a transaction must come before its first write. MemoryStore enforces the same rule."""
 
 
 class Txn(Protocol):
@@ -44,29 +49,42 @@ class _MemoryTxn:
         self._store = store
         self._writes: dict[str, dict[str, Any] | None] = {}
         self._creates: set[str] = set()
+        self._wrote = False
 
-    def get(self, path: str) -> dict[str, Any] | None:
+    def _check_read(self, what: str) -> None:
+        if self._wrote:
+            raise ReadAfterWrite(f"read of {what} after a write in the same transaction")
+
+    def _peek(self, path: str) -> dict[str, Any] | None:
         if path in self._writes:
             return copy.deepcopy(self._writes[path])
         return self._store.get(path)
 
+    def get(self, path: str) -> dict[str, Any] | None:
+        self._check_read(path)
+        return self._peek(path)
+
     def set(self, path: str, data: dict[str, Any]) -> None:
+        self._wrote = True
         self._writes[path] = copy.deepcopy(data)
 
     def create(self, path: str, data: dict[str, Any]) -> None:
-        if self.get(path) is not None:
+        if self._peek(path) is not None:  # Firestore fails the commit; same outcome
             raise AlreadyExists(path)
+        self._wrote = True
         self._creates.add(path)
         self._writes[path] = copy.deepcopy(data)
 
     def update(self, path: str, data: dict[str, Any]) -> None:
-        current = self.get(path)
+        current = self._peek(path)
         if current is None:
             raise KeyError(path)
         current.update(copy.deepcopy(data))
+        self._wrote = True
         self._writes[path] = current
 
     def list(self, collection: str) -> list[tuple[str, dict[str, Any]]]:
+        self._check_read(collection)
         prefix = collection.rstrip("/") + "/"
         merged: dict[str, dict[str, Any]] = dict(self._store.list(collection))
         for path, data in self._writes.items():

@@ -10,11 +10,14 @@ from evals.runners.dev_server import build
 
 
 def _wait(client: TestClient, gap_id: str, states: set[str], timeout_s: float = 60,
-          pending: bool = False) -> dict:
+          pending: bool = False, fallbacks: bool = False) -> dict:
     end = time.monotonic() + timeout_s
     while time.monotonic() < end:
         view = client.get(f"/gaps/{gap_id}").json()
-        if view["gap"]["state"] in states and (not pending or view["gap"]["approval_pending"]):
+        gap = view["gap"]
+        # ESCALATED is appended before escalation-request stores the fallbacks: wait for both.
+        if (gap["state"] in states and (not pending or gap["approval_pending"])
+                and (not fallbacks or gap["fallbacks"])):
             return view
         time.sleep(0.05)
     raise AssertionError(f"{gap_id} never reached {states}")
@@ -43,7 +46,7 @@ def test_dev_server_nobody_replies_waits_for_fallback() -> None:
     pending = client.get(f"/gaps/{gap_id}/approval").json()
     client.post("/approvals", json={"gap_id": gap_id, "nonce": pending["nonce"], "decision": "approve",
                                     "channel": "tap"})
-    view = _wait(client, gap_id, {"ESCALATED"})
+    view = _wait(client, gap_id, {"ESCALATED"}, fallbacks=True)
     option = view["gap"]["fallbacks"][0]
     assert client.post("/fallbacks", json={"gap_id": gap_id, "option": option}).status_code == 200
     view = _wait(client, gap_id, {"RESOLVED"})
