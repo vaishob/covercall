@@ -78,6 +78,26 @@ def test_rate_limits_return_429(api: Any) -> None:
     assert client.post("/live/token", headers=a).status_code == 200
 
 
+def test_limiter_keys_on_the_ip_cloud_run_appends(api: Any) -> None:
+    # Cloud Run appends the real caller IP as the right-most X-Forwarded-For entry; anything to its
+    # left is client-supplied. Spoofing a fresh left-most entry must not buy a fresh per-IP budget.
+    limiter = live.RateLimiter(per_ip=2, total=100, window_s=600, clock=lambda: 0.0)
+    client = app_with(api, FakeClient(), limiter)
+    codes = [client.post("/live/token", headers={"X-Forwarded-For": f"10.0.0.{i}, 203.0.113.7"}).status_code
+             for i in range(3)]
+    assert codes == [200, 200, 429]
+    # Two different real callers (e.g. two phones) have separate budgets.
+    assert client.post("/live/token", headers={"X-Forwarded-For": "198.51.100.9"}).status_code == 200
+    assert set(limiter._by_ip) == {"203.0.113.7", "198.51.100.9"}
+
+
+def test_default_limits_allow_a_demo_burst_from_one_phone(api: Any) -> None:
+    # 20 Oct 22:03-22:05 SGT: one iPhone minted 5 tokens in 57 s and then got 429 for 3 minutes.
+    client = app_with(api, FakeClient(), live.RateLimiter(clock=lambda: 0.0))
+    phone = {"X-Forwarded-For": "222.0.2.1"}
+    assert [client.post("/live/token", headers=phone).status_code for _ in range(12)] == [200] * 12
+
+
 def test_sdk_error_is_502_without_details(api: Any) -> None:
     class Broken(FakeClient):
         def __init__(self) -> None:

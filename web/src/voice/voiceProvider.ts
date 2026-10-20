@@ -1,5 +1,5 @@
 import type { VoiceMode, VoiceState } from './types.ts';
-import type { ApiClient } from '../data/apiClient.ts';
+import { ApiError, type ApiClient } from '../data/apiClient.ts';
 
 /**
  * The exact five tools exposed to the voice model (§7.2):
@@ -312,9 +312,14 @@ abstract class TokenVoiceProvider implements VoiceProvider {
       this.live = null;
       const msg = err instanceof Error ? err.message : 'Live session failed';
       const denied = err instanceof Error && err.name === 'NotAllowedError';
-      const reason = `${label} unavailable: ${denied ? 'microphone permission denied.' : msg} Falling back to ${next}.`;
+      // Push-to-talk mints from the same route, so after a 429 it would fail too: go straight to text.
+      const limited = err instanceof ApiError && err.status === 429;
+      const fallback = limited ? 'text' : next;
+      const reason = limited
+        ? `${label} unavailable: ${msg}. Voice is paused for a few minutes; falling back to text.`
+        : `${label} unavailable: ${denied ? 'microphone permission denied.' : msg} Falling back to ${fallback}.`;
       this.callbacks.onStateChange('Offline', reason);
-      this.callbacks.onModeFallback(next, reason);
+      this.callbacks.onModeFallback(fallback, reason);
     }
   }
 

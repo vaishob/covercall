@@ -65,6 +65,17 @@ test('hands-free falls back to push-to-talk when POST /live/token answers 501', 
   assert.match(reason, /Hands-free unavailable/);
 });
 
+test('a 429 from POST /live/token skips push-to-talk (same token route) and falls back to text', async () => {
+  const { client, calls } = recordingClient(429, { error: 'rate_limited', message: 'per-IP token limit reached' });
+  let fallback = '';
+  let reason = '';
+  await new LiveVoiceProvider(client, { ...quiet, onModeFallback: (m, r) => ((fallback = m), (reason = r)) }).connect();
+  assert.equal(calls.length, 1);
+  assert.equal(fallback, 'text');
+  assert.match(reason, /per-IP token limit reached/);
+  assert.doesNotMatch(reason, /push-to-talk/i);
+});
+
 test('hands-free accepts only a v1beta ephemeral token (decision 0019)', async () => {
   const token = { token: 'auth_tokens/tok', expires_at: '2026-11-03T06:30:00+08:00', model_id: 'gemini-3.8-live' };
   // v1beta passes the token check and reaches the mic (none in node, so it falls back for that reason).

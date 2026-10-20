@@ -59,7 +59,8 @@ class RateLimited(Exception):
 class RateLimiter:
     """Sliding window: at most ``per_ip`` tokens per IP and ``total`` overall per ``window_s``."""
 
-    def __init__(self, per_ip: int = 5, total: int = 60, window_s: float = 600,
+    # Every mode tap mints a token, so 5 per IP ran out in under a minute on one phone (20 Oct).
+    def __init__(self, per_ip: int = 20, total: int = 120, window_s: float = 600,
                  clock: Callable[[], float] = time.monotonic):
         self.per_ip, self.total, self.window_s, self.clock = per_ip, total, window_s, clock
         self._all: deque[float] = deque()

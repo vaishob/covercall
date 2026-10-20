@@ -166,6 +166,8 @@ export const App: React.FC = () => {
   };
 
   const requestVoiceMode = async (mode: VoiceMode) => {
+    // Re-tapping the mode that is already connected (or connecting) would mint another token.
+    if (mode === voiceMode && voiceRef.current && voiceState !== 'Offline') return;
     voiceRef.current?.disconnect();
     voiceRef.current = null;
     // The voice tools act on the gap they create; the lead view follows it (nothing runs locally).
