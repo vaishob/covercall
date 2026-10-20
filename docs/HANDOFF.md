@@ -595,3 +595,52 @@ the tagged revisions `voice` (`00005-bux`) and `live-voice` (`00006-bip`) remain
 - Production still runs on the real clock (dates 3–4 Nov); voice reports must name the date.
 - `gap-0001` stays stranded (failed execution, cancel route cannot reach it).
 - Ephemeral tokens are a Preview feature; rate limits are per instance (in memory).
+
+---
+
+## Voice fix (branch `fix/voice-ratelimit`, promoted 2026-10-20 ~22:50 SGT). Frozen after this.
+
+### What happened
+20 Oct ~22:07 SGT, iPhone on https://covercall-demo-2026.web.app: "Hands-free unavailable: per-IP token limit
+reached". Request logs: one phone (`222.164.40.95`, one instance) minted 5 tokens in 57 s (22:03:36-22:04:33),
+then got 429 seven times. The limiter worked as built; 5 per IP per 10 min was too tight when every mode tap
+mints, and the iPhone sessions never got working audio (no tool call followed any token), so the lead kept
+retrying. Two more defects: the limiter keyed on the left-most `X-Forwarded-For` entry (client-supplied, so the
+per-IP limit could be bypassed), and the hands-free -> push-to-talk fallback only switched the mode, leaving a
+dead "Hold to talk" button.
+
+### What changed
+| Thing | Value |
+|---|---|
+| api | `client_ip()` = right-most `X-Forwarded-For` entry (the one Cloud Run appends). Limits **20 per IP and 120 overall per 10 min** (429 beyond). One `live_token limiter_key=<ip> outcome=...` log line per request. Counters still in memory per instance |
+| Web | Mode tap creates/reuses the input and output `AudioContext`s and calls `resume()` before any `await` (iOS); Hold to talk resumes again. If audio is not running once the socket opens: "Tap to enable audio", never "Listening". Hands-free -> push-to-talk fallback really connects; a **429 (or mic denial) goes straight to text**. Re-tapping a connected or connecting mode does not mint again. Pure rules in `web/src/voice/voiceFlow.ts` |
+| Commits | `7cb16dc` (api), `7cd5bf3` (web) |
+| api | revision **`covercall-api-00010-qoy`** (tag `final`, image `api:fix-7cb16dc`), 100% of traffic. Same env and secrets as `00006-bip` |
+| Web | live release built from `7cd5bf3` against the production api (`index-HqNEQ3kc.js`) |
+
+### Verification
+| Check | Result |
+|---|---|
+| Limiter key, tagged revision, two networks (one call each with a spoofed `X-Forwarded-For: 10.9.9.9`) | key = request `remoteIp` every time (`222.164.40.95`, hotspot `119.234.32.32`); never `10.9.9.9` |
+| Author's iPhone test on preview `voicefix` (Safari and Chrome) | audio heard, read-back, "yes, approve", FILLED; push-to-talk answered |
+| After the api + Hosting promote (`00008-xam`) | S-017 FILLED in 2.1 min (`gap-0019`); Nobody replies ESCALATED then RESOLVED in 2.8 min (`gap-0020`); fake-mic voice check 5/5; 385 api requests, all 200 |
+| After the preview origin was removed (`00010-qoy`) | preview origin CORS 400, `web.app` 200; fake-mic voice check 2/2; S-017 FILLED in 1.4 min (`gap-0021`) |
+| Checks on `7cd5bf3` | pytest 192 passed, ruff, mypy; npm test 41/41, tsc, build, local Playwright 2/2 (web checks ran in Cloud Build: Windows Application Control on the author's laptop now blocks rollup's native binary) |
+
+One fake-mic run on the preview failed (1 of 5) before the promote; its trace was overwritten, cause unknown.
+Every run since (10) passed.
+
+### Rollback (exact commands)
+```bash
+gcloud run services update-traffic covercall-api --project covercall-demo-2026 --region asia-southeast1 \
+  --to-revisions covercall-api-00006-bip=100
+firebase hosting:clone covercall-demo-2026:prevlive2 covercall-demo-2026:live --project covercall-demo-2026
+```
+`prevlive2` (expires 27 Oct) holds the pre-fix live release. Tags `fix` (`00008-xam`, with the preview origin)
+and `final` remain; preview channel `voicefix` expires 27 Oct.
+
+### Still open
+- Rate-limit counters are per instance (in memory); no evidence yet that Firestore-backed counters are needed.
+- The limiter assumes Cloud Run's front end is the only proxy. A load balancer in front would add an entry
+  and must be revisited.
+- Gemini parser variation, the real clock and `gap-0001` (above) are unchanged.

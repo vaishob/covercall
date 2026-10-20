@@ -65,6 +65,64 @@ test('hands-free falls back to push-to-talk when POST /live/token answers 501', 
   assert.match(reason, /Hands-free unavailable/);
 });
 
+test('a 429 from POST /live/token skips push-to-talk (same token route) and falls back to text', async () => {
+  const { client, calls } = recordingClient(429, { error: 'rate_limited', message: 'per-IP token limit reached' });
+  let fallback = '';
+  let reason = '';
+  await new LiveVoiceProvider(client, { ...quiet, onModeFallback: (m, r) => ((fallback = m), (reason = r)) }).connect();
+  assert.equal(calls.length, 1);
+  assert.equal(fallback, 'text');
+  assert.match(reason, /per-IP token limit reached/);
+  assert.doesNotMatch(reason, /push-to-talk/i);
+});
+
+class FakeLive {
+  gate: boolean | null = null;
+  running = false;
+  lastUserTranscript = '';
+  setGate(open: boolean) {
+    this.gate = open;
+  }
+  close() {}
+  async audioReady() {
+    return this.running;
+  }
+}
+
+class AttachableLive extends LiveVoiceProvider {
+  attach(live: FakeLive) {
+    this.live = live;
+  }
+}
+
+test('hold-to-talk without a live session never reports Listening', () => {
+  const states: string[] = [];
+  const ptt = new PushToTalkProvider(recordingClient().client, { ...quiet, onStateChange: (s) => states.push(s) });
+  ptt.setTalking(true);
+  ptt.setTalking(false);
+  assert.deepEqual(states, []);
+});
+
+test('an open session with suspended audio asks for a tap, then listens once audio runs', async () => {
+  const states: Array<[string, string | undefined]> = [];
+  const blocked: boolean[] = [];
+  const provider = new AttachableLive(recordingClient().client, {
+    ...quiet,
+    onStateChange: (s, r) => states.push([s, r]),
+    onAudioBlocked: (b) => blocked.push(b),
+  });
+  const live = new FakeLive();
+  provider.attach(live);
+  await provider.enableAudio();
+  assert.deepEqual(states.at(-1), ['Muted', 'Tap to enable audio']);
+  assert.equal(live.gate, false);
+  live.running = true;
+  await provider.enableAudio();
+  assert.equal(states.at(-1)?.[0], 'Listening');
+  assert.equal(live.gate, true);
+  assert.deepEqual(blocked, [true, false]);
+});
+
 test('hands-free accepts only a v1beta ephemeral token (decision 0019)', async () => {
   const token = { token: 'auth_tokens/tok', expires_at: '2026-11-03T06:30:00+08:00', model_id: 'gemini-3.8-live' };
   // v1beta passes the token check and reaches the mic (none in node, so it falls back for that reason).

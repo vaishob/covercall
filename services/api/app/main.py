@@ -3,6 +3,7 @@ only the workflow service account (Google-signed OIDC ID token). All data is syn
 
 from __future__ import annotations
 
+import logging
 import os
 from collections.abc import Callable
 from typing import Any
@@ -17,6 +18,10 @@ from services.api.app.page import TEST_PAGE
 from services.common.models import pinned_role
 
 DEFAULT_ALLOWED_ORIGINS = ("http://localhost:3000",)
+log = logging.getLogger("covercall.api")  # uvicorn leaves app loggers at WARNING; stderr reaches Cloud Logging
+log.setLevel(logging.INFO)
+if not log.handlers:
+    log.addHandler(logging.StreamHandler())
 
 
 def allowed_origins_from_env() -> list[str]:
@@ -26,6 +31,13 @@ def allowed_origins_from_env() -> list[str]:
     if any("*" in o for o in origins):
         raise ValueError("ALLOWED_ORIGINS must list exact origins; '*' is not allowed")
     return origins
+
+
+def client_ip(request: Request) -> str:
+    """The caller's IP for rate limiting: the right-most ``X-Forwarded-For`` entry, which Cloud Run's
+    front end appends. Entries to its left are whatever the client sent, so they are not trusted."""
+    forwarded = [p.strip() for p in request.headers.get("x-forwarded-for", "").split(",") if p.strip()]
+    return forwarded[-1] if forwarded else (request.client.host if request.client else "unknown")
 
 
 def require_workflow_caller(authorization: str = Header(default="")) -> None:
@@ -126,12 +138,13 @@ def create_app(api: Api, internal_auth: Callable[..., None] = require_workflow_c
             return JSONResponse(status_code=501, content={
                 "error": "not_implemented",
                 "message": "Voice is not enabled on this deployment. Use the Scenario buttons or text."})
-        forwarded = request.headers.get("x-forwarded-for", "")
-        ip = forwarded.split(",")[0].strip() or (request.client.host if request.client else "unknown")
+        ip = client_ip(request)
         try:
             limiter.check(ip)
         except live.RateLimited as exc:
+            log.info("live_token limiter_key=%s outcome=429 (%s)", ip, exc)
             return JSONResponse(status_code=429, content={"error": "rate_limited", "message": str(exc)})
+        log.info("live_token limiter_key=%s outcome=allowed", ip)
         try:
             spec = pinned_role("voice")
             return JSONResponse(content=live.mint(live_client(), spec))

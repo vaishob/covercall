@@ -33,7 +33,7 @@ CoverCall reads the server's approval sentence back. Say **"yes, approve"** and 
 **D. Check the evidence.** **Trace replay** shows every event and the server's hash-chain check. **How we know it's safe** (`/evals`) says "No eval run yet" instead of showing numbers we have not produced there. **About** (`/about`) lists the live model IDs from [`GET /status`](https://covercall-api-584069229211.asia-southeast1.run.app/status).
 
 **Usage notes**
-- Voice tokens are limited to 5 per IP and 60 overall per 10 minutes (`services/api/app/live.py`; `tests/test_live_token.py::test_rate_limits_return_429`). Past the limit, voice falls back to push-to-talk, then text.
+- Voice tokens are limited to 20 per IP and 120 overall per 10 minutes (`services/api/app/live.py`; `tests/test_live_token.py::test_rate_limits_return_429`, `::test_default_limits_allow_a_demo_burst_from_one_phone`). Every tap on Hands-free or Push-to-talk uses one. Past the limit, voice falls back straight to text (push-to-talk would hit the same limit); try voice again a few minutes later.
 - Every run creates its own synthetic gap and leaves the shared roster unchanged, so judges do not affect each other ([0023](docs/decisions/0023-scenario-overlay-and-gemini-on.md), [0024](docs/decisions/0024-demo-isolation-and-voice-live.md); `tests/test_dev_server.py::test_s017_twice_in_a_row_gives_identical_plans` and `::test_demo_isolation_same_lead_report_twice_gives_identical_plans`).
 - Staff replies come from simulated personas (`services/persona_sim/`). No real person is messaged.
 
@@ -165,7 +165,7 @@ Only the workflow changes state. It does so through `/internal/*` routes, each o
 - **Retries:** every workflow HTTP call has 3 attempts with exponential backoff, and every state change carries an idempotency key (`workflows/coverage_cascade.yaml`; `test_every_http_call_uses_oidc_and_the_retry_policy`).
 - **Warm instances:** api, guard, agent and persona-sim each keep one warm instance; solver and connectors scale to zero (`infra/40_deploy_services.sh`).
 - **Found in production and fixed:** Firestore rejects reads after writes in a transaction, which broke `accept` and `commit`; the in-memory test store now enforces the same rule. Also fixed: a database ID that was too short, an api image missing a module, and a deploy script that could not have worked ([HANDOFF](docs/HANDOFF.md), section "Deployment").
-- **Limits:** voice tokens are capped at 5 per IP and 60 overall per 10 minutes. The counts are held in each instance's memory.
+- **Limits:** voice tokens are capped at 20 per IP and 120 overall per 10 minutes, keyed on the caller IP that Cloud Run appends to `X-Forwarded-For`. The counts are held in each instance's memory.
 
 ---
 
