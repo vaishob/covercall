@@ -36,7 +36,7 @@ and have not been run. See `docs/HANDOFF.md`.
 | Component | Path | Google Cloud service | Status |
 |---|---|---|---|
 | `coverage-cascade` | `workflows/coverage_cascade.yaml` | Cloud Workflows | See `docs/HANDOFF.md` |
-| `api` | `services/api/` | Cloud Run (FastAPI) | Live. Also mints voice tokens: `POST /live/token`, single-use `v1beta` ephemeral tokens for `gemini-3.8-live`, rate-limited (5 per IP / 60 overall per 10 min) |
+| `api` | `services/api/` | Cloud Run (FastAPI) | Live. Also mints voice tokens: `POST /live/token`, single-use `v1beta` ephemeral tokens for `gemini-3.8-live`, rate-limited (20 per IP / 120 overall per 10 min; past the limit voice falls back to text) |
 | Voice | `web/src/voice/` | Gemini Live API (`gemini-3.8-live`, v1beta) | **Live** in the web app: hands-free, push-to-talk, text fallback. The browser holds only an ephemeral token; every tool call runs on `api` |
 | `solver` | `services/solver/` | Cloud Run (OR-Tools) | See `docs/HANDOFF.md` |
 | `agent` | `services/agent/` | Cloud Run (ADK, Gemini Flash on Vertex AI) | `parse_reply` runs in `api`: `gemini-3.8-flash` (global) in production (`PARSER_IMPL=gemini`), fails closed to `unclear`; deterministic stub locally |
