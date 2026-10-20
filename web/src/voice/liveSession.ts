@@ -5,6 +5,7 @@
  * is queued gaplessly and stopped at once on `interrupted`. Tool calls go to `onToolCall` (api).
  */
 import { GoogleGenAI, type LiveServerMessage, type Session } from '@google/genai';
+import { type AudioPair, audioRunning, ensureCaptureWorklet, primeAudio, tryResume } from './audio.ts';
 import { base64ToPcm16, Chunker, OUTPUT_RATE, pcm16ToBase64, pcm16ToFloat } from './pcm.ts';
 
 export interface LiveSessionHandlers {
@@ -18,8 +19,9 @@ export interface LiveSessionHandlers {
 export class LiveSession {
   private session: Session | null = null;
   private mic: MediaStream | null = null;
-  private ctxIn: AudioContext | null = null;
-  private ctxOut: AudioContext | null = null;
+  // Shared contexts from primeAudio() (created in the tap handler for iOS); never closed here.
+  private audio: AudioPair | null = null;
+  private capture: { source: MediaStreamAudioSourceNode; node: AudioWorkletNode } | null = null;
   private playAt = 0;
   private sources: AudioBufferSourceNode[] = [];
   private gate = true;
@@ -35,7 +37,8 @@ export class LiveSession {
   /** The lead's latest complete utterance (sent with `approve` so the server checks the words). */
   lastUserTranscript = '';
 
-  async open(token: string, model: string, apiVersion: string): Promise<void> {
+  /** `audio` should come from primeAudio() inside the user's tap; without it, contexts are made here. */
+  async open(token: string, model: string, apiVersion: string, audio?: AudioPair | null): Promise<void> {
     // Mic first: a denial falls back before a token use is spent on a socket.
     this.mic = await navigator.mediaDevices.getUserMedia({
       audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
@@ -50,18 +53,26 @@ export class LiveSession {
         onclose: (e: CloseEvent) => this.close(e.reason ? `Live session closed: ${e.reason}` : 'Live session closed.'),
       },
     });
-    this.ctxOut = new AudioContext({ sampleRate: OUTPUT_RATE });
-    this.ctxIn = new AudioContext();
-    await this.ctxIn.audioWorklet.addModule('/pcm-capture.worklet.js');
-    const node = new AudioWorkletNode(this.ctxIn, 'pcm-capture');
-    const chunker = new Chunker(this.ctxIn.sampleRate);
+    this.audio = audio ?? primeAudio();
+    if (!this.audio) throw new Error('Web Audio is not available in this browser.');
+    const ctxIn = this.audio.input;
+    await ensureCaptureWorklet(ctxIn);
+    const node = new AudioWorkletNode(ctxIn, 'pcm-capture');
+    const chunker = new Chunker(ctxIn.sampleRate);
     node.port.onmessage = (e: MessageEvent<Float32Array>) => {
       if (!this.gate || !this.session) return;
       for (const pcm of chunker.push(e.data)) {
         this.session.sendRealtimeInput({ audio: { data: pcm16ToBase64(pcm), mimeType: 'audio/pcm;rate=16000' } });
       }
     };
-    this.ctxIn.createMediaStreamSource(this.mic).connect(node);
+    const source = ctxIn.createMediaStreamSource(this.mic);
+    source.connect(node);
+    this.capture = { source, node };
+  }
+
+  /** True when both contexts run (iOS can leave them suspended or interrupted after the mic opens). */
+  async audioReady(): Promise<boolean> {
+    return this.audio ? audioRunning(this.audio) || tryResume(this.audio) : false;
   }
 
   /** Push-to-talk: the same session, with the mic gated by a held button. */
@@ -101,7 +112,7 @@ export class LiveSession {
   }
 
   private play(b64: string): void {
-    const ctx = this.ctxOut;
+    const ctx = this.audio?.output;
     if (!ctx) return;
     const samples = pcm16ToFloat(base64ToPcm16(b64));
     const buf = ctx.createBuffer(1, samples.length, OUTPUT_RATE);
@@ -138,8 +149,9 @@ export class LiveSession {
     this.closed = true;
     this.stopPlayback();
     this.mic?.getTracks().forEach((t) => t.stop());
-    void this.ctxIn?.close();
-    void this.ctxOut?.close();
+    this.capture?.source.disconnect();
+    this.capture?.node.disconnect();
+    this.capture = null;
     try {
       this.session?.close();
     } catch {

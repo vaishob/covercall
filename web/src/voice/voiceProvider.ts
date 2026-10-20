@@ -1,5 +1,7 @@
 import type { VoiceMode, VoiceState } from './types.ts';
 import { ApiError, type ApiClient } from '../data/apiClient.ts';
+import type { AudioPair } from './audio.ts';
+import { fallbackModeFor, liveReadyState, TAP_TO_ENABLE_AUDIO, talkState } from './voiceFlow.ts';
 
 /**
  * The exact five tools exposed to the voice model (§7.2):
@@ -138,6 +140,8 @@ export interface VoiceProviderCallbacks {
   onStateChange: (state: VoiceState, reason?: string) => void;
   onModeFallback: (newMode: VoiceMode, reason: string) => void;
   onCaption: (speaker: 'Lead' | 'CoverCall', text: string) => void;
+  /** True while the Live session is open but its audio needs one more tap (iOS). */
+  onAudioBlocked?: (blocked: boolean) => void;
 }
 
 export interface ToolContext {
@@ -236,14 +240,24 @@ abstract class TokenVoiceProvider implements VoiceProvider {
   protected readonly apiClient: ApiClient | null;
   protected readonly callbacks: VoiceProviderCallbacks;
   protected readonly context: ToolContext;
-  protected live: { setGate(open: boolean): void; close(reason?: string): void; lastUserTranscript: string } | null = null;
+  protected live: {
+    setGate(open: boolean): void;
+    close(reason?: string): void;
+    audioReady(): Promise<boolean>;
+    lastUserTranscript: string;
+  } | null = null;
+  protected readonly audio: AudioPair | null;
+  private pushToTalk = false;
+  private modelLabel = '';
 
+  /** `audio` comes from primeAudio(), called synchronously in the user's tap (iOS). */
   constructor(apiClient: ApiClient | null, callbacks: VoiceProviderCallbacks, configuredModelId?: string | null,
-              context?: ToolContext) {
+              context?: ToolContext, audio?: AudioPair | null) {
     this.apiClient = apiClient;
     this.callbacks = callbacks;
     this.modelId = configuredModelId?.trim() || null;
     this.context = context ?? { gapId: null };
+    this.audio = audio ?? null;
   }
 
   abstract connect(): Promise<void>;
@@ -301,20 +315,17 @@ abstract class TokenVoiceProvider implements VoiceProvider {
         },
       });
       this.live = session;
-      await session.open(tokenResp.token, model, tokenResp.api_version);
-      session.setGate(!pushToTalk);
-      this.callbacks.onStateChange(
-        pushToTalk ? 'Muted' : 'Listening',
-        `Live session active (${model}, v1beta ephemeral token)${pushToTalk ? '. Hold the button to talk.' : ''}`
-      );
+      this.pushToTalk = pushToTalk;
+      this.modelLabel = model;
+      await session.open(tokenResp.token, model, tokenResp.api_version, this.audio);
+      await this.reportReady();
     } catch (err) {
       this.live?.close();
       this.live = null;
       const msg = err instanceof Error ? err.message : 'Live session failed';
       const denied = err instanceof Error && err.name === 'NotAllowedError';
-      // Push-to-talk mints from the same route, so after a 429 it would fail too: go straight to text.
       const limited = err instanceof ApiError && err.status === 429;
-      const fallback = limited ? 'text' : next;
+      const fallback = fallbackModeFor({ status: err instanceof ApiError ? err.status : undefined, micDenied: denied }, next);
       const reason = limited
         ? `${label} unavailable: ${msg}. Voice is paused for a few minutes; falling back to text.`
         : `${label} unavailable: ${denied ? 'microphone permission denied.' : msg} Falling back to ${fallback}.`;
@@ -323,10 +334,33 @@ abstract class TokenVoiceProvider implements VoiceProvider {
     }
   }
 
-  /** Push-to-talk gate (held button). */
+  /** Listening only when the session is live and its audio runs; otherwise ask for one more tap. */
+  private async reportReady(): Promise<void> {
+    const session = this.live;
+    if (!session) return;
+    const ready = liveReadyState(this.pushToTalk, await session.audioReady());
+    if (this.live !== session) return; // closed meanwhile
+    session.setGate(!this.pushToTalk && !ready.needsTap);
+    this.callbacks.onAudioBlocked?.(ready.needsTap);
+    this.callbacks.onStateChange(
+      ready.state,
+      ready.needsTap
+        ? TAP_TO_ENABLE_AUDIO
+        : `Live session active (${this.modelLabel}, v1beta ephemeral token)${this.pushToTalk ? '. Hold the button to talk.' : ''}`
+    );
+  }
+
+  /** Call after primeAudio() inside a tap: re-checks the audio of the open session. */
+  async enableAudio(): Promise<void> {
+    await this.reportReady();
+  }
+
+  /** Push-to-talk gate (held button). No live session: nothing changes (never "Listening"). */
   setTalking(open: boolean): void {
+    const state = talkState(open, this.live !== null);
+    if (state === null) return;
     this.live?.setGate(open);
-    this.callbacks.onStateChange(open ? 'Listening' : 'Muted');
+    this.callbacks.onStateChange(state);
   }
 }
 

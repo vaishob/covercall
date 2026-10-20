@@ -20,6 +20,8 @@ import { createSource } from './data/source';
 import type { LeadView } from './data/viewModel';
 import type { CaptionExchange, VoiceMode, VoiceState } from './voice/types';
 import { isClearAffirmativeTranscript, LiveVoiceProvider, PushToTalkProvider, TextProvider } from './voice/voiceProvider';
+import { type AudioPair, primeAudio } from './voice/audio';
+import { isSameModeActive, TAP_TO_ENABLE_AUDIO } from './voice/voiceFlow';
 
 function routeFromLocation(): { route: Route; gap: string | null } {
   if (typeof window === 'undefined') return { route: '/', gap: null };
@@ -157,19 +159,42 @@ export const App: React.FC = () => {
     say('CoverCall', 'Typed absence reports are not parsed in the browser. Use voice (hands-free or push-to-talk) or a scenario button.', at);
   };
 
-  const voiceRef = useRef<{ disconnect(): void; setTalking?(open: boolean): void } | null>(null);
+  const voiceRef = useRef<{ disconnect(): void; setTalking?(open: boolean): void; enableAudio?(): Promise<void> } | null>(null);
+  // iOS runs an AudioContext only if it is created or resumed inside a tap, before any await.
+  const audioRef = useRef<AudioPair | null>(null);
+  const primeAudioInTap = () => {
+    audioRef.current = primeAudio() ?? audioRef.current;
+  };
+  const [audioBlocked, setAudioBlocked] = useState(false);
   const [talking, setTalking] = useState(false);
+  const enableAudio = () => {
+    primeAudioInTap();
+    void voiceRef.current?.enableAudio?.();
+  };
   const talk = (open: boolean) => {
-    if (talking === open) return;
+    // A touch pointerdown is not a user activation on iOS but pointerup is: prime on both.
+    primeAudioInTap();
+    if (talking === open || audioBlocked) return; // blocked: the button's click unlocks audio first
     setTalking(open);
     voiceRef.current?.setTalking?.(open);
   };
 
-  const requestVoiceMode = async (mode: VoiceMode) => {
-    // Re-tapping the mode that is already connected (or connecting) would mint another token.
-    if (mode === voiceMode && voiceRef.current && voiceState !== 'Offline') return;
+  /** Mode-tap handler: synchronous up to connectVoice, so the audio is primed inside the tap. */
+  const requestVoiceMode = (mode: VoiceMode) => {
+    if (mode !== 'text') primeAudioInTap();
+    // Re-tapping the mode that is already connected (or connecting) must not mint another token.
+    if (isSameModeActive(mode, voiceMode, voiceState, voiceRef.current !== null)) {
+      void voiceRef.current?.enableAudio?.();
+      return;
+    }
+    void connectVoice(mode);
+  };
+
+  const connectVoice = async (mode: VoiceMode) => {
     voiceRef.current?.disconnect();
     voiceRef.current = null;
+    setAudioBlocked(false);
+    setTalking(false);
     // The voice tools act on the gap they create; the lead view follows it (nothing runs locally).
     const context = {
       gapId: gapHandle,
@@ -189,15 +214,22 @@ export const App: React.FC = () => {
         setVoiceMode(fallback);
         setVoiceReason(reason);
         setAnnouncement(reason);
+        // Push-to-talk really connects (with the audio primed by the original tap). Text needs no session.
+        if (fallback === 'push-to-talk') void connectVoice('push-to-talk');
+        else {
+          voiceRef.current = null;
+          setAudioBlocked(false);
+        }
       },
       onCaption: (speaker: 'Lead' | 'CoverCall', text: string) => say(speaker, text, view?.now ?? new Date().toISOString()),
+      onAudioBlocked: setAudioBlocked,
     };
     setVoiceMode(mode);
     const provider =
       mode === 'hands-free'
-        ? new LiveVoiceProvider(apiClient, callbacks, null, context)
+        ? new LiveVoiceProvider(apiClient, callbacks, null, context, audioRef.current)
         : mode === 'push-to-talk'
-          ? new PushToTalkProvider(apiClient, callbacks, null, context)
+          ? new PushToTalkProvider(apiClient, callbacks, null, context, audioRef.current)
           : new TextProvider(apiClient, callbacks);
     voiceRef.current = provider;
     await provider.connect();
@@ -214,7 +246,7 @@ export const App: React.FC = () => {
           isReplay={isReplay}
           themeMode={themeMode}
           onChangeVoiceState={setVoiceState}
-          onChangeVoiceMode={(m) => void requestVoiceMode(m)}
+          onChangeVoiceMode={requestVoiceMode}
           onToggleTheme={() => setThemeMode((p) => (p === 'light' ? 'dark' : 'light'))}
           onSubmitUtterance={submitText}
         />
@@ -243,6 +275,7 @@ export const App: React.FC = () => {
                 <Button
                   variant={talking ? 'contained' : 'outlined'}
                   aria-pressed={talking}
+                  onClick={audioBlocked ? enableAudio : undefined}
                   onPointerDown={() => talk(true)}
                   onPointerUp={() => talk(false)}
                   onPointerLeave={() => talk(false)}
@@ -255,7 +288,12 @@ export const App: React.FC = () => {
                   onKeyUp={() => talk(false)}
                   sx={{ alignSelf: 'flex-start', minHeight: 48 }}
                 >
-                  {talking ? 'Listening… release to stop' : 'Hold to talk'}
+                  {audioBlocked ? TAP_TO_ENABLE_AUDIO : talking ? 'Listening… release to stop' : 'Hold to talk'}
+                </Button>
+              )}
+              {voiceMode === 'hands-free' && audioBlocked && !isReplay && (
+                <Button variant="contained" onClick={enableAudio} sx={{ alignSelf: 'flex-start', minHeight: 48 }}>
+                  {TAP_TO_ENABLE_AUDIO}
                 </Button>
               )}
               {!view && (captions.length > 0 || voiceMode !== 'text') && (
