@@ -38,7 +38,7 @@ deploy connectors private 0 ""
 deploy persona-sim private 1 "API_URL=${API_URL}##TIME_SCALE=${TIME_SCALE}##GOOGLE_CLOUD_PROJECT=${PROJECT_ID}##PERSONA_TEXT_IMPL=${PERSONA_TEXT_IMPL:-gemini}" \
   --no-cpu-throttling
 # GEMINI_API_KEY: required Secret Manager entry (infra/25_secrets.sh checks it exists); api only.
-deploy api public 1 "API_URL=${API_URL}##TIME_SCALE=${TIME_SCALE}##GOOGLE_CLOUD_PROJECT=${PROJECT_ID}##WORKFLOW_SA_EMAIL=$(sa_email workflow)##SOLVER_URL=$(run_url solver)##GUARD_URL=$(run_url guard)##PERSONA_SIM_URL=$(run_url persona-sim)##ALLOWED_ORIGINS=${HOSTING_ORIGINS}##PARSER_IMPL=${PARSER_IMPL:-gemini}##PERSONA_TEXT_IMPL=${PERSONA_TEXT_IMPL:-gemini}##VOICE_ENABLED=${VOICE_ENABLED:-1}##DEMO_ISOLATION=${DEMO_ISOLATION:-1}" \
+deploy api public 1 "API_URL=${API_URL}##TIME_SCALE=${TIME_SCALE}##GOOGLE_CLOUD_PROJECT=${PROJECT_ID}##WORKFLOW_SA_EMAIL=$(sa_email workflow)##SOLVER_URL=$(run_url solver)##GUARD_URL=$(run_url guard)##PERSONA_SIM_URL=$(run_url persona-sim)##ALLOWED_ORIGINS=${HOSTING_ORIGINS}##PARSER_IMPL=${PARSER_IMPL:-gemini}##PERSONA_TEXT_IMPL=${PERSONA_TEXT_IMPL:-gemini}##VOICE_ENABLED=${VOICE_ENABLED:-1}##DEMO_ISOLATION=${DEMO_ISOLATION:-1}##DEMO_CLOCK_OFFSET_DAYS=${DEMO_CLOCK_OFFSET_DAYS:-7}" \
   --update-secrets "GEMINI_API_KEY=GEMINI_API_KEY:latest"
 
 invoker solver api

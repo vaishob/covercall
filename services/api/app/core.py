@@ -68,7 +68,8 @@ class Api:
     def __init__(self, store: Store, cfg: dict[str, Any], rules: list[dict[str, Any]], clock: Clock,
                  guard: GuardClient, agent: AgentClient, messenger: Messenger,
                  callbacks: CallbackSender, launcher: Launcher, solver: SolveFn = solve,
-                 time_scale: float = 1.0, id_prefix: str = "gap", demo_isolation: bool = False):
+                 time_scale: float = 1.0, id_prefix: str = "gap", demo_isolation: bool = False,
+                 clock_offset: timedelta = timedelta(0)):
         self.store, self.cfg, self.rules, self.clock = store, cfg, rules, clock
         self.guard, self.agent, self.messenger = guard, agent, messenger
         self.callbacks, self.launcher, self.solver = callbacks, launcher, solver
@@ -77,6 +78,9 @@ class Api:
         # DEMO_ISOLATION=1: lead-reported gaps commit to their own overlay too (decision 0024), so
         # every demo run of the same absence starts from the same seeded roster.
         self.demo_isolation = demo_isolation
+        # DEMO_CLOCK_OFFSET_DAYS (decision 0025): deadlines are judged this far in the past, so the
+        # fixed 3-8 Nov demo roster stays ahead of production's real clock. Timestamps stay real.
+        self.clock_offset = clock_offset
 
     def _isolated(self, gap: dict[str, Any]) -> bool:
         return bool(gap.get("scenario_id")) or self.demo_isolation
@@ -85,6 +89,11 @@ class Api:
 
     def _now(self) -> str:
         return self.clock.now().isoformat()
+
+    def decision_now(self) -> datetime:
+        """"now" for solver arrival, t_esc, reply windows and the countdown (decision 0025).
+        Event and document timestamps use the real clock (``_now``)."""
+        return self.clock.now() - self.clock_offset
 
     def _gap(self, gap_id: str) -> dict[str, Any]:
         gap = self.store.get(gap_path(gap_id))
@@ -122,7 +131,7 @@ class Api:
         for sid, win in (gap.get("accepted") or {}).items():
             windows.setdefault(sid, win)
         return {
-            "now": self._now(),
+            "now": self.decision_now().isoformat(),
             "seed": int(gap.get("seed", self.cfg["solver_seed"])),
             "gap": self._gap_spec(gap),
             "staff": {k: v for k, v in r.list("staff")},
@@ -203,7 +212,8 @@ class Api:
         fields = dict(spec, excluded=[], windows={}, accepted={}, pending_counters=[], plan_id=None,
                       current_plan_id=None, approval_id=None, approval_pending=False, outcome=None,
                       cost_saved_sgd=None, cost_saved_cents=None, workflow_execution_id=None,
-                      reported_at=self._now(), offer_seq=0, time_scale=self.time_scale)
+                      reported_at=self._now(), offer_seq=0, time_scale=self.time_scale,
+                      clock_offset_s=int(self.clock_offset.total_seconds()))
         self.store.transaction(lambda txn: append_in_txn(
             txn, gap_id, "gap.reported", actor="lead", ts=self._now(),
             payload={"source": source, "scenario_id": spec["scenario_id"]}, gap_fields=fields))
@@ -373,7 +383,7 @@ class Api:
             plan0 = self.store.get(f"plans/{approval0.get('plan_id')}") or {}
             ctx0 = self.planner_context(gap0)
             remaining0 = _remaining(gap0, ctx0, {r["staff_id"] for r in plan0.get("rejected_candidates") or []})
-            lock = locked_t_esc(self.clock.now(), remaining0, self.cfg).isoformat()
+            lock = locked_t_esc(self.decision_now(), remaining0, self.cfg).isoformat()
 
         def run(txn: Txn) -> dict[str, Any]:
             if key:
@@ -472,7 +482,7 @@ class Api:
         if gap["state"] != "OUTREACH":
             raise ApiError(409, f"next-offers needs OUTREACH, gap is {gap['state']}")
         ctx = self.planner_context(gap)
-        now = self.clock.now()
+        now = self.decision_now()
         try:
             result = self.solver(ctx["gap"], ctx, self.rules, self.cfg)
         except PlanDisagreement as exc:  # P0; fail closed to the lead
@@ -878,11 +888,12 @@ def pii_leaks(store: Store) -> int:
 
 def escalation_late(store: Store) -> int:
     late = 0
-    for gap_id, _ in store.list("gaps"):
+    for gap_id, gap in store.list("gaps"):
+        offset = timedelta(seconds=int(gap.get("clock_offset_s") or 0))  # t_esc is on the decision clock
         for _, ev in store.list(f"gaps/{gap_id}/events"):
             if ev["type"] == "escalation.due":
                 t_esc = ev["payload"].get("t_esc")
-                if t_esc is None or datetime.fromisoformat(ev["ts"]) > datetime.fromisoformat(t_esc) + timedelta(seconds=0):
+                if t_esc is None or datetime.fromisoformat(ev["ts"]) - offset > datetime.fromisoformat(t_esc):
                     late += 1
     return late
 
