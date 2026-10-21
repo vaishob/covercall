@@ -31,7 +31,7 @@ invoker() {  # invoker <service> <caller-sa>
     --member "serviceAccount:$(sa_email "$2")" --role roles/run.invoker >/dev/null
 }
 
-deploy solver private 0 ""
+deploy solver private 1 ""
 deploy guard private 1 ""
 deploy agent private 1 "AGENT_IMPL=stub-v0##GOOGLE_CLOUD_PROJECT=${PROJECT_ID}"
 deploy connectors private 0 ""
