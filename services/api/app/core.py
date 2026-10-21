@@ -567,8 +567,13 @@ class Api:
             return {"flagged": True, "guard_labels": labels, "guard_impl": GUARD_IMPL}
         parsed = self.agent.parse_reply(raw["text"], {"start": offer["start"], "end": offer["end"]})
         # Which model (or stub) wrote and read this reply, recorded on the outcome event (§7.1).
+        # parse_error / attempts / backend reach the outcome event, so a decline caused by a model error is
+        # told apart from a real decline or low confidence (decision 0026).
         self.store.set(f"parses/{offer_id}", {"parser_impl": parsed.get("parser_impl"),
                                               "prompt_sha256": parsed.get("prompt_sha256"),
+                                              "parser_backend": parsed.get("parser_backend"),
+                                              "parse_attempts": parsed.get("parse_attempts"),
+                                              "parse_error": parsed.get("parse_error"),
                                               "text_impl": raw.get("text_impl"),
                                               "text_prompt_sha256": raw.get("text_prompt_sha256"),
                                               "synthetic": True})

@@ -39,6 +39,24 @@ def test_status_reports_impls_and_registry_models(data: dict[str, Any]) -> None:
     assert status["time_scale"] == 1.0 and status["synthetic"] is True
 
 
+def test_status_reports_the_parse_backend_that_runs(data: dict[str, Any]) -> None:
+    """Decision 0026: with PARSER_BACKEND=developer the agent role is served by the Developer API."""
+    run = LocalRun(load_scenario("S-017"), data, CFG, RULES)
+
+    class Parser:
+        model_id, backend = "gemini-3.8-flash", "developer"
+
+        def parse_reply(self, text: str, offer: dict[str, Any]) -> dict[str, Any]:
+            raise AssertionError("not called by /status")
+
+    run.api.agent = Parser()
+    agent = run.get("/status")["models"]["agent"]
+    assert agent == {"model_id": "gemini-3.8-flash", "api_version": "v1beta", "provider": "gemini_developer_api"}
+    Parser.backend = "vertex"
+    agent = run.get("/status")["models"]["agent"]
+    assert agent == {"model_id": "gemini-3.8-flash", "api_version": "v1", "provider": "vertex_ai"}
+
+
 def test_scenarios_are_real_dataset_ids(data: dict[str, Any]) -> None:
     scenarios = [yaml.safe_load(p.read_text(encoding="utf-8"))
                  for p in sorted(Path("evals/datasets/golden").glob("*.yaml"))]

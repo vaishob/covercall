@@ -19,6 +19,7 @@ import yaml
 
 MODELS_PATH = Path("config/models.yaml")
 ENTERPRISE_PROVIDERS = ("vertex_ai",)
+DEVELOPER_PROVIDER, DEVELOPER_API_VERSION = "gemini_developer_api", "v1beta"  # as the voice role
 
 
 class StartupRefused(RuntimeError):
@@ -57,3 +58,18 @@ def enterprise_client(role: str, env: dict[str, str] | None = None,
 
     return genai.Client(enterprise=True, project=project, location=spec["location"], credentials=credentials,
                         http_options=types.HttpOptions(api_version=spec["api_version"], timeout=timeout_ms))
+
+
+def developer_client(role: str, env: dict[str, str] | None = None,
+                     models_path: str | Path = MODELS_PATH, timeout_ms: int | None = None) -> Any:
+    """A ``google-genai`` client for the same pinned model on the Gemini Developer API (``v1beta``),
+    keyed by ``GEMINI_API_KEY`` from Secret Manager (decision 0026). The model ID stays the role's."""
+    pinned_role(role, models_path)
+    env = dict(os.environ) if env is None else env
+    key = env.get("GEMINI_API_KEY", "")
+    if not key:
+        raise StartupRefused(f"role '{role}': GEMINI_API_KEY is not set for the Developer API backend")
+    from google import genai
+    from google.genai import types
+
+    return genai.Client(api_key=key, http_options=types.HttpOptions(api_version=DEVELOPER_API_VERSION, timeout=timeout_ms))

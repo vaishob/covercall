@@ -17,6 +17,7 @@ import yaml
 from services.agent.app.logic import PARSER_IMPL
 from services.api.app.core import Api, ApiError
 from services.api.app.events import TERMINAL_STATES, verify_chain
+from services.common.models import DEVELOPER_API_VERSION, DEVELOPER_PROVIDER
 from services.common.pii import redact
 from services.guard.app.logic import GUARD_IMPL
 from services.persona_sim.app.logic import TEXT_IMPL
@@ -41,6 +42,10 @@ def _rule_meta(api: Api) -> dict[str, dict[str, Any]]:
 
 def status_view(api: Api, environment: str, voice: str = "off") -> dict[str, Any]:
     roles = yaml.safe_load(Path("config/models.yaml").read_text(encoding="utf-8"))["roles"]
+    models = {name: {"model_id": r["model_id"], "api_version": r["api_version"], "provider": r["provider"]}
+              for name, r in roles.items()}
+    if getattr(api.agent, "backend", None) == "developer":  # decision 0026: report the parser that runs
+        models["agent"] = dict(models["agent"], api_version=DEVELOPER_API_VERSION, provider=DEVELOPER_PROVIDER)
     return {
         "status": "ok",
         "environment": environment,
@@ -48,8 +53,7 @@ def status_view(api: Api, environment: str, voice: str = "off") -> dict[str, Any
         "parser_impl": getattr(api.agent, "model_id", PARSER_IMPL),
         "persona_text_impl": (roles["persona_sim"]["model_id"] if os.environ.get("PERSONA_TEXT_IMPL") == "gemini"
                               else TEXT_IMPL),
-        "models": {name: {"model_id": r["model_id"], "api_version": r["api_version"],
-                          "provider": r["provider"]} for name, r in roles.items()},
+        "models": models,
         "time_scale": api.time_scale,
         "voice": voice,  # "live": POST /live/token mints Gemini Live tokens; "off": 501
         "synthetic": True,
