@@ -35,6 +35,6 @@ Measured (local, synthetic texts):
 
 ## Consequences
 - A parse can take up to about 30 s instead of 8 s. The cascade waits for it; deadlines are days away.
-- Switching to `developer` is a config change, but README ("global endpoint") and the in-app evidence
-  text would then be inaccurate and must be updated with it.
+- Production uses `developer` (`infra/40_deploy_services.sh` default). `/status` reports the agent role
+  as `gemini_developer_api` / `v1beta` when that backend runs, and the evidence page and README say so.
 - Tests: `tests/test_gemini.py` (retries, budget, logging, backends, the event payload).

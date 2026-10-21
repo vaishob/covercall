@@ -29,6 +29,7 @@ roles:
     fallback_order: [hands_free, push_to_talk, text]
 
   agent:
+    # Served on the Gemini Developer API (v1beta) when PARSER_BACKEND=developer (production; decision 0026).
     # source: https://docs.cloud.google.com/gemini-enterprise-agent-platform/resources/locations
     provider: vertex_ai
     framework: adk

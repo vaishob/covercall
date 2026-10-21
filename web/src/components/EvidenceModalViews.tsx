@@ -22,10 +22,11 @@ interface EvidenceViewsProps {
 }
 
 /** P0 metric definitions from §10.1 (text only; values come from the release gate in Slice 6). */
-/** What the implementation ID reported by /status means. */
-function implNote(impl: string): string {
-  return impl.startsWith('stub')
-    ? 'deterministic stub, not a model'
+/** What the implementation ID reported by /status means; `provider` is that role's entry in /status models. */
+function implNote(impl: string, provider: string | undefined): string {
+  if (impl.startsWith('stub')) return 'deterministic stub, not a model';
+  return provider === 'gemini_developer_api'
+    ? 'Gemini model on the Gemini Developer API; fails closed'
     : 'Gemini model on the Enterprise Agent Platform, global endpoint; fails closed';
 }
 
@@ -175,8 +176,11 @@ export const EvidenceViews: React.FC<EvidenceViewsProps> = ({ activeRoute, gapHa
           {status && (
             <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }} className="mono-tabular">
               <li>guard: {status.guard_impl} (deterministic stub, not a model)</li>
-              <li>reply parser: {status.parser_impl} ({implNote(status.parser_impl)})</li>
-              <li>persona reply text: {status.persona_text_impl} ({implNote(status.persona_text_impl)})</li>
+              <li>reply parser: {status.parser_impl} ({implNote(status.parser_impl, status.models.agent?.provider)})</li>
+              <li>
+                persona reply text: {status.persona_text_impl} (
+                {implNote(status.persona_text_impl, status.models.persona_sim?.provider)})
+              </li>
               <li>
                 voice: {status.voice === 'live'
                   ? 'live (Gemini Live, v1beta single-use ephemeral tokens minted by api; tools run on the server)'

@@ -106,10 +106,10 @@ flowchart LR
   W -- "OIDC: /internal/*" --> A
   A -- "ID token" --> S["solver<br/>OR-Tools + validator"]
   A -- "ID token" --> G["guard<br/>stub-v0"]
-  A -- "parse_reply" --> M["Gemini 3.8 Flash<br/>global endpoint"]
+  A -- "parse_reply" --> D["Gemini 3.8 Flash<br/>Developer API"]
   A -- "offers" --> P["persona-sim<br/>Cloud Run"]
   P <--> FS[("Firestore<br/>covercall-sim")]
-  P -- "wording" --> M
+  P -- "wording" --> M["Gemini 3.8 Flash<br/>global endpoint"]
   P -- "replies" --> A
   SM["Secret Manager<br/>GEMINI_API_KEY"] --> A
 ```
@@ -129,12 +129,13 @@ Only the workflow changes state. It does so through `/internal/*` routes, each o
 | Service | What it does here | Evidence |
 |---|---|---|
 | Gemini 3.8 Live (`gemini-3.8-live`, v1beta) | Voice: listens, reads back, calls five server-side tools | `GET /status` shows `voice: live`; `services/api/app/live.py`; `web/src/voice/liveSession.ts`; api revision `covercall-api-00006-bip` |
-| Gemini 3.8 Flash (`gemini-3.8-flash`, global endpoint) | Reads staff replies into a fixed schema; writes persona wording | `services/agent/app/gemini.py`; `services/persona_sim/app/main.py`; events record `parser_impl`, `text_impl` and prompt SHA-256 (`gap-0005`) |
+| Gemini 3.8 Flash (`gemini-3.8-flash`) on the Gemini Developer API (v1beta) | Reads staff replies into a fixed schema (`PARSER_BACKEND=developer`, [0026](docs/decisions/0026-parse-reliability.md)) | `services/agent/app/gemini.py`; `GET /status` shows the agent role's provider; events record `parser_impl`, `parser_backend` and prompt SHA-256 |
+| Gemini 3.8 Flash (`gemini-3.8-flash`) on the Enterprise Agent Platform, global endpoint | Writes persona wording (falls back to templates on error) | `services/persona_sim/app/main.py`; events record `text_impl` (`gap-0005`) |
 | Cloud Run | Six services: api, solver, guard, agent, persona-sim, connectors | `infra/40_deploy_services.sh`; `services/*/Dockerfile` |
 | Cloud Workflows | The state machine, with durable callback waits | `workflows/coverage_cascade.yaml`; executions `c592b95a…`, `b18202c3…` |
 | Firestore | Gaps, events, plans and offers; `covercall-sim` holds personas | `services/common/store.py`; `infra/10_firestore.sh` |
 | Firebase Hosting | The web app, plus a `voice` preview channel | `firebase.json`; `infra/70_hosting.sh` |
-| Secret Manager | `GEMINI_API_KEY`, readable only by the api service account | `infra/25_secrets.sh` |
+| Secret Manager | `GEMINI_API_KEY` (voice tokens and reply parsing), readable only by the api service account | `infra/25_secrets.sh` |
 | Cloud Build, Artifact Registry | Image builds | `infra/build-images.yaml`; `infra/30_images.sh` |
 | Gemini 4 Argon | CI eval judge | **Planned, not yet running** (`config/models.yaml`; [0020](docs/decisions/0020-eval-judge-gemini-4-argon.md)) |
 
@@ -160,7 +161,7 @@ Only the workflow changes state. It does so through `/internal/*` routes, each o
 
 ## Latency and reliability (measured only)
 
-- **Gemini parse:** one live call took **4.7 s**, measured locally. The parser timeout is 8 s, set from that one measurement. It has not been load-tested.
+- **Gemini parse:** on 21 Oct the Vertex global endpoint failed about 75-90% of parses (504, 429, 500), and each failure was a fail-closed decline. The 4.7 s seen earlier was a deadline, not the model: the SDK sends `X-Server-Timeout` and Vertex stops about 3.4 s before it. Parses now run on the Gemini Developer API (12/12 in the same window, median 3.6 s) and retry 429/500/503/504 within a 30 s budget, logging each failure on the event ([0026](docs/decisions/0026-parse-reliability.md)). An error is still never an accept.
 - **Journeys:** fills took 1.1 to 1.9 minutes and escalations 2.6 to 2.8 minutes in production, with waits compressed ×60 (see Results).
 - **Retries:** every workflow HTTP call has 3 attempts with exponential backoff, and every state change carries an idempotency key (`workflows/coverage_cascade.yaml`; `test_every_http_call_uses_oidc_and_the_retry_policy`).
 - **Warm instances:** api, solver, guard, agent and persona-sim each keep one warm instance; connectors scales to zero (`infra/40_deploy_services.sh`).
@@ -179,10 +180,12 @@ Only the workflow changes state. It does so through `/internal/*` routes, each o
 - [0014](docs/decisions/0014-commit-cancel-and-cost-saved.md): commit re-check, cancel through the workflow, approvals and cost saved.
 - [0019](docs/decisions/0019-live-ephemeral-tokens-v1beta.md): Live ephemeral tokens use v1beta.
 - [0020](docs/decisions/0020-eval-judge-gemini-4-argon.md): the eval judge is Gemini 4 Argon (planned).
-- [0021](docs/decisions/0021-global-model-endpoint.md): model calls use the global endpoint; services stay in asia-southeast1.
+- [0021](docs/decisions/0021-global-model-endpoint.md): Enterprise Agent Platform model calls use the global endpoint; services stay in asia-southeast1.
 - [0022](docs/decisions/0022-sim-database-id.md): the persona database is named `covercall-sim`.
 - [0023](docs/decisions/0023-scenario-overlay-and-gemini-on.md): scenario gaps use a per-gap overlay, and Gemini Flash is switched on.
 - [0024](docs/decisions/0024-demo-isolation-and-voice-live.md): demo isolation for lead-reported gaps, and voice goes live.
+- [0025](docs/decisions/0025-demo-clock-offset.md): deadlines are judged on a clock 7 days behind, so the fixed 3-8 Nov roster stays ahead through judging.
+- [0026](docs/decisions/0026-parse-reliability.md): reply parsing retries transient errors and runs on the Gemini Developer API.
 
 ---
 
