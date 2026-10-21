@@ -693,3 +693,48 @@ was running. Gaps created on `00013-xiz` carry `clock_offset_s`, which older cod
 ### Still open
 - Vertex reliability (above). `gap-0022` (started 21 Oct 17:16 SGT, not ours) is still waiting in its workflow.
 - `prevlive2` and `voicefix` preview channels expire 27 Oct; Hosting is unchanged by this fix.
+
+---
+
+## Parse reliability (branch `fix/parse-reliability`, promoted 2026-10-21 22:49 SGT). Frozen after this.
+
+### What happened
+On 21 Oct gemini-3.8-flash on Vertex `global` failed about 75-90% of reply parses (504 DEADLINE_EXCEEDED, 429,
+500). Each failure was silently "unclear", a fail-closed decline, so S-017 escalated on every revision (see
+"Demo clock fix", Finding). The 504s were the SDK's `X-Server-Timeout` (8 s) minus a ~3.4 s server margin.
+
+### What changed
+| Thing | Value |
+|---|---|
+| Parser | Retries 429/500/503/504 (0.5 s, then 1.5 s backoff; at most 3 attempts) inside a 30 s budget; attempt timeout 9 s on Vertex, 10 s on the Developer API (its minimum). Every failed attempt is logged; `parser_backend`, `parse_attempts`, `parse_error` reach the outcome event. Fail-closed unchanged (decision 0026). Commit `dc7da90` |
+| Backend | `PARSER_BACKEND=developer`: the same pinned model on the Gemini Developer API (`v1beta`, existing `GEMINI_API_KEY`, Tier 1 prepaid). persona-sim stays on Vertex `global` (template text on error) |
+| `/status`, evidence page, README | The agent role reports `gemini_developer_api` / `v1beta` when that backend runs; the evidence page and README say where parsing and persona wording run. Commit `4563ce3` |
+| api | revision **`covercall-api-00017-jen`** (tag `parsefinal`, image `api:parse-4803dcb`), 100% of traffic. Env as `00013-xiz` plus `PARSER_BACKEND=developer` |
+| Web | live release built from `4803dcb` in Cloud Build (`06abaefa`) against the production api: `index-D54SlQ4q.js` |
+| Unchanged | solver (`00005-lmf`, min 1), guard, agent, persona-sim, workflow definition, Firestore |
+
+### Verification
+| Check | Result |
+|---|---|
+| Backend comparison (local, interleaved, 12 s timeout, n=12, no retries) | Vertex global 1/12; Vertex asia-southeast1 and us-central1 404 (model not served); Developer API 12/12 correct, median 3.6 s |
+| New parser live (local, 12 each) | Vertex with retries 8/12 (median 16.1 s); Developer API 12/12, 1 attempt each, median 3.8 s |
+| Checks on `4803dcb` | pytest 208 passed, ruff, mypy; npm test 41/41, tsc, local Playwright 2/2; npm test, tsc and build again in Cloud Build |
+| Tag `parsefix` (`00016-jeg`, `API_URL` = tag URL), 3 smoke runs | S-017 FILLED 3/3 (Fiona 07-09 + Lucas 09-15, 1.1-1.3 min); voice FILLED 3/3; Nobody replies RESOLVED 3/3; offset 7.00; no fan-out; every parse `developer`, 1 attempt, no errors; 758 requests all 200; `/status` agent `gemini_developer_api` |
+| After the shift (`gap-0048..50`) | S-017 FILLED (Fiona + Lucas, 1.3 min); Nobody replies RESOLVED (3.2 min); voice FILLED (0.6 min); same parse checks; 256 requests all 200; PROD `/status` agent `gemini_developer_api` / `v1beta`, persona_sim `vertex_ai` |
+| Hosting | `web.app` and `firebaseapp.com` serve `index-D54SlQ4q.js` with the new evidence text and the production api URL; deep link 200; CORS preflight from `web.app` 200 |
+
+### Rollback (exact commands)
+```bash
+gcloud run services update-traffic covercall-api --project covercall-demo-2026 --region asia-southeast1 \
+  --to-revisions covercall-api-00013-xiz=100
+firebase hosting:clone covercall-demo-2026:prevlive3 covercall-demo-2026:live --project covercall-demo-2026
+```
+`00013-xiz` (tag `democlockfinal`) is the clock fix on Vertex parsing. `prevlive3` (expires 20 Nov) holds the
+previous live web release (`index-HqNEQ3kc.js`). Roll back both together: the old web text says the parser runs
+on the global endpoint. Tag `parsefix` was removed after confirming no execution started through it was running.
+
+### Still open
+- The demo now depends on the Developer API key's prepaid balance (Tier 1, US$50 top-up 21 Oct) for parsing as
+  well as voice; check the balance in AI Studio before and during judging.
+- persona-sim text on Vertex still fails often; it falls back to template text, which parses reliably.
+- `gap-0022` (21 Oct 17:16 SGT, not ours) is still waiting in its workflow.
