@@ -644,3 +644,52 @@ and `final` remain; preview channel `voicefix` expires 27 Oct.
 - The limiter assumes Cloud Run's front end is the only proxy. A load balancer in front would add an entry
   and must be revisited.
 - Gemini parser variation, the real clock and `gap-0001` (above) are unchanged.
+
+---
+
+## Demo clock fix (branch `fix/demo-clock`, promoted 2026-10-21 21:12 SGT). Frozen after this.
+
+### What happened
+The demo shifts are fixed on 3-8 Nov 2026 and production runs on the real clock. Locally reproduced: from
+3 Nov 06:19 SGT the S-017 tap and the voice report for "Tuesday, 3 November" escalate on approval and never
+fill; from 4 Nov 06:19 "Nobody replies" escalates without sending an offer. Judging runs to 6 Nov.
+
+### What changed
+| Thing | Value |
+|---|---|
+| api | `DEMO_CLOCK_OFFSET_DAYS=7`: deadlines (solver arrival, t_esc lock, next offers, countdown) are judged on a clock 7 days behind; event timestamps stay real (decision 0025). Commit `d042863`. Works until 10 Nov 06:19 SGT |
+| api | revision **`covercall-api-00013-xiz`** (tag `democlockfinal`, image `api:clock-d042863`), 100% of traffic. Env as `00010-qoy` plus `DEMO_CLOCK_OFFSET_DAYS=7` |
+| solver | revision **`covercall-solver-00005-lmf`**, `--min-instances 1` (was 0; first solve after idle took 7.5-13.6 s). Commit `7a779fb`. Roughly US$0.30-0.45 a day |
+| Unchanged | web, Hosting, persona-sim, guard, agent, workflow definition |
+
+### Verification
+| Check | Result |
+|---|---|
+| Local sweep, judge times 21 Oct 19:00 to 6 Nov 23:59 (8 times x voice, S-017, Nobody replies) | all 24 match the 20-21 Oct runs (same outcome, offers, people); no fan-out; countdown 3.3-20.5 days |
+| Checks on `d042863` | pytest 198 passed, ruff, mypy; npm test 41/41, tsc |
+| Tag `democlock` (`00012-dol`, `API_URL` = tag URL so the workflow ran the new code) | offset 7.00; Nobody replies RESOLVED with 12 single timeouts; voice FILLED; 199 requests all 200 |
+| Control: S-017 x4 alternating PROD (offset 0) / TAG (offset 7), 21 Oct 20:48-20:58 SGT | identical: all ESCALATED -> RESOLVED, same 9 single offers; 6-7 "unclear" parses per run lining up with Vertex 504/429/500 on both revisions |
+| After the shift (`gap-0035..37`) | offset 7.00; Nobody replies RESOLVED (3.1 min); voice FILLED (0.6 min); S-017 escalated in the control pattern (7 unclear vs 6 Vertex errors); 315 requests all 200, no tracebacks |
+| Solver after 20 min idle (`gap-0038`, 21:39 SGT) | no new instance started; solver `/solve` 0.84 s, api `/internal/solve` 3.4 s, read-back 5.7 s after the report (cold before: `/internal/solve` 7.5-13.6 s). The voice run itself escalated: 8 "unclear" parses vs 7 Vertex errors (control pattern) |
+
+### Finding: Vertex errors make S-017 escalate (open)
+gemini-3.8-flash on Vertex `global` failed about 75-90% of calls on 21 Oct (504 DEADLINE_EXCEEDED, 429, 500;
+18-39% on 18 and 20 Oct). A failed parse is "unclear", which fails closed to decline, so S-017 escalates on
+any revision. The SDK sends `X-Server-Timeout: 8` and the server stops about 3.4 s earlier: the 504s and the
+4.6-4.7 s latency spike are that deadline. No status-page incident; no project quota (dynamic shared quota).
+Not available on Vertex asia-southeast1 or us-central1 (404). The Gemini Developer API parsed 12/12 in the
+same window. Fix in progress on `fix/parse-reliability` (not deployed).
+
+### Rollback (exact commands)
+```bash
+gcloud run services update-traffic covercall-api --project covercall-demo-2026 --region asia-southeast1 \
+  --to-revisions covercall-api-00010-qoy=100
+gcloud run services update-traffic covercall-solver --project covercall-demo-2026 --region asia-southeast1 \
+  --to-revisions covercall-solver-00004-kls=100
+```
+`00010-qoy` keeps tag `final`. Tag `democlock` was removed after confirming no execution started through it
+was running. Gaps created on `00013-xiz` carry `clock_offset_s`, which older code ignores.
+
+### Still open
+- Vertex reliability (above). `gap-0022` (started 21 Oct 17:16 SGT, not ours) is still waiting in its workflow.
+- `prevlive2` and `voicefix` preview channels expire 27 Oct; Hosting is unchanged by this fix.

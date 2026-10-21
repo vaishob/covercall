@@ -418,9 +418,10 @@ class LocalRun:
             filled = datetime.fromisoformat(gap["filled_at"])
             ttf = round((filled - reported).total_seconds() / 60, 2)
             travel = (self.store.get("config/travel") or {})["staff_to_outlet_min"]
+            judged = filled.timestamp() - int(gap.get("clock_offset_s") or 0)  # decision clock (0025)
             late_arrivals = sum(
                 1 for s in segments
-                if filled.timestamp() + 60 * int(travel[s["staff_id"]][gap["outlet"]])
+                if judged + 60 * int(travel[s["staff_id"]][gap["outlet"]])
                 > datetime.fromisoformat(s["start"]).timestamp())
         chain = verify_chain(self.store, gid)
         return {

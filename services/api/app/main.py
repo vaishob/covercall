@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import os
 from collections.abc import Callable
+from datetime import timedelta
 from typing import Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
@@ -31,6 +32,16 @@ def allowed_origins_from_env() -> list[str]:
     if any("*" in o for o in origins):
         raise ValueError("ALLOWED_ORIGINS must list exact origins; '*' is not allowed")
     return origins
+
+
+def demo_clock_offset_from_env() -> timedelta:
+    """Whole days in ``DEMO_CLOCK_OFFSET_DAYS`` (decision 0025); unset means the real clock.
+    Whole days keep every time of day unchanged. A bad value stops the service from starting."""
+    raw = os.environ.get("DEMO_CLOCK_OFFSET_DAYS", "").strip()
+    days = int(raw) if raw else 0
+    if not 0 <= days <= 30:
+        raise ValueError(f"DEMO_CLOCK_OFFSET_DAYS must be 0..30 whole days, got {raw!r}")
+    return timedelta(days=days)
 
 
 def client_ip(request: Request) -> str:
@@ -236,7 +247,8 @@ def _cloud_app() -> FastAPI:  # pragma: no cover - Cloud Run wiring, not run in 
               agent=agent, messenger=HttpMessenger(os.environ["PERSONA_SIM_URL"]),
               callbacks=HttpCallbacks(),
               launcher=WorkflowsLauncher(), solver=HttpSolver(os.environ["SOLVER_URL"]), time_scale=scale,
-              demo_isolation=os.environ.get("DEMO_ISOLATION") == "1")
+              demo_isolation=os.environ.get("DEMO_ISOLATION") == "1",
+              clock_offset=demo_clock_offset_from_env())
     live_client = None
     if os.environ.get("VOICE_ENABLED") == "1" and os.environ.get("GEMINI_API_KEY"):
         voice = pinned_role("voice")  # refuses to start if the voice model is TODO-VERIFY

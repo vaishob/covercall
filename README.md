@@ -163,7 +163,7 @@ Only the workflow changes state. It does so through `/internal/*` routes, each o
 - **Gemini parse:** one live call took **4.7 s**, measured locally. The parser timeout is 8 s, set from that one measurement. It has not been load-tested.
 - **Journeys:** fills took 1.1 to 1.9 minutes and escalations 2.6 to 2.8 minutes in production, with waits compressed ×60 (see Results).
 - **Retries:** every workflow HTTP call has 3 attempts with exponential backoff, and every state change carries an idempotency key (`workflows/coverage_cascade.yaml`; `test_every_http_call_uses_oidc_and_the_retry_policy`).
-- **Warm instances:** api, guard, agent and persona-sim each keep one warm instance; solver and connectors scale to zero (`infra/40_deploy_services.sh`).
+- **Warm instances:** api, solver, guard, agent and persona-sim each keep one warm instance; connectors scales to zero (`infra/40_deploy_services.sh`).
 - **Found in production and fixed:** Firestore rejects reads after writes in a transaction, which broke `accept` and `commit`; the in-memory test store now enforces the same rule. Also fixed: a database ID that was too short, an api image missing a module, and a deploy script that could not have worked ([HANDOFF](docs/HANDOFF.md), section "Deployment").
 - **Limits:** voice tokens are capped at 20 per IP and 120 overall per 10 minutes, keyed on the caller IP that Cloud Run appends to `X-Forwarded-For`. The counts are held in each instance's memory.
 

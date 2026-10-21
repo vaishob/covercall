@@ -122,7 +122,7 @@ def gap_view(api: Api, gap_id: str) -> dict[str, Any]:
     view_gap["absent_staff_name"] = staff.get(gap["absent_staff_id"], {}).get("display_name")
     seconds = None
     if gap.get("t_esc_locked") and gap["state"] not in TERMINAL_STATES and gap["state"] != "ESCALATED":
-        seconds = max(0, int((datetime.fromisoformat(gap["t_esc_locked"]) - now).total_seconds()))
+        seconds = max(0, int((datetime.fromisoformat(gap["t_esc_locked"]) - api.decision_now()).total_seconds()))
     plan_id = (gap.get("committing") or {}).get("plan_id") if gap["state"] == "FILLED" else None
     plan_id = plan_id or gap.get("current_plan_id")
     plan_doc = api.store.get(f"plans/{plan_id}") if plan_id else None
